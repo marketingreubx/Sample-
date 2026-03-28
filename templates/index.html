@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Viral Video Analyzer</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0a0a0f;
+      --surface: #12121a;
+      --surface2: #1a1a28;
+      --border: #2a2a3d;
+      --accent: #7c3aed;
+      --accent2: #a855f7;
+      --pink: #ec4899;
+      --teal: #14b8a6;
+      --text: #f0f0ff;
+      --muted: #8888aa;
+      --success: #22c55e;
+      --radius: 12px;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      min-height: 100vh;
+      line-height: 1.6;
+    }
+
+    /* ── Header ── */
+    header {
+      background: linear-gradient(135deg, #1a0533 0%, #0f0a1f 50%, #001a1a 100%);
+      border-bottom: 1px solid var(--border);
+      padding: 24px 20px;
+      text-align: center;
+    }
+    header h1 {
+      font-size: clamp(1.6rem, 4vw, 2.4rem);
+      font-weight: 800;
+      background: linear-gradient(90deg, var(--accent2), var(--pink), var(--teal));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 8px;
+    }
+    header p {
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    /* ── Main layout ── */
+    main { max-width: 900px; margin: 0 auto; padding: 32px 20px 80px; }
+
+    /* ── Input card ── */
+    .input-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 28px;
+      margin-bottom: 32px;
+    }
+
+    .form-group { margin-bottom: 18px; }
+    label {
+      display: block;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 8px;
+    }
+    input[type="text"], input[type="url"] {
+      width: 100%;
+      padding: 12px 16px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-size: 0.95rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    input:focus { border-color: var(--accent); }
+    input::placeholder { color: var(--muted); }
+
+    .platform-badges {
+      display: flex;
+      gap: 8px;
+      margin-top: 8px;
+    }
+    .badge {
+      font-size: 0.75rem;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-weight: 600;
+    }
+    .badge-ig { background: #2d1040; color: #d946ef; border: 1px solid #7c3aed44; }
+    .badge-tt { background: #001a1a; color: #14b8a6; border: 1px solid #14b8a644; }
+
+    .analyze-btn {
+      width: 100%;
+      padding: 14px;
+      background: linear-gradient(135deg, var(--accent), var(--pink));
+      border: none;
+      border-radius: 8px;
+      color: white;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: opacity 0.2s, transform 0.1s;
+      letter-spacing: 0.03em;
+    }
+    .analyze-btn:hover { opacity: 0.9; }
+    .analyze-btn:active { transform: scale(0.99); }
+    .analyze-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* ── Loading ── */
+    #loading { display: none; text-align: center; padding: 48px 0; }
+    .spinner {
+      width: 48px; height: 48px;
+      border: 3px solid var(--border);
+      border-top-color: var(--accent2);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto 16px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    #loading p { color: var(--muted); }
+
+    /* ── Error ── */
+    #error-box {
+      display: none;
+      background: #1a0a0a;
+      border: 1px solid #7f1d1d;
+      border-radius: var(--radius);
+      padding: 16px 20px;
+      color: #fca5a5;
+      margin-bottom: 24px;
+    }
+
+    /* ── Results ── */
+    #results { display: none; }
+
+    .video-meta {
+      display: flex;
+      gap: 16px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      margin-bottom: 24px;
+      align-items: flex-start;
+    }
+    .video-meta img {
+      width: 120px;
+      height: 80px;
+      object-fit: cover;
+      border-radius: 8px;
+      flex-shrink: 0;
+      background: var(--surface2);
+    }
+    .video-meta .meta-info h3 {
+      font-size: 1rem;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+    .video-meta .meta-info .stats {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      font-size: 0.82rem;
+      color: var(--muted);
+      margin-top: 8px;
+    }
+    .stat { display: flex; align-items: center; gap: 4px; }
+    .stat span:first-child { font-size: 1rem; }
+
+    /* ── Sections ── */
+    .section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      margin-bottom: 20px;
+      overflow: hidden;
+    }
+    .section-header {
+      padding: 16px 20px;
+      background: var(--surface2);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+      user-select: none;
+    }
+    .section-header:hover { background: #22223a; }
+    .section-header .icon { font-size: 1.2rem; }
+    .section-header h2 { font-size: 1rem; font-weight: 700; flex: 1; }
+    .section-header .chevron { color: var(--muted); transition: transform 0.2s; }
+    .section-header.open .chevron { transform: rotate(180deg); }
+    .section-body { padding: 20px; display: none; }
+    .section-body.open { display: block; }
+
+    /* ── Script structure ── */
+    .hook-card {
+      background: linear-gradient(135deg, #1a0533, #0f0a1f);
+      border: 1px solid var(--accent);
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+    .hook-card .label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--accent2);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 8px;
+    }
+    .hook-card h3 { font-size: 1rem; font-weight: 700; margin-bottom: 6px; }
+    .hook-card .ts { font-size: 0.8rem; color: var(--muted); margin-bottom: 8px; }
+    .hook-card p { font-size: 0.9rem; color: #ccc; }
+
+    .body-section {
+      border-left: 3px solid var(--border);
+      padding-left: 16px;
+      margin-bottom: 14px;
+    }
+    .body-section .ts { font-size: 0.78rem; color: var(--muted); }
+    .body-section h4 { font-size: 0.9rem; font-weight: 700; color: var(--accent2); margin: 2px 0 6px; }
+    .body-section p { font-size: 0.88rem; color: #ccc; }
+
+    .cta-card {
+      background: linear-gradient(135deg, #001a1a, #0f0a1f);
+      border: 1px solid var(--teal);
+      border-radius: 8px;
+      padding: 16px;
+      margin-top: 16px;
+    }
+    .cta-card .label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--teal);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 8px;
+    }
+
+    /* ── Virality factors ── */
+    .factor-item {
+      display: flex;
+      gap: 14px;
+      padding: 14px 0;
+      border-bottom: 1px solid var(--border);
+      align-items: flex-start;
+    }
+    .factor-item:last-child { border-bottom: none; }
+    .score-ring {
+      flex-shrink: 0;
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 0.95rem;
+    }
+    .score-high { background: #14293a; color: #22d3ee; border: 2px solid #22d3ee66; }
+    .score-mid  { background: #1a1400; color: #facc15; border: 2px solid #facc1566; }
+    .score-low  { background: #1a0a00; color: #f97316; border: 2px solid #f9731666; }
+    .factor-text h4 { font-size: 0.9rem; font-weight: 700; margin-bottom: 4px; }
+    .factor-text p  { font-size: 0.85rem; color: #bbb; }
+
+    /* ── Why it went viral ── */
+    .viral-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 12px;
+    }
+    .viral-item {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 14px;
+    }
+    .viral-item .vl { font-size: 0.72rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 6px; font-weight: 700; }
+    .viral-item p { font-size: 0.88rem; }
+
+    .algo-list { list-style: none; margin-top: 14px; }
+    .algo-list li {
+      padding: 7px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.88rem;
+      display: flex;
+      gap: 8px;
+    }
+    .algo-list li:last-child { border-bottom: none; }
+    .algo-list li::before { content: "→"; color: var(--accent2); flex-shrink: 0; }
+
+    /* ── Content DNA ── */
+    .dna-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .dna-chip {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px;
+    }
+    .dna-chip .dl { font-size: 0.7rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 4px; font-weight: 700; }
+    .dna-chip .dv { font-size: 0.9rem; font-weight: 600; }
+
+    /* ── Content ideas ── */
+    .idea-card {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 18px;
+      margin-bottom: 14px;
+      transition: border-color 0.2s;
+    }
+    .idea-card:hover { border-color: var(--accent); }
+    .idea-header {
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+      margin-bottom: 12px;
+    }
+    .idea-num {
+      background: linear-gradient(135deg, var(--accent), var(--pink));
+      color: white;
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 0.85rem;
+      flex-shrink: 0;
+    }
+    .idea-header h3 { font-size: 1rem; font-weight: 700; line-height: 1.3; }
+    .idea-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    @media (max-width: 500px) { .idea-grid { grid-template-columns: 1fr; } }
+    .idea-field { font-size: 0.82rem; }
+    .idea-field .fl { color: var(--muted); font-weight: 600; text-transform: uppercase; font-size: 0.7rem; letter-spacing: 0.06em; margin-bottom: 3px; }
+    .idea-field p { color: #ddd; }
+    .idea-why {
+      background: #0a1a0a;
+      border: 1px solid #14532d44;
+      border-radius: 6px;
+      padding: 10px 12px;
+      font-size: 0.83rem;
+      color: #86efac;
+      margin-top: 10px;
+    }
+    .idea-why .fl { color: #4ade80; font-weight: 700; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 4px; }
+
+    /* ── Hashtags ── */
+    .hashtag-list { display: flex; flex-wrap: wrap; gap: 8px; }
+    .hashtag {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 4px 12px;
+      font-size: 0.8rem;
+      color: var(--accent2);
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 600px) {
+      .video-meta { flex-direction: column; }
+      .video-meta img { width: 100%; height: 160px; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>Viral Video Analyzer</h1>
+  <p>Paste an Instagram Reel or TikTok link — get the script, virality breakdown, and 10 content ideas</p>
+</header>
+
+<main>
+  <!-- Input card -->
+  <div class="input-card">
+    <div class="form-group">
+      <label>Video URL</label>
+      <input type="url" id="url-input" placeholder="https://www.tiktok.com/@user/video/... or https://www.instagram.com/reel/..." />
+      <div class="platform-badges">
+        <span class="badge badge-ig">Instagram Reels</span>
+        <span class="badge badge-tt">TikTok</span>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Your Niche</label>
+      <input type="text" id="niche-input" placeholder="e.g. fitness for busy moms, personal finance for Gen Z, travel on a budget..." />
+    </div>
+    <button class="analyze-btn" id="analyze-btn" onclick="runAnalysis()">
+      Analyze Video
+    </button>
+  </div>
+
+  <!-- Error -->
+  <div id="error-box"></div>
+
+  <!-- Loading -->
+  <div id="loading">
+    <div class="spinner"></div>
+    <p id="loading-msg">Extracting video data...</p>
+  </div>
+
+  <!-- Results -->
+  <div id="results">
+
+    <!-- Meta bar -->
+    <div class="video-meta" id="meta-bar"></div>
+
+    <!-- Script Structure -->
+    <div class="section">
+      <div class="section-header open" onclick="toggleSection(this)">
+        <span class="icon">📝</span>
+        <h2>Script Structure</h2>
+        <span class="chevron">▼</span>
+      </div>
+      <div class="section-body open" id="script-body"></div>
+    </div>
+
+    <!-- Virality Factors -->
+    <div class="section">
+      <div class="section-header open" onclick="toggleSection(this)">
+        <span class="icon">🔥</span>
+        <h2>Virality Factors</h2>
+        <span class="chevron">▼</span>
+      </div>
+      <div class="section-body open" id="virality-body"></div>
+    </div>
+
+    <!-- Why It Went Viral -->
+    <div class="section">
+      <div class="section-header open" onclick="toggleSection(this)">
+        <span class="icon">🧠</span>
+        <h2>Why It Went Viral</h2>
+        <span class="chevron">▼</span>
+      </div>
+      <div class="section-body open" id="viral-body"></div>
+    </div>
+
+    <!-- Content DNA -->
+    <div class="section">
+      <div class="section-header" onclick="toggleSection(this)">
+        <span class="icon">🧬</span>
+        <h2>Content DNA</h2>
+        <span class="chevron">▼</span>
+      </div>
+      <div class="section-body" id="dna-body"></div>
+    </div>
+
+    <!-- Content Ideas -->
+    <div class="section">
+      <div class="section-header open" onclick="toggleSection(this)">
+        <span class="icon">💡</span>
+        <h2>10 Content Ideas for Your Niche</h2>
+        <span class="chevron">▼</span>
+      </div>
+      <div class="section-body open" id="ideas-body"></div>
+    </div>
+
+    <!-- Hashtags -->
+    <div class="section" id="hashtags-section" style="display:none">
+      <div class="section-header" onclick="toggleSection(this)">
+        <span class="icon">#</span>
+        <h2>Hashtags from Original</h2>
+        <span class="chevron">▼</span>
+      </div>
+      <div class="section-body" id="hashtags-body"></div>
+    </div>
+
+  </div><!-- /results -->
+</main>
+
+<script>
+  function toggleSection(header) {
+    header.classList.toggle('open');
+    const body = header.nextElementSibling;
+    body.classList.toggle('open');
+  }
+
+  function setLoading(msg) {
+    document.getElementById('loading-msg').textContent = msg;
+    document.getElementById('loading').style.display = 'block';
+  }
+
+  function formatNum(n) {
+    if (n == null) return null;
+    if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + 'M';
+    if (n >= 1_000) return (n / 1_000).toFixed(1) + 'K';
+    return n.toString();
+  }
+
+  function esc(str) {
+    if (!str) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  async function runAnalysis() {
+    const url = document.getElementById('url-input').value.trim();
+    const niche = document.getElementById('niche-input').value.trim();
+    const btn = document.getElementById('analyze-btn');
+    const errorBox = document.getElementById('error-box');
+    const results = document.getElementById('results');
+
+    errorBox.style.display = 'none';
+    results.style.display = 'none';
+
+    if (!url) { showError('Please paste an Instagram or TikTok URL.'); return; }
+    if (!niche) { showError('Please enter your content niche.'); return; }
+
+    btn.disabled = true;
+    setLoading('Fetching video metadata...');
+    document.getElementById('loading').style.display = 'block';
+
+    setTimeout(() => setLoading('Analyzing with Claude AI... (this takes 15-30s)'), 4000);
+
+    try {
+      const res = await fetch('/analyze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url, niche }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        showError(data.detail || 'Analysis failed. Please try again.');
+        return;
+      }
+
+      renderResults(data, niche);
+    } catch (err) {
+      showError('Network error. Please check your connection and try again.');
+    } finally {
+      btn.disabled = false;
+      document.getElementById('loading').style.display = 'none';
+    }
+  }
+
+  function showError(msg) {
+    const box = document.getElementById('error-box');
+    box.textContent = msg;
+    box.style.display = 'block';
+    document.getElementById('loading').style.display = 'none';
+  }
+
+  function renderResults(data, niche) {
+    const a = data.analysis;
+
+    // Meta bar
+    const stats = data.stats;
+    const statItems = [
+      stats.views != null    ? `<span class="stat"><span>👁️</span>${formatNum(stats.views)} views</span>` : '',
+      stats.likes != null    ? `<span class="stat"><span>❤️</span>${formatNum(stats.likes)} likes</span>` : '',
+      stats.comments != null ? `<span class="stat"><span>💬</span>${formatNum(stats.comments)}</span>` : '',
+      stats.shares != null   ? `<span class="stat"><span>🔁</span>${formatNum(stats.shares)}</span>` : '',
+      stats.duration_seconds != null ? `<span class="stat"><span>⏱️</span>${Math.round(stats.duration_seconds)}s</span>` : '',
+    ].filter(Boolean).join('');
+
+    const thumbHtml = data.thumbnail
+      ? `<img src="${esc(data.thumbnail)}" alt="thumbnail" onerror="this.style.display='none'" />`
+      : '';
+
+    document.getElementById('meta-bar').innerHTML = `
+      ${thumbHtml}
+      <div class="meta-info">
+        <div class="badge badge-${data.platform === 'instagram' ? 'ig' : 'tt'}">${esc(data.platform.toUpperCase())}</div>
+        <h3>${esc(data.title || data.uploader)}</h3>
+        <div style="font-size:0.82rem;color:var(--muted);">by @${esc(data.uploader)}</div>
+        ${a.video_summary ? `<div style="font-size:0.87rem;margin-top:8px;color:#ccc;">${esc(a.video_summary)}</div>` : ''}
+        <div class="stats">${statItems}</div>
+      </div>`;
+
+    // Script structure
+    const ss = a.script_structure || {};
+    let scriptHtml = '';
+    if (ss.hook) {
+      scriptHtml += `<div class="hook-card">
+        <div class="label">Hook</div>
+        <h3>${esc(ss.hook.technique || 'Opening Hook')}</h3>
+        <div class="ts">${esc(ss.hook.timestamp || '')}</div>
+        <p>${esc(ss.hook.description || '')}</p>
+      </div>`;
+    }
+    if (ss.body && Array.isArray(ss.body)) {
+      ss.body.forEach(sec => {
+        scriptHtml += `<div class="body-section">
+          <div class="ts">${esc(sec.timestamp || '')}</div>
+          <h4>${esc(sec.section || '')}</h4>
+          <p>${esc(sec.content || '')}</p>
+        </div>`;
+      });
+    }
+    if (ss.cta_or_ending) {
+      scriptHtml += `<div class="cta-card">
+        <div class="label">CTA / Ending</div>
+        <h3 style="font-size:0.9rem;font-weight:700;margin-bottom:6px;">${esc(ss.cta_or_ending.technique || '')}</h3>
+        <div class="ts">${esc(ss.cta_or_ending.timestamp || '')}</div>
+        <p style="font-size:0.88rem;color:#ccc;margin-top:6px;">${esc(ss.cta_or_ending.description || '')}</p>
+      </div>`;
+    }
+    document.getElementById('script-body').innerHTML = scriptHtml || '<p style="color:var(--muted)">No script data available.</p>';
+
+    // Virality factors
+    const factors = a.virality_factors || [];
+    let vfHtml = '';
+    factors.forEach(f => {
+      const s = parseInt(f.score) || 0;
+      const cls = s >= 8 ? 'score-high' : s >= 5 ? 'score-mid' : 'score-low';
+      vfHtml += `<div class="factor-item">
+        <div class="score-ring ${cls}">${s}</div>
+        <div class="factor-text">
+          <h4>${esc(f.factor || '')}</h4>
+          <p>${esc(f.explanation || '')}</p>
+        </div>
+      </div>`;
+    });
+    document.getElementById('virality-body').innerHTML = vfHtml || '<p style="color:var(--muted)">No data.</p>';
+
+    // Why viral
+    const wv = a.why_it_went_viral || {};
+    let viralHtml = `<div class="viral-grid">
+      <div class="viral-item"><div class="vl">Primary Reason</div><p>${esc(wv.primary_reason || '-')}</p></div>
+      <div class="viral-item"><div class="vl">Emotional Trigger</div><p>${esc(wv.emotional_trigger || '-')}</p></div>
+      <div class="viral-item"><div class="vl">Audience Psychology</div><p>${esc(wv.audience_psychology || '-')}</p></div>
+      <div class="viral-item"><div class="vl">Trend / Timing</div><p>${esc(wv.timing_or_trend || '-')}</p></div>
+    </div>`;
+    if (wv.algorithm_advantages && wv.algorithm_advantages.length) {
+      viralHtml += `<div style="margin-top:16px"><div style="font-size:0.78rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px;">Algorithm Signals Triggered</div>
+        <ul class="algo-list">${wv.algorithm_advantages.map(x => `<li>${esc(x)}</li>`).join('')}</ul>
+      </div>`;
+    }
+    document.getElementById('viral-body').innerHTML = viralHtml;
+
+    // DNA
+    const dna = a.content_dna || {};
+    const dnaFields = [
+      ['Format', dna.format],
+      ['Pacing', dna.pacing],
+      ['Tone', dna.tone],
+      ['Production', dna.production_level],
+    ];
+    let dnaHtml = `<div class="dna-grid">${dnaFields.map(([l, v]) => `
+      <div class="dna-chip"><div class="dl">${l}</div><div class="dv">${esc(v || '-')}</div></div>`).join('')}
+    </div>`;
+    if (dna.key_elements && dna.key_elements.length) {
+      dnaHtml += `<div style="font-size:0.8rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;font-weight:700;margin-bottom:8px;">Key Elements</div>
+        <ul class="algo-list">${dna.key_elements.map(x => `<li>${esc(x)}</li>`).join('')}</ul>`;
+    }
+    document.getElementById('dna-body').innerHTML = dnaHtml;
+
+    // Ideas
+    const ideas = a.content_ideas || [];
+    let ideasHtml = `<div style="font-size:0.83rem;color:var(--muted);margin-bottom:16px;">Tailored for: <strong style="color:var(--accent2)">${esc(niche)}</strong></div>`;
+    ideas.forEach((idea, i) => {
+      ideasHtml += `<div class="idea-card">
+        <div class="idea-header">
+          <div class="idea-num">${idea.idea_number || i + 1}</div>
+          <h3>${esc(idea.title || '')}</h3>
+        </div>
+        <div class="idea-grid">
+          <div class="idea-field"><div class="fl">Hook (first 3s)</div><p>${esc(idea.hook || '-')}</p></div>
+          <div class="idea-field"><div class="fl">Format</div><p>${esc(idea.format || '-')}</p></div>
+          <div class="idea-field" style="grid-column:1/-1"><div class="fl">Structure</div><p>${esc(idea.structure || '-')}</p></div>
+          <div class="idea-field"><div class="fl">Viral Element Borrowed</div><p>${esc(idea.viral_element_borrowed || '-')}</p></div>
+        </div>
+        <div class="idea-why">
+          <div class="fl">Why it will work for your niche</div>
+          ${esc(idea.why_it_will_work || '')}
+        </div>
+      </div>`;
+    });
+    document.getElementById('ideas-body').innerHTML = ideasHtml;
+
+    // Hashtags
+    if (data.hashtags && data.hashtags.length) {
+      document.getElementById('hashtags-section').style.display = '';
+      document.getElementById('hashtags-body').innerHTML =
+        `<div class="hashtag-list">${data.hashtags.map(h => `<span class="hashtag">${esc(h)}</span>`).join('')}</div>`;
+    }
+
+    document.getElementById('results').style.display = 'block';
+    document.getElementById('results').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  // Allow Enter key on inputs
+  document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('niche-input').addEventListener('keydown', e => {
+      if (e.key === 'Enter') runAnalysis();
+    });
+  });
+</script>
+</body>
+</html>
