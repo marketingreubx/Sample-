@@ -16,6 +16,7 @@
       --accent2: #a855f7;
       --pink: #ec4899;
       --teal: #14b8a6;
+      --yt: #ff0000;
       --text: #f0f0ff;
       --muted: #8888aa;
       --success: #22c55e;
@@ -34,7 +35,7 @@
     header {
       background: linear-gradient(135deg, #1a0533 0%, #0f0a1f 50%, #001a1a 100%);
       border-bottom: 1px solid var(--border);
-      padding: 24px 20px;
+      padding: 28px 20px 24px;
       text-align: center;
     }
     header h1 {
@@ -46,13 +47,46 @@
       background-clip: text;
       margin-bottom: 8px;
     }
-    header p {
-      color: var(--muted);
-      font-size: 0.95rem;
-    }
+    header p { color: var(--muted); font-size: 0.95rem; }
 
     /* ── Main layout ── */
-    main { max-width: 900px; margin: 0 auto; padding: 32px 20px 80px; }
+    main { max-width: 920px; margin: 0 auto; padding: 32px 20px 100px; }
+
+    /* ── Step indicator ── */
+    .steps {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      margin-bottom: 28px;
+    }
+    .step {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex: 1;
+    }
+    .step-num {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      font-weight: 800;
+      flex-shrink: 0;
+      border: 2px solid var(--border);
+      color: var(--muted);
+      background: var(--surface);
+      transition: all 0.3s;
+    }
+    .step-label { font-size: 0.78rem; color: var(--muted); font-weight: 600; white-space: nowrap; transition: color 0.3s; }
+    .step-line { flex: 1; height: 2px; background: var(--border); margin: 0 8px; transition: background 0.3s; }
+    .step.active .step-num { border-color: var(--accent2); color: var(--accent2); background: #1a0a2e; }
+    .step.active .step-label { color: var(--accent2); }
+    .step.done .step-num { border-color: var(--success); color: var(--success); background: #0a1a0a; }
+    .step.done .step-label { color: var(--success); }
+    .step.done + .step-line { background: var(--success); }
 
     /* ── Input card ── */
     .input-card {
@@ -60,13 +94,13 @@
       border: 1px solid var(--border);
       border-radius: var(--radius);
       padding: 28px;
-      margin-bottom: 32px;
+      margin-bottom: 28px;
     }
 
     .form-group { margin-bottom: 18px; }
     label {
       display: block;
-      font-size: 0.85rem;
+      font-size: 0.82rem;
       font-weight: 600;
       color: var(--muted);
       text-transform: uppercase;
@@ -87,19 +121,11 @@
     input:focus { border-color: var(--accent); }
     input::placeholder { color: var(--muted); }
 
-    .platform-badges {
-      display: flex;
-      gap: 8px;
-      margin-top: 8px;
-    }
-    .badge {
-      font-size: 0.75rem;
-      padding: 3px 10px;
-      border-radius: 20px;
-      font-weight: 600;
-    }
+    .platform-badges { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+    .badge { font-size: 0.72rem; padding: 3px 10px; border-radius: 20px; font-weight: 600; }
     .badge-ig { background: #2d1040; color: #d946ef; border: 1px solid #7c3aed44; }
     .badge-tt { background: #001a1a; color: #14b8a6; border: 1px solid #14b8a644; }
+    .badge-yt { background: #1a0000; color: #ff6b6b; border: 1px solid #ff000044; }
 
     .analyze-btn {
       width: 100%;
@@ -163,21 +189,9 @@
       flex-shrink: 0;
       background: var(--surface2);
     }
-    .video-meta .meta-info h3 {
-      font-size: 1rem;
-      font-weight: 700;
-      margin-bottom: 6px;
-    }
-    .video-meta .meta-info .stats {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 12px;
-      font-size: 0.82rem;
-      color: var(--muted);
-      margin-top: 8px;
-    }
+    .video-meta .meta-info h3 { font-size: 1rem; font-weight: 700; margin-bottom: 6px; }
+    .video-meta .meta-info .stats { display: flex; flex-wrap: wrap; gap: 12px; font-size: 0.82rem; color: var(--muted); margin-top: 8px; }
     .stat { display: flex; align-items: center; gap: 4px; }
-    .stat span:first-child { font-size: 1rem; }
 
     /* ── Sections ── */
     .section {
@@ -213,14 +227,7 @@
       padding: 16px;
       margin-bottom: 16px;
     }
-    .hook-card .label {
-      font-size: 0.75rem;
-      font-weight: 700;
-      color: var(--accent2);
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      margin-bottom: 8px;
-    }
+    .hook-card .label { font-size: 0.75rem; font-weight: 700; color: var(--accent2); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 8px; }
     .hook-card h3 { font-size: 1rem; font-weight: 700; margin-bottom: 6px; }
     .hook-card .ts { font-size: 0.8rem; color: var(--muted); margin-bottom: 8px; }
     .hook-card p { font-size: 0.9rem; color: #ccc; }
@@ -241,14 +248,7 @@
       padding: 16px;
       margin-top: 16px;
     }
-    .cta-card .label {
-      font-size: 0.75rem;
-      font-weight: 700;
-      color: var(--teal);
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      margin-bottom: 8px;
-    }
+    .cta-card .label { font-size: 0.75rem; font-weight: 700; color: var(--teal); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 8px; }
 
     /* ── Virality factors ── */
     .factor-item {
@@ -261,8 +261,7 @@
     .factor-item:last-child { border-bottom: none; }
     .score-ring {
       flex-shrink: 0;
-      width: 44px;
-      height: 44px;
+      width: 44px; height: 44px;
       border-radius: 50%;
       display: flex;
       align-items: center;
@@ -337,8 +336,7 @@
     .idea-num {
       background: linear-gradient(135deg, var(--accent), var(--pink));
       color: white;
-      width: 28px;
-      height: 28px;
+      width: 28px; height: 28px;
       border-radius: 6px;
       display: flex;
       align-items: center;
@@ -347,7 +345,7 @@
       font-size: 0.85rem;
       flex-shrink: 0;
     }
-    .idea-header h3 { font-size: 1rem; font-weight: 700; line-height: 1.3; }
+    .idea-header h3 { font-size: 1rem; font-weight: 700; line-height: 1.3; flex: 1; }
     .idea-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -369,6 +367,26 @@
     }
     .idea-why .fl { color: #4ade80; font-weight: 700; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 4px; }
 
+    .write-script-btn {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 14px;
+      padding: 9px 16px;
+      background: linear-gradient(135deg, #1a0a2e, #0f0a1f);
+      border: 1px solid var(--accent);
+      border-radius: 8px;
+      color: var(--accent2);
+      font-size: 0.83rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+      width: 100%;
+      justify-content: center;
+    }
+    .write-script-btn:hover { background: var(--accent); color: white; }
+    .write-script-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
     /* ── Hashtags ── */
     .hashtag-list { display: flex; flex-wrap: wrap; gap: 8px; }
     .hashtag {
@@ -380,10 +398,135 @@
       color: var(--accent2);
     }
 
+    /* ── Script Modal ── */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.85);
+      z-index: 100;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 20px;
+      overflow-y: auto;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      width: 100%;
+      max-width: 760px;
+      margin: auto;
+      display: flex;
+      flex-direction: column;
+      max-height: 90vh;
+    }
+    .modal-header {
+      padding: 20px 24px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+    }
+    .modal-header h2 { font-size: 1.1rem; font-weight: 700; }
+    .modal-header .idea-badge {
+      font-size: 0.78rem;
+      color: var(--accent2);
+      background: #1a0a2e;
+      border: 1px solid var(--accent);
+      border-radius: 20px;
+      padding: 3px 10px;
+      max-width: 280px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .modal-close {
+      background: none;
+      border: none;
+      color: var(--muted);
+      font-size: 1.5rem;
+      cursor: pointer;
+      padding: 0 4px;
+      line-height: 1;
+    }
+    .modal-close:hover { color: var(--text); }
+    .modal-body {
+      padding: 24px;
+      overflow-y: auto;
+      flex: 1;
+    }
+
+    /* Script loading */
+    .script-loading { text-align: center; padding: 40px 0; }
+    .script-loading .spinner { margin: 0 auto 16px; }
+    .script-loading p { color: var(--muted); font-size: 0.9rem; }
+
+    /* Script content */
+    .script-content { display: none; }
+    .script-content.visible { display: block; }
+
+    .script-toolbar {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+    .copy-btn {
+      padding: 8px 16px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .copy-btn:hover { border-color: var(--accent2); color: var(--accent2); }
+    .copy-btn.copied { border-color: var(--success); color: var(--success); }
+
+    .script-text {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 20px;
+      font-size: 0.88rem;
+      line-height: 1.8;
+      white-space: pre-wrap;
+      word-break: break-word;
+      color: #e0e0f0;
+      font-family: 'Georgia', serif;
+    }
+
+    /* Markdown-like rendering */
+    .script-rendered h2 { font-size: 1.1rem; font-weight: 800; color: var(--accent2); margin: 20px 0 10px; border-bottom: 1px solid var(--border); padding-bottom: 6px; }
+    .script-rendered h3 { font-size: 0.95rem; font-weight: 700; color: var(--pink); margin: 18px 0 8px; }
+    .script-rendered h4 { font-size: 0.88rem; font-weight: 700; color: var(--teal); margin: 14px 0 6px; }
+    .script-rendered p { margin-bottom: 10px; font-size: 0.9rem; }
+    .script-rendered strong { color: #fff; font-weight: 700; }
+    .script-rendered em { color: var(--muted); font-style: italic; }
+    .script-rendered hr { border: none; border-top: 1px solid var(--border); margin: 16px 0; }
+    .script-rendered ul, .script-rendered ol { padding-left: 20px; margin-bottom: 10px; }
+    .script-rendered li { margin-bottom: 4px; font-size: 0.88rem; }
+    .script-rendered blockquote {
+      border-left: 3px solid var(--accent);
+      padding: 10px 16px;
+      background: #1a0a2e;
+      border-radius: 0 8px 8px 0;
+      margin: 10px 0;
+      font-style: italic;
+      color: #ccc;
+    }
+
     /* ── Responsive ── */
     @media (max-width: 600px) {
       .video-meta { flex-direction: column; }
       .video-meta img { width: 100%; height: 160px; }
+      .steps .step-label { display: none; }
+      .modal { border-radius: 12px; }
     }
   </style>
 </head>
@@ -391,16 +534,36 @@
 
 <header>
   <h1>Viral Video Analyzer</h1>
-  <p>Paste an Instagram Reel or TikTok link — get the script, virality breakdown, and 10 content ideas</p>
+  <p>Paste any viral video — get the structure, why it works, 10 fresh ideas, and a full script</p>
 </header>
 
 <main>
+
+  <!-- Step indicator -->
+  <div class="steps" id="step-indicator">
+    <div class="step active" id="step1">
+      <div class="step-num">1</div>
+      <div class="step-label">Analyze Video</div>
+    </div>
+    <div class="step-line"></div>
+    <div class="step" id="step2">
+      <div class="step-num">2</div>
+      <div class="step-label">Pick an Idea</div>
+    </div>
+    <div class="step-line"></div>
+    <div class="step" id="step3">
+      <div class="step-num">3</div>
+      <div class="step-label">Write Script</div>
+    </div>
+  </div>
+
   <!-- Input card -->
   <div class="input-card">
     <div class="form-group">
       <label>Video URL</label>
-      <input type="url" id="url-input" placeholder="https://www.tiktok.com/@user/video/... or https://www.instagram.com/reel/..." />
+      <input type="url" id="url-input" placeholder="https://youtube.com/watch?v=... or tiktok.com/@user/video/... or instagram.com/reel/..." />
       <div class="platform-badges">
+        <span class="badge badge-yt">YouTube</span>
         <span class="badge badge-ig">Instagram Reels</span>
         <span class="badge badge-tt">TikTok</span>
       </div>
@@ -410,7 +573,7 @@
       <input type="text" id="niche-input" placeholder="e.g. fitness for busy moms, personal finance for Gen Z, travel on a budget..." />
     </div>
     <button class="analyze-btn" id="analyze-btn" onclick="runAnalysis()">
-      Analyze Video
+      Analyze Video &amp; Generate Ideas
     </button>
   </div>
 
@@ -420,7 +583,7 @@
   <!-- Loading -->
   <div id="loading">
     <div class="spinner"></div>
-    <p id="loading-msg">Extracting video data...</p>
+    <p id="loading-msg">Fetching video metadata...</p>
   </div>
 
   <!-- Results -->
@@ -433,7 +596,7 @@
     <div class="section">
       <div class="section-header open" onclick="toggleSection(this)">
         <span class="icon">📝</span>
-        <h2>Script Structure</h2>
+        <h2>Viral Script Structure</h2>
         <span class="chevron">▼</span>
       </div>
       <div class="section-body open" id="script-body"></div>
@@ -473,7 +636,7 @@
     <div class="section">
       <div class="section-header open" onclick="toggleSection(this)">
         <span class="icon">💡</span>
-        <h2>10 Content Ideas for Your Niche</h2>
+        <h2>10 Fresh Content Ideas for Your Niche</h2>
         <span class="chevron">▼</span>
       </div>
       <div class="section-body open" id="ideas-body"></div>
@@ -492,11 +655,49 @@
   </div><!-- /results -->
 </main>
 
+<!-- ── Script Modal ── -->
+<div class="modal-overlay" id="script-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div>
+        <h2>✍️ Video Script</h2>
+        <div class="idea-badge" id="modal-idea-title"></div>
+      </div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="script-loading" id="script-loading">
+        <div class="spinner"></div>
+        <p>Writing your script using the viral structure...<br><small>This takes about 15–30 seconds</small></p>
+      </div>
+      <div class="script-content" id="script-content">
+        <div class="script-toolbar">
+          <button class="copy-btn" id="copy-btn" onclick="copyScript()">📋 Copy Script</button>
+        </div>
+        <div class="script-rendered" id="script-rendered"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
+  // ── State ─────────────────────────────────────────────────────────────────
+  let _analysisCache = null;   // full response from /analyze
+  let _rawScript = "";
+
+  // ── Utilities ─────────────────────────────────────────────────────────────
   function toggleSection(header) {
     header.classList.toggle('open');
-    const body = header.nextElementSibling;
-    body.classList.toggle('open');
+    header.nextElementSibling.classList.toggle('open');
+  }
+
+  function setStep(n) {
+    [1,2,3].forEach(i => {
+      const el = document.getElementById('step' + i);
+      el.classList.remove('active','done');
+      if (i < n) el.classList.add('done');
+      else if (i === n) el.classList.add('active');
+    });
   }
 
   function setLoading(msg) {
@@ -514,52 +715,7 @@
   function esc(str) {
     if (!str) return '';
     return String(str)
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;');
-  }
-
-  async function runAnalysis() {
-    const url = document.getElementById('url-input').value.trim();
-    const niche = document.getElementById('niche-input').value.trim();
-    const btn = document.getElementById('analyze-btn');
-    const errorBox = document.getElementById('error-box');
-    const results = document.getElementById('results');
-
-    errorBox.style.display = 'none';
-    results.style.display = 'none';
-
-    if (!url) { showError('Please paste an Instagram or TikTok URL.'); return; }
-    if (!niche) { showError('Please enter your content niche.'); return; }
-
-    btn.disabled = true;
-    setLoading('Fetching video metadata...');
-    document.getElementById('loading').style.display = 'block';
-
-    setTimeout(() => setLoading('Analyzing with Claude AI... (this takes 15-30s)'), 4000);
-
-    try {
-      const res = await fetch('/analyze', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url, niche }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        showError(data.detail || 'Analysis failed. Please try again.');
-        return;
-      }
-
-      renderResults(data, niche);
-    } catch (err) {
-      showError('Network error. Please check your connection and try again.');
-    } finally {
-      btn.disabled = false;
-      document.getElementById('loading').style.display = 'none';
-    }
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   }
 
   function showError(msg) {
@@ -569,27 +725,96 @@
     document.getElementById('loading').style.display = 'none';
   }
 
+  // ── Markdown → HTML (minimal renderer) ───────────────────────────────────
+  function renderMarkdown(md) {
+    let html = esc(md);  // start escaped, then selectively unescape for our patterns
+
+    // We'll do a proper approach: work on raw md, build HTML
+    html = md
+      // headers
+      .replace(/^## (.+)$/gm, '<h2>$1</h2>')
+      .replace(/^### (.+)$/gm, '<h3>$1</h3>')
+      .replace(/^#### (.+)$/gm, '<h4>$1</h4>')
+      // hr
+      .replace(/^---+$/gm, '<hr>')
+      // bold + italic
+      .replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>')
+      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\*(.+?)\*/g, '<em>$1</em>')
+      // blockquotes
+      .replace(/^> (.+)$/gm, '<blockquote>$1</blockquote>')
+      // bullet lists (simple)
+      .replace(/^\- (.+)$/gm, '<li>$1</li>')
+      // wrap consecutive <li> in <ul>
+      .replace(/(<li>[\s\S]+?<\/li>)(?=\s*(?!<li>))/g, '<ul>$1</ul>')
+      // paragraphs: double newline
+      .replace(/\n\n(?!<[uh]|<li|<bl|<hr)/g, '</p><p>')
+      // single newline that isn't block element
+      .replace(/\n(?!<[uh2-6b]|<li|<hr)/g, '<br>');
+
+    return '<p>' + html + '</p>';
+  }
+
+  // ── Main analysis ─────────────────────────────────────────────────────────
+  async function runAnalysis() {
+    const url   = document.getElementById('url-input').value.trim();
+    const niche = document.getElementById('niche-input').value.trim();
+    const btn   = document.getElementById('analyze-btn');
+
+    document.getElementById('error-box').style.display = 'none';
+    document.getElementById('results').style.display   = 'none';
+    _analysisCache = null;
+
+    if (!url)   { showError('Please paste a YouTube, Instagram, or TikTok URL.'); return; }
+    if (!niche) { showError('Please enter your content niche.'); return; }
+
+    btn.disabled = true;
+    setStep(1);
+    setLoading('Fetching video metadata...');
+    setTimeout(() => setLoading('Analyzing with Claude AI... (15–30s)'), 4000);
+
+    try {
+      const res  = await fetch('/analyze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url, niche }),
+      });
+      const data = await res.json();
+
+      if (!res.ok) { showError(data.detail || 'Analysis failed. Please try again.'); return; }
+
+      _analysisCache = data;
+      renderResults(data, niche);
+      setStep(2);
+    } catch (err) {
+      showError('Network error. Please check your connection and try again.');
+    } finally {
+      btn.disabled = false;
+      document.getElementById('loading').style.display = 'none';
+    }
+  }
+
+  // ── Render results ────────────────────────────────────────────────────────
   function renderResults(data, niche) {
     const a = data.analysis;
 
     // Meta bar
     const stats = data.stats;
     const statItems = [
-      stats.views != null    ? `<span class="stat"><span>👁️</span>${formatNum(stats.views)} views</span>` : '',
-      stats.likes != null    ? `<span class="stat"><span>❤️</span>${formatNum(stats.likes)} likes</span>` : '',
-      stats.comments != null ? `<span class="stat"><span>💬</span>${formatNum(stats.comments)}</span>` : '',
-      stats.shares != null   ? `<span class="stat"><span>🔁</span>${formatNum(stats.shares)}</span>` : '',
-      stats.duration_seconds != null ? `<span class="stat"><span>⏱️</span>${Math.round(stats.duration_seconds)}s</span>` : '',
+      stats.views != null    ? `<span class="stat">👁️ ${formatNum(stats.views)} views</span>` : '',
+      stats.likes != null    ? `<span class="stat">❤️ ${formatNum(stats.likes)} likes</span>` : '',
+      stats.comments != null ? `<span class="stat">💬 ${formatNum(stats.comments)}</span>` : '',
+      stats.shares != null   ? `<span class="stat">🔁 ${formatNum(stats.shares)}</span>` : '',
+      stats.duration_seconds != null ? `<span class="stat">⏱️ ${Math.round(stats.duration_seconds)}s</span>` : '',
     ].filter(Boolean).join('');
 
-    const thumbHtml = data.thumbnail
-      ? `<img src="${esc(data.thumbnail)}" alt="thumbnail" onerror="this.style.display='none'" />`
-      : '';
+    const platBadge = { youtube: 'badge-yt', instagram: 'badge-ig', tiktok: 'badge-tt' }[data.platform] || 'badge-tt';
+    const platLabel = { youtube: 'YOUTUBE', instagram: 'INSTAGRAM', tiktok: 'TIKTOK' }[data.platform] || data.platform.toUpperCase();
 
     document.getElementById('meta-bar').innerHTML = `
-      ${thumbHtml}
+      ${data.thumbnail ? `<img src="${esc(data.thumbnail)}" alt="thumbnail" onerror="this.style.display='none'" />` : ''}
       <div class="meta-info">
-        <div class="badge badge-${data.platform === 'instagram' ? 'ig' : 'tt'}">${esc(data.platform.toUpperCase())}</div>
+        <div class="badge ${platBadge}" style="margin-bottom:6px;display:inline-block">${platLabel}</div>
         <h3>${esc(data.title || data.uploader)}</h3>
         <div style="font-size:0.82rem;color:var(--muted);">by @${esc(data.uploader)}</div>
         ${a.video_summary ? `<div style="font-size:0.87rem;margin-top:8px;color:#ccc;">${esc(a.video_summary)}</div>` : ''}
@@ -607,15 +832,13 @@
         <p>${esc(ss.hook.description || '')}</p>
       </div>`;
     }
-    if (ss.body && Array.isArray(ss.body)) {
-      ss.body.forEach(sec => {
-        scriptHtml += `<div class="body-section">
-          <div class="ts">${esc(sec.timestamp || '')}</div>
-          <h4>${esc(sec.section || '')}</h4>
-          <p>${esc(sec.content || '')}</p>
-        </div>`;
-      });
-    }
+    (ss.body || []).forEach(sec => {
+      scriptHtml += `<div class="body-section">
+        <div class="ts">${esc(sec.timestamp || '')}</div>
+        <h4>${esc(sec.section || '')}</h4>
+        <p>${esc(sec.content || '')}</p>
+      </div>`;
+    });
     if (ss.cta_or_ending) {
       scriptHtml += `<div class="cta-card">
         <div class="label">CTA / Ending</div>
@@ -627,17 +850,13 @@
     document.getElementById('script-body').innerHTML = scriptHtml || '<p style="color:var(--muted)">No script data available.</p>';
 
     // Virality factors
-    const factors = a.virality_factors || [];
     let vfHtml = '';
-    factors.forEach(f => {
-      const s = parseInt(f.score) || 0;
+    (a.virality_factors || []).forEach(f => {
+      const s   = parseInt(f.score) || 0;
       const cls = s >= 8 ? 'score-high' : s >= 5 ? 'score-mid' : 'score-low';
       vfHtml += `<div class="factor-item">
         <div class="score-ring ${cls}">${s}</div>
-        <div class="factor-text">
-          <h4>${esc(f.factor || '')}</h4>
-          <p>${esc(f.explanation || '')}</p>
-        </div>
+        <div class="factor-text"><h4>${esc(f.factor)}</h4><p>${esc(f.explanation)}</p></div>
       </div>`;
     });
     document.getElementById('virality-body').innerHTML = vfHtml || '<p style="color:var(--muted)">No data.</p>';
@@ -650,8 +869,9 @@
       <div class="viral-item"><div class="vl">Audience Psychology</div><p>${esc(wv.audience_psychology || '-')}</p></div>
       <div class="viral-item"><div class="vl">Trend / Timing</div><p>${esc(wv.timing_or_trend || '-')}</p></div>
     </div>`;
-    if (wv.algorithm_advantages && wv.algorithm_advantages.length) {
-      viralHtml += `<div style="margin-top:16px"><div style="font-size:0.78rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px;">Algorithm Signals Triggered</div>
+    if (wv.algorithm_advantages?.length) {
+      viralHtml += `<div style="margin-top:16px">
+        <div style="font-size:0.78rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px;">Algorithm Signals Triggered</div>
         <ul class="algo-list">${wv.algorithm_advantages.map(x => `<li>${esc(x)}</li>`).join('')}</ul>
       </div>`;
     }
@@ -659,16 +879,11 @@
 
     // DNA
     const dna = a.content_dna || {};
-    const dnaFields = [
-      ['Format', dna.format],
-      ['Pacing', dna.pacing],
-      ['Tone', dna.tone],
-      ['Production', dna.production_level],
-    ];
-    let dnaHtml = `<div class="dna-grid">${dnaFields.map(([l, v]) => `
+    const dnaFields = [['Format', dna.format], ['Pacing', dna.pacing], ['Tone', dna.tone], ['Production', dna.production_level]];
+    let dnaHtml = `<div class="dna-grid">${dnaFields.map(([l,v]) => `
       <div class="dna-chip"><div class="dl">${l}</div><div class="dv">${esc(v || '-')}</div></div>`).join('')}
     </div>`;
-    if (dna.key_elements && dna.key_elements.length) {
+    if (dna.key_elements?.length) {
       dnaHtml += `<div style="font-size:0.8rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;font-weight:700;margin-bottom:8px;">Key Elements</div>
         <ul class="algo-list">${dna.key_elements.map(x => `<li>${esc(x)}</li>`).join('')}</ul>`;
     }
@@ -676,11 +891,15 @@
 
     // Ideas
     const ideas = a.content_ideas || [];
-    let ideasHtml = `<div style="font-size:0.83rem;color:var(--muted);margin-bottom:16px;">Tailored for: <strong style="color:var(--accent2)">${esc(niche)}</strong></div>`;
+    let ideasHtml = `<div style="font-size:0.83rem;color:var(--muted);margin-bottom:16px;">
+      Tailored for: <strong style="color:var(--accent2)">${esc(niche)}</strong>
+      <span style="color:var(--muted);margin-left:8px;">— click "Write Script" on any idea to go to Step 3</span>
+    </div>`;
     ideas.forEach((idea, i) => {
+      const idx = idea.idea_number || (i + 1);
       ideasHtml += `<div class="idea-card">
         <div class="idea-header">
-          <div class="idea-num">${idea.idea_number || i + 1}</div>
+          <div class="idea-num">${idx}</div>
           <h3>${esc(idea.title || '')}</h3>
         </div>
         <div class="idea-grid">
@@ -693,12 +912,15 @@
           <div class="fl">Why it will work for your niche</div>
           ${esc(idea.why_it_will_work || '')}
         </div>
+        <button class="write-script-btn" onclick="openScriptModal(${i})">
+          ✍️ Write Full Script for This Idea
+        </button>
       </div>`;
     });
     document.getElementById('ideas-body').innerHTML = ideasHtml;
 
     // Hashtags
-    if (data.hashtags && data.hashtags.length) {
+    if (data.hashtags?.length) {
       document.getElementById('hashtags-section').style.display = '';
       document.getElementById('hashtags-body').innerHTML =
         `<div class="hashtag-list">${data.hashtags.map(h => `<span class="hashtag">${esc(h)}</span>`).join('')}</div>`;
@@ -708,7 +930,79 @@
     document.getElementById('results').scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
-  // Allow Enter key on inputs
+  // ── Script modal ──────────────────────────────────────────────────────────
+  async function openScriptModal(ideaIndex) {
+    if (!_analysisCache) return;
+
+    const a    = _analysisCache.analysis;
+    const idea = (a.content_ideas || [])[ideaIndex];
+    if (!idea) return;
+
+    setStep(3);
+
+    // Show modal in loading state
+    document.getElementById('modal-idea-title').textContent = idea.title || 'Idea ' + (ideaIndex + 1);
+    document.getElementById('script-loading').style.display  = 'block';
+    document.getElementById('script-content').classList.remove('visible');
+    document.getElementById('script-modal').classList.add('open');
+    document.body.style.overflow = 'hidden';
+
+    try {
+      const res = await fetch('/generate-script', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          niche:            document.getElementById('niche-input').value.trim(),
+          idea_title:       idea.title        || '',
+          idea_hook:        idea.hook         || '',
+          idea_format:      idea.format       || '',
+          idea_structure:   idea.structure    || '',
+          viral_structure:  a.script_structure || {},
+          content_dna:      a.content_dna     || {},
+          video_summary:    a.video_summary   || '',
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) { alert(data.detail || 'Script generation failed.'); closeModal(); return; }
+
+      _rawScript = data.script || '';
+
+      document.getElementById('script-rendered').innerHTML = renderMarkdown(_rawScript);
+      document.getElementById('script-loading').style.display = 'none';
+      document.getElementById('script-content').classList.add('visible');
+
+    } catch (err) {
+      alert('Network error generating script. Please try again.');
+      closeModal();
+    }
+  }
+
+  function closeModal() {
+    document.getElementById('script-modal').classList.remove('open');
+    document.body.style.overflow = '';
+  }
+
+  async function copyScript() {
+    if (!_rawScript) return;
+    try {
+      await navigator.clipboard.writeText(_rawScript);
+      const btn = document.getElementById('copy-btn');
+      btn.textContent = '✅ Copied!';
+      btn.classList.add('copied');
+      setTimeout(() => { btn.textContent = '📋 Copy Script'; btn.classList.remove('copied'); }, 2000);
+    } catch { alert('Copy failed — please select and copy manually.'); }
+  }
+
+  // Close modal on overlay click
+  document.getElementById('script-modal').addEventListener('click', function(e) {
+    if (e.target === this) closeModal();
+  });
+
+  // Close modal on Escape
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+  // Enter key on niche input
   document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('niche-input').addEventListener('keydown', e => {
       if (e.key === 'Enter') runAnalysis();

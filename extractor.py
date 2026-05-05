@@ -36,7 +36,9 @@ def detect_platform(url: str) -> str:
         return "instagram"
     if "tiktok.com" in url or "vm.tiktok.com" in url:
         return "tiktok"
-    raise ValueError(f"Unsupported platform. Only Instagram and TikTok URLs are supported. Got: {url}")
+    if "youtube.com" in url or "youtu.be" in url:
+        return "youtube"
+    raise ValueError(f"Unsupported platform. Only Instagram, TikTok, and YouTube URLs are supported. Got: {url}")
 
 
 def extract_hashtags(text: str) -> list[str]:
@@ -48,16 +50,7 @@ def extract_hashtags(text: str) -> list[str]:
 def extract_video_data(url: str) -> VideoData:
     platform = detect_platform(url)
 
-    cmd = [
-        "yt-dlp",
-        "--dump-json",
-        "--no-download",
-        "--no-warnings",
-        "--cookies-from-browser", "chrome",  # fallback; skipped if not available
-        url,
-    ]
-
-    # Try without cookies first, then with cookies if it fails
+    # Try without cookies first, then with mobile UA if it fails
     result = None
     for attempt_cmd in [
         ["yt-dlp", "--dump-json", "--no-download", "--no-warnings", url],

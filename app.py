@@ -1,7 +1,7 @@
 """
 Viral Video Analyzer — FastAPI backend
-Analyzes Instagram Reels and TikTok videos for script, structure,
-virality factors, and generates 10 niche content ideas.
+Analyzes Instagram Reels, TikTok, and YouTube videos for script, structure,
+virality factors, generates 10 niche content ideas, and writes full scripts.
 """
 
 import os
@@ -12,15 +12,15 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from pydantic import BaseModel, HttpUrl, field_validator
+from pydantic import BaseModel, field_validator
 
 from extractor import extract_video_data, detect_platform
-from analyzer import analyze_video
+from analyzer import analyze_video, generate_script
 
 app = FastAPI(
     title="Viral Video Analyzer",
-    description="Analyze Instagram Reels & TikTok videos to extract scripts, virality factors, and content ideas.",
-    version="1.0.0",
+    description="Analyze Instagram Reels, TikTok & YouTube videos to extract scripts, virality factors, content ideas, and write full scripts.",
+    version="2.0.0",
 )
 
 templates = Jinja2Templates(directory="templates")
@@ -38,8 +38,13 @@ class AnalyzeRequest(BaseModel):
         v = v.strip()
         if not (v.startswith("http://") or v.startswith("https://")):
             raise ValueError("URL must start with http:// or https://")
-        if "instagram.com" not in v and "tiktok.com" not in v and "vm.tiktok.com" not in v and "instagr.am" not in v:
-            raise ValueError("Only Instagram and TikTok URLs are supported.")
+        supported = (
+            "instagram.com", "instagr.am",
+            "tiktok.com", "vm.tiktok.com",
+            "youtube.com", "youtu.be",
+        )
+        if not any(s in v for s in supported):
+            raise ValueError("Only Instagram, TikTok, and YouTube URLs are supported.")
         return v
 
     @field_validator("niche")
@@ -53,6 +58,25 @@ class AnalyzeRequest(BaseModel):
         return v
 
 
+class ScriptRequest(BaseModel):
+    niche: str
+    idea_title: str
+    idea_hook: str
+    idea_format: str
+    idea_structure: str
+    viral_structure: dict
+    content_dna: dict
+    video_summary: str
+
+    @field_validator("niche", "idea_title")
+    @classmethod
+    def not_empty(cls, v: str) -> str:
+        v = v.strip()
+        if not v:
+            raise ValueError("Field cannot be empty.")
+        return v
+
+
 # ── Routes ───────────────────────────────────────────────────────────────────
 
 @app.get("/", response_class=HTMLResponse)
@@ -62,7 +86,6 @@ async def index(request: Request):
 
 @app.post("/analyze")
 async def analyze(body: AnalyzeRequest):
-    # 1. Extract video data
     try:
         video_data = extract_video_data(body.url)
     except ValueError as e:
@@ -72,7 +95,6 @@ async def analyze(body: AnalyzeRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Video extraction failed: {str(e)}")
 
-    # 2. Analyze with Claude
     try:
         analysis = analyze_video(video_data, body.niche)
     except EnvironmentError as e:
@@ -95,6 +117,18 @@ async def analyze(body: AnalyzeRequest):
         "hashtags": video_data.hashtags[:15],
         "analysis": analysis,
     })
+
+
+@app.post("/generate-script")
+async def generate_script_endpoint(body: ScriptRequest):
+    try:
+        script = generate_script(body.model_dump())
+    except EnvironmentError as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Script generation failed: {str(e)}")
+
+    return JSONResponse(content={"script": script})
 
 
 @app.get("/health")

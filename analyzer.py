@@ -142,8 +142,109 @@ def analyze_video(data: VideoData, niche: str) -> dict:
     try:
         return json.loads(raw)
     except json.JSONDecodeError:
-        # Return structured error with raw response for debugging
         return {
             "error": "Failed to parse Claude response as JSON",
             "raw_response": raw,
         }
+
+
+def _build_script_prompt(data: dict) -> str:
+    ss = data.get("viral_structure", {})
+    dna = data.get("content_dna", {})
+
+    hook_info = ss.get("hook", {})
+    body_sections = ss.get("body", [])
+    cta_info = ss.get("cta_or_ending", {})
+
+    body_outline = "\n".join(
+        f"  - {s.get('section', '')}: {s.get('content', '')}"
+        for s in body_sections
+    ) or "  - Build value, demonstrate, story"
+
+    return f"""You are an expert short-form video scriptwriter who specializes in viral content.
+
+You are writing a complete, ready-to-record video script for the following brief:
+
+NICHE: {data.get("niche", "")}
+VIDEO TITLE/IDEA: {data.get("idea_title", "")}
+FORMAT: {data.get("idea_format", "")}
+
+HOOK TO OPEN WITH (first 3 seconds): {data.get("idea_hook", "")}
+ROUGH STRUCTURE: {data.get("idea_structure", "")}
+
+VIRAL STRUCTURE TO MIRROR (from the analyzed viral video):
+- Hook technique: {hook_info.get("technique", "")} — {hook_info.get("description", "")}
+- Body flow:
+{body_outline}
+- Ending technique: {cta_info.get("technique", "")} — {cta_info.get("description", "")}
+
+CONTENT DNA TO MATCH:
+- Format: {dna.get("format", "")}
+- Pacing: {dna.get("pacing", "")}
+- Tone: {dna.get("tone", "")}
+- Production level: {dna.get("production_level", "")}
+
+ORIGINAL VIDEO CONTEXT: {data.get("video_summary", "")}
+
+Write a COMPLETE, word-for-word video script. Structure it as follows:
+
+---
+
+## SCRIPT: [Title]
+
+**Platform format:** [e.g. TikTok / Reels / YouTube Shorts — 60s]
+**Estimated duration:** [e.g. 45–60 seconds]
+**Tone:** [e.g. energetic, conversational, authoritative]
+
+---
+
+### 🎬 HOOK (0–3s)
+[VISUAL NOTE: brief camera/visual direction]
+**SPOKEN:** "[exact words to say]"
+
+---
+
+### 📖 BODY
+
+**[Section Name] (3–Xs)**
+[VISUAL NOTE: ...]
+**SPOKEN:** "[exact words]"
+
+[Repeat for each section — typically 2–4 body sections]
+
+---
+
+### 🎯 CTA / ENDING (last 5s)
+[VISUAL NOTE: ...]
+**SPOKEN:** "[exact words]"
+
+---
+
+### 📋 CAPTION (for posting)
+[Ready-to-copy caption with hooks and hashtags for the niche]
+
+---
+
+### 💡 DIRECTOR'S NOTES
+- [3–5 production tips: camera angle, text overlays, music vibe, edit cuts, etc.]
+
+---
+
+Write real, specific, punchy copy — not placeholders. The script must feel authentic to the {data.get("niche", "niche")} audience. Use the exact tone and pacing of the viral structure. Make every second count."""
+
+
+def generate_script(data: dict) -> str:
+    api_key = os.getenv("ANTHROPIC_API_KEY")
+    if not api_key:
+        raise EnvironmentError("ANTHROPIC_API_KEY environment variable is not set.")
+
+    client = anthropic.Anthropic(api_key=api_key)
+    prompt = _build_script_prompt(data)
+
+    message = client.messages.create(
+        model="claude-opus-4-6",
+        max_tokens=3000,
+        messages=[{"role": "user", "content": prompt}],
+    )
+
+    return message.content[0].text.strip()
