@@ -117,6 +117,113 @@ Each idea must borrow and adapt at least one specific viral element from the ana
 Return ONLY the JSON object, no markdown fences, no extra text."""
 
 
+def _build_script_prompt(analysis: dict, selected_idea: dict, niche: str, platform: str) -> str:
+    script_structure = analysis.get("script_structure", {})
+    hook_info = script_structure.get("hook", {})
+    body_info = script_structure.get("body", [])
+    cta_info = script_structure.get("cta_or_ending", {})
+    dna = analysis.get("content_dna", {})
+    viral = analysis.get("why_it_went_viral", {})
+
+    structure_summary = (
+        f"Hook technique: {hook_info.get('technique', 'N/A')}\n"
+        f"Body sections: {', '.join(s.get('section', '') for s in body_info)}\n"
+        f"Ending type: {cta_info.get('technique', 'N/A')}\n"
+        f"Format: {dna.get('format', 'N/A')} | Pacing: {dna.get('pacing', 'N/A')} | Tone: {dna.get('tone', 'N/A')}\n"
+        f"Emotional trigger: {viral.get('emotional_trigger', 'N/A')}"
+    )
+
+    idea_summary = (
+        f"Title: {selected_idea.get('title', '')}\n"
+        f"Hook: {selected_idea.get('hook', '')}\n"
+        f"Format: {selected_idea.get('format', '')}\n"
+        f"Structure outline: {selected_idea.get('structure', '')}\n"
+        f"Why it will work: {selected_idea.get('why_it_will_work', '')}"
+    )
+
+    platform_note = {
+        "tiktok": "TikTok (15s–3min, punchy cuts, trending audio cues, direct-to-camera)",
+        "instagram": "Instagram Reels (up to 90s, visually polished, caption-forward)",
+        "youtube": "YouTube (can be 3–20min for standard, or 60s for Shorts — match the outline's format)",
+    }.get(platform, platform)
+
+    return f"""You are a professional short-form video scriptwriter who specialises in viral {platform_note} content.
+
+Using the viral structure extracted from the reference video and the content idea below, write a complete, ready-to-record video script for the [{niche}] niche.
+
+---
+VIRAL STRUCTURE FROM REFERENCE VIDEO:
+{structure_summary}
+
+CONTENT IDEA TO SCRIPT:
+{idea_summary}
+---
+
+Write the script following this exact format as a JSON object:
+
+{{
+  "title": "Final video title",
+  "estimated_duration": "e.g. 45s or 3min",
+  "platform_notes": "Specific tips for recording/posting on {platform}",
+
+  "script": [
+    {{
+      "segment": "HOOK",
+      "timestamp": "0-3s",
+      "on_screen_text": "Text overlay or caption (if any)",
+      "voiceover_or_dialogue": "Exact words to say out loud",
+      "visual_direction": "What to show / how to frame the shot",
+      "notes": "Any director/creator notes"
+    }},
+    {{
+      "segment": "BODY — [section name]",
+      "timestamp": "...",
+      "on_screen_text": "...",
+      "voiceover_or_dialogue": "...",
+      "visual_direction": "...",
+      "notes": "..."
+    }}
+  ],
+
+  "b_roll_list": ["List of specific B-roll shots or visuals needed"],
+  "audio_suggestions": ["Background music mood or specific sound suggestion"],
+  "caption_or_description": "Full post caption with hashtags (ready to copy-paste)",
+  "content_gaps_exploited": "What gap or underserved angle this fills in the {niche} niche"
+}}
+
+Rules:
+- Include a HOOK segment, 2-4 BODY segments, and a CTA/ENDING segment in the script array.
+- The voiceover_or_dialogue must be the EXACT words to say — no placeholders.
+- Mirror the pacing and emotional arc of the reference video's viral structure.
+- Make the hook impossible to scroll past.
+- Return ONLY the JSON object, no markdown fences, no extra text."""
+
+
+def generate_script(analysis: dict, selected_idea: dict, niche: str, platform: str) -> dict:
+    api_key = os.getenv("ANTHROPIC_API_KEY")
+    if not api_key:
+        raise EnvironmentError("ANTHROPIC_API_KEY environment variable is not set.")
+
+    client = anthropic.Anthropic(api_key=api_key)
+    prompt = _build_script_prompt(analysis, selected_idea, niche, platform)
+
+    message = client.messages.create(
+        model="claude-opus-4-6",
+        max_tokens=4096,
+        messages=[{"role": "user", "content": prompt}],
+    )
+
+    raw = message.content[0].text.strip()
+    if raw.startswith("```"):
+        raw = re.sub(r"^```[a-z]*\n?", "", raw)
+        raw = re.sub(r"\n?```$", "", raw)
+
+    try:
+        return json.loads(raw)
+    except json.JSONDecodeError:
+        return {"error": "Failed to parse script response", "raw_response": raw}
+
+
 def analyze_video(data: VideoData, niche: str) -> dict:
     api_key = os.getenv("ANTHROPIC_API_KEY")
     if not api_key:

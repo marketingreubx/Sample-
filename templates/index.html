@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Viral Video Analyzer</title>
+  <title>Viral Video Analyzer — YouTube, TikTok & Instagram</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -100,6 +100,7 @@
     }
     .badge-ig { background: #2d1040; color: #d946ef; border: 1px solid #7c3aed44; }
     .badge-tt { background: #001a1a; color: #14b8a6; border: 1px solid #14b8a644; }
+    .badge-yt { background: #1a0808; color: #f87171; border: 1px solid #ef444444; }
 
     .analyze-btn {
       width: 100%;
@@ -380,6 +381,136 @@
       color: var(--accent2);
     }
 
+    /* ── Script writer ── */
+    .idea-card.selected-idea {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px #7c3aed33;
+    }
+    .script-btn {
+      margin-top: 10px;
+      padding: 8px 14px;
+      background: linear-gradient(135deg, var(--accent), var(--pink));
+      border: none;
+      border-radius: 6px;
+      color: white;
+      font-size: 0.82rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+    .script-btn:hover { opacity: 0.85; }
+    .script-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+    #script-writer-section { display: none; }
+
+    .script-segment {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+      margin-bottom: 14px;
+    }
+    .script-segment-header {
+      padding: 10px 16px;
+      background: var(--surface2);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .script-segment-header .seg-label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .07em;
+      color: var(--accent2);
+    }
+    .script-segment-header .seg-ts {
+      font-size: 0.75rem;
+      color: var(--muted);
+    }
+    .script-segment-body { padding: 14px 16px; }
+    .script-field { margin-bottom: 12px; }
+    .script-field:last-child { margin-bottom: 0; }
+    .script-field .sf-label {
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      color: var(--muted);
+      margin-bottom: 4px;
+    }
+    .script-field .sf-val {
+      font-size: 0.88rem;
+      color: #ddd;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 10px 12px;
+      white-space: pre-wrap;
+      line-height: 1.5;
+    }
+    .script-field .sf-val.dialogue {
+      background: #0f1a0f;
+      border-color: #14532d44;
+      color: #86efac;
+      font-size: 0.93rem;
+      font-style: italic;
+    }
+    .script-meta-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .script-meta-item {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px;
+    }
+    .script-meta-item .smi-label {
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      color: var(--muted);
+      margin-bottom: 5px;
+    }
+    .script-meta-item .smi-val { font-size: 0.88rem; }
+
+    .copy-btn {
+      padding: 6px 12px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--muted);
+      font-size: 0.75rem;
+      cursor: pointer;
+      transition: color 0.2s, border-color 0.2s;
+    }
+    .copy-btn:hover { color: var(--accent2); border-color: var(--accent); }
+
+    .caption-box {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 14px;
+      font-size: 0.88rem;
+      color: #ddd;
+      white-space: pre-wrap;
+      line-height: 1.6;
+      margin-bottom: 10px;
+    }
+
+    .list-pill-row { display: flex; flex-wrap: wrap; gap: 8px; }
+    .list-pill {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 4px 12px;
+      font-size: 0.8rem;
+      color: var(--teal);
+    }
+
     /* ── Responsive ── */
     @media (max-width: 600px) {
       .video-meta { flex-direction: column; }
@@ -391,7 +522,7 @@
 
 <header>
   <h1>Viral Video Analyzer</h1>
-  <p>Paste an Instagram Reel or TikTok link — get the script, virality breakdown, and 10 content ideas</p>
+  <p>Paste a YouTube, TikTok, or Instagram link — get the script structure, virality breakdown, 10 content ideas, and a ready-to-record video script</p>
 </header>
 
 <main>
@@ -399,8 +530,9 @@
   <div class="input-card">
     <div class="form-group">
       <label>Video URL</label>
-      <input type="url" id="url-input" placeholder="https://www.tiktok.com/@user/video/... or https://www.instagram.com/reel/..." />
+      <input type="url" id="url-input" placeholder="https://youtu.be/..., https://tiktok.com/..., or https://instagram.com/reel/..." />
       <div class="platform-badges">
+        <span class="badge badge-yt">YouTube</span>
         <span class="badge badge-ig">Instagram Reels</span>
         <span class="badge badge-tt">TikTok</span>
       </div>
@@ -489,10 +621,29 @@
       <div class="section-body" id="hashtags-body"></div>
     </div>
 
+    <!-- Script Writer -->
+    <div class="section" id="script-writer-section">
+      <div class="section-header open" onclick="toggleSection(this)">
+        <span class="icon">✍️</span>
+        <h2>Video Script Writer</h2>
+        <span class="chevron">▼</span>
+      </div>
+      <div class="section-body open" id="script-writer-body">
+        <p style="color:var(--muted);font-size:0.88rem;">
+          Click <strong style="color:var(--accent2)">Write Script</strong> on any content idea above to generate a full, ready-to-record video script based on the viral structure.
+        </p>
+      </div>
+    </div>
+
   </div><!-- /results -->
 </main>
 
 <script>
+  // Global state for script generation
+  let _lastAnalysis = null;
+  let _lastPlatform = null;
+  let _lastNiche = null;
+
   function toggleSection(header) {
     header.classList.toggle('open');
     const body = header.nextElementSibling;
@@ -569,8 +720,24 @@
     document.getElementById('loading').style.display = 'none';
   }
 
+  function platformBadgeClass(platform) {
+    if (platform === 'instagram') return 'badge-ig';
+    if (platform === 'tiktok') return 'badge-tt';
+    return 'badge-yt';
+  }
+
   function renderResults(data, niche) {
     const a = data.analysis;
+
+    // Cache for script generation
+    _lastAnalysis = a;
+    _lastPlatform = data.platform;
+    _lastNiche = niche;
+
+    // Reset script writer
+    document.getElementById('script-writer-section').style.display = 'none';
+    document.getElementById('script-writer-body').innerHTML =
+      '<p style="color:var(--muted);font-size:0.88rem;">Click <strong style="color:var(--accent2)">Write Script</strong> on any content idea above to generate a full, ready-to-record video script based on the viral structure.</p>';
 
     // Meta bar
     const stats = data.stats;
@@ -589,7 +756,7 @@
     document.getElementById('meta-bar').innerHTML = `
       ${thumbHtml}
       <div class="meta-info">
-        <div class="badge badge-${data.platform === 'instagram' ? 'ig' : 'tt'}">${esc(data.platform.toUpperCase())}</div>
+        <div class="badge ${platformBadgeClass(data.platform)}">${esc(data.platform.toUpperCase())}</div>
         <h3>${esc(data.title || data.uploader)}</h3>
         <div style="font-size:0.82rem;color:var(--muted);">by @${esc(data.uploader)}</div>
         ${a.video_summary ? `<div style="font-size:0.87rem;margin-top:8px;color:#ccc;">${esc(a.video_summary)}</div>` : ''}
@@ -678,7 +845,8 @@
     const ideas = a.content_ideas || [];
     let ideasHtml = `<div style="font-size:0.83rem;color:var(--muted);margin-bottom:16px;">Tailored for: <strong style="color:var(--accent2)">${esc(niche)}</strong></div>`;
     ideas.forEach((idea, i) => {
-      ideasHtml += `<div class="idea-card">
+      const ideaIdx = i;
+      ideasHtml += `<div class="idea-card" id="idea-card-${ideaIdx}">
         <div class="idea-header">
           <div class="idea-num">${idea.idea_number || i + 1}</div>
           <h3>${esc(idea.title || '')}</h3>
@@ -693,9 +861,13 @@
           <div class="fl">Why it will work for your niche</div>
           ${esc(idea.why_it_will_work || '')}
         </div>
+        <button class="script-btn" id="script-btn-${ideaIdx}" onclick="writeScript(${ideaIdx})">
+          ✍️ Write Script for This Idea
+        </button>
       </div>`;
     });
     document.getElementById('ideas-body').innerHTML = ideasHtml;
+    document.getElementById('script-writer-section').style.display = '';
 
     // Hashtags
     if (data.hashtags && data.hashtags.length) {
@@ -706,6 +878,157 @@
 
     document.getElementById('results').style.display = 'block';
     document.getElementById('results').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  async function writeScript(ideaIdx) {
+    const btn = document.getElementById(`script-btn-${ideaIdx}`);
+    const writerSection = document.getElementById('script-writer-section');
+    const writerBody = document.getElementById('script-writer-body');
+
+    // Highlight selected idea card
+    document.querySelectorAll('.idea-card').forEach(c => c.classList.remove('selected-idea'));
+    document.getElementById(`idea-card-${ideaIdx}`).classList.add('selected-idea');
+
+    // Disable all script buttons while generating
+    document.querySelectorAll('.script-btn').forEach(b => b.disabled = true);
+    btn.textContent = '✍️ Generating script...';
+
+    writerBody.innerHTML = `
+      <div style="text-align:center;padding:40px 0;">
+        <div class="spinner"></div>
+        <p style="color:var(--muted);margin-top:12px;">Writing your script using the viral structure… (15–25s)</p>
+      </div>`;
+    writerSection.style.display = '';
+
+    // Ensure the section is open
+    const writerHeader = writerSection.querySelector('.section-header');
+    if (!writerHeader.classList.contains('open')) {
+      writerHeader.classList.add('open');
+      writerBody.classList.add('open');
+    }
+
+    writerSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+    // Grab the idea object from the rendered analysis
+    const ideas = _lastAnalysis.content_ideas || [];
+    const selectedIdea = ideas[ideaIdx] || {};
+
+    try {
+      const res = await fetch('/generate-script', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          analysis: _lastAnalysis,
+          selected_idea: selectedIdea,
+          niche: _lastNiche,
+          platform: _lastPlatform,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        writerBody.innerHTML = `<p style="color:#fca5a5;">Error: ${esc(data.detail || 'Script generation failed.')}</p>`;
+        return;
+      }
+      renderScript(data.script, selectedIdea);
+    } catch (err) {
+      writerBody.innerHTML = `<p style="color:#fca5a5;">Network error. Please try again.</p>`;
+    } finally {
+      document.querySelectorAll('.script-btn').forEach(b => b.disabled = false);
+      btn.textContent = '✍️ Write Script for This Idea';
+    }
+  }
+
+  function renderScript(s, idea) {
+    if (s.error) {
+      document.getElementById('script-writer-body').innerHTML =
+        `<p style="color:#fca5a5;">Could not generate script: ${esc(s.error)}</p>`;
+      return;
+    }
+
+    let html = '';
+
+    // Title + meta
+    html += `<h3 style="font-size:1.1rem;font-weight:800;margin-bottom:16px;color:var(--accent2);">${esc(s.title || idea.title || 'Your Script')}</h3>`;
+
+    html += `<div class="script-meta-grid">`;
+    if (s.estimated_duration) html += `<div class="script-meta-item"><div class="smi-label">Estimated Duration</div><div class="smi-val">${esc(s.estimated_duration)}</div></div>`;
+    if (s.platform_notes)     html += `<div class="script-meta-item"><div class="smi-label">Platform Tips</div><div class="smi-val">${esc(s.platform_notes)}</div></div>`;
+    if (s.content_gaps_exploited) html += `<div class="script-meta-item" style="grid-column:1/-1"><div class="smi-label">Content Gap Exploited</div><div class="smi-val">${esc(s.content_gaps_exploited)}</div></div>`;
+    html += `</div>`;
+
+    // Script segments
+    if (Array.isArray(s.script) && s.script.length) {
+      html += `<div style="font-size:0.78rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:12px;">Full Script</div>`;
+      s.script.forEach(seg => {
+        html += `<div class="script-segment">
+          <div class="script-segment-header">
+            <span class="seg-label">${esc(seg.segment || '')}</span>
+            <span class="seg-ts">${esc(seg.timestamp || '')}</span>
+          </div>
+          <div class="script-segment-body">`;
+
+        if (seg.voiceover_or_dialogue) {
+          html += `<div class="script-field">
+            <div class="sf-label">Say (Voiceover / Dialogue)</div>
+            <div class="sf-val dialogue">${esc(seg.voiceover_or_dialogue)}</div>
+          </div>`;
+        }
+        if (seg.on_screen_text) {
+          html += `<div class="script-field">
+            <div class="sf-label">On-Screen Text / Caption</div>
+            <div class="sf-val">${esc(seg.on_screen_text)}</div>
+          </div>`;
+        }
+        if (seg.visual_direction) {
+          html += `<div class="script-field">
+            <div class="sf-label">Visual Direction</div>
+            <div class="sf-val">${esc(seg.visual_direction)}</div>
+          </div>`;
+        }
+        if (seg.notes) {
+          html += `<div class="script-field">
+            <div class="sf-label">Notes</div>
+            <div class="sf-val" style="color:var(--muted);font-size:0.82rem;">${esc(seg.notes)}</div>
+          </div>`;
+        }
+
+        html += `</div></div>`;
+      });
+    }
+
+    // B-roll
+    if (Array.isArray(s.b_roll_list) && s.b_roll_list.length) {
+      html += `<div style="margin-top:20px;font-size:0.78rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px;">B-Roll Shot List</div>
+        <div class="list-pill-row">${s.b_roll_list.map(b => `<span class="list-pill">${esc(b)}</span>`).join('')}</div>`;
+    }
+
+    // Audio
+    if (Array.isArray(s.audio_suggestions) && s.audio_suggestions.length) {
+      html += `<div style="margin-top:16px;font-size:0.78rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px;">Audio / Music</div>
+        <div class="list-pill-row">${s.audio_suggestions.map(a => `<span class="list-pill" style="color:var(--accent2);">${esc(a)}</span>`).join('')}</div>`;
+    }
+
+    // Caption
+    if (s.caption_or_description) {
+      html += `<div style="margin-top:20px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+          <div style="font-size:0.78rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;">Post Caption (ready to copy)</div>
+          <button class="copy-btn" onclick="copyCaption()">Copy</button>
+        </div>
+        <div class="caption-box" id="caption-text">${esc(s.caption_or_description)}</div>
+      </div>`;
+    }
+
+    document.getElementById('script-writer-body').innerHTML = html;
+    document.getElementById('script-writer-section').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  function copyCaption() {
+    const text = document.getElementById('caption-text')?.innerText || '';
+    navigator.clipboard.writeText(text).then(() => {
+      const btn = document.querySelector('.copy-btn');
+      if (btn) { btn.textContent = 'Copied!'; setTimeout(() => btn.textContent = 'Copy', 2000); }
+    });
   }
 
   // Allow Enter key on inputs

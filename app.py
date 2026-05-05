@@ -15,7 +15,7 @@ from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel, HttpUrl, field_validator
 
 from extractor import extract_video_data, detect_platform
-from analyzer import analyze_video
+from analyzer import analyze_video, generate_script
 
 app = FastAPI(
     title="Viral Video Analyzer",
@@ -38,8 +38,13 @@ class AnalyzeRequest(BaseModel):
         v = v.strip()
         if not (v.startswith("http://") or v.startswith("https://")):
             raise ValueError("URL must start with http:// or https://")
-        if "instagram.com" not in v and "tiktok.com" not in v and "vm.tiktok.com" not in v and "instagr.am" not in v:
-            raise ValueError("Only Instagram and TikTok URLs are supported.")
+        allowed = any(d in v for d in (
+            "instagram.com", "instagr.am",
+            "tiktok.com", "vm.tiktok.com",
+            "youtube.com", "youtu.be",
+        ))
+        if not allowed:
+            raise ValueError("Only Instagram, TikTok, and YouTube URLs are supported.")
         return v
 
     @field_validator("niche")
@@ -95,6 +100,41 @@ async def analyze(body: AnalyzeRequest):
         "hashtags": video_data.hashtags[:15],
         "analysis": analysis,
     })
+
+
+class ScriptRequest(BaseModel):
+    analysis: dict
+    selected_idea: dict
+    niche: str
+    platform: str
+
+    @field_validator("niche")
+    @classmethod
+    def validate_niche(cls, v: str) -> str:
+        v = v.strip()
+        if not v:
+            raise ValueError("Niche cannot be empty.")
+        return v
+
+    @field_validator("platform")
+    @classmethod
+    def validate_platform(cls, v: str) -> str:
+        v = v.strip().lower()
+        if v not in ("instagram", "tiktok", "youtube"):
+            raise ValueError("Platform must be instagram, tiktok, or youtube.")
+        return v
+
+
+@app.post("/generate-script")
+async def generate_script_endpoint(body: ScriptRequest):
+    try:
+        script = generate_script(body.analysis, body.selected_idea, body.niche, body.platform)
+    except EnvironmentError as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Script generation failed: {str(e)}")
+
+    return JSONResponse(content={"script": script})
 
 
 @app.get("/health")
