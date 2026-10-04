@@ -6,6 +6,8 @@ Researched October 4, 2026. I pulled 112 Abuja skincare and cosmetics businesses
 
 ---
 
+> **Update (Oct 4): Tulip Bodycare is removed.** They already run a full online store at tulipbodycare.com. It just isn't linked on their Google profile, so their Google listing is the only thing that needs fixing. That leaves **4 live leads**: Debskulture, Ecokim, Berries, Timaglow. One-tap WhatsApp links are in `abuja-whatsapp-links.md`.
+
 ## Ranked by ability to pay
 
 | # | Brand | Instagram | Followers | Proof they can pay | What they use instead of a store | Hook |
