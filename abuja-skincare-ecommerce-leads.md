@@ -166,3 +166,18 @@ Swap in `[demo link]` and your name.
 - Zaron, Staniwills: big chains that already have websites
 - Maitama Stores, Passion Trust, Hmedix: general retailers, not skincare brands
 - AJ Organics, Tees Naturals: small vendors, or the profile mixes several businesses
+
+---
+
+# Batch 2 (Oct 4): emails sent
+
+| Brand | Email (where it was found) | IG | Notes |
+|---|---|---|---|
+| Prime Signature Organics | primesignature@gmail.com (their Facebook contact info) | @primesignatureorganics (1.2K) | Cruelty-free, acne focus. Taplink only. Phone +234 907 993 0776 |
+| Aifi Skin Glow | aifiskinglow@gmail.com (their own IG posts) | @aifiskinglow (485) | Korean skincare. WhatsApp-only orders. Phone 0811 904 0438. Small budget |
+
+Also emailed in batch 1: Berries Bath & Body, Timaglow Skincare (addresses not confirmed, so watch for bounces).
+
+**Checked and dropped (they already have a store):** Eti Skin (etiskin.com), Uandnature (uandnature.com), Tulip Bodycare (tulipbodycare.com)
+
+**No email found, so reach on WhatsApp or IG instead:** Bam Bam Organics (@bambamskincareandspa1, 4K, 0908 199 5757), Shaprapra Organic (@shaprapra123), Nennie's Naturals (taplink.cc/nenniesnaturals)
