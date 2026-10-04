@@ -286,3 +286,29 @@ EstheticsBizGenius
 - **Lead #2 (Lexx)** cares about looking luxury. Show her a mockup that looks expensive. Design is what sells her.
 - **Leads #3 and #5** respond to time and money. Frame it as "hours saved from texting" and "clients you're missing on Google."
 - **Upsell for your agency:** once the site is live, offer monthly social media management through EstheticsBizGenius. The website makes your content work harder.
+
+---
+
+# Human-sounding versions (use these)
+
+Sent 2026-10-04: email to Tiffany (Glam Confidential), from ighoreuben08@gmail.com.
+
+The other 4 have no public email. Send these as Instagram DMs (copy-paste). Written to sound like a real person typing: short, no em dashes, no buzzwords, lowercase is fine.
+
+**Lexx (@classyandconfident_esthetics)**
+> hey lexx! saw your voyageatl feature, congrats 🎉 vet med to esthetician is a big jump lol
+> your hyperpigmentation before and afters are so good. do you have anywhere besides ig where new clients can see them?
+
+**Wynter Aesthetics (@wynteraesthetics)**
+> hey! love your results posts
+> random question, how many "do you have anything open?" texts do you get a day? saw the text for availability in your bio and was curious
+
+**Eye Am Royalty (@eye_am_royalty_)**: tap the bio link first to confirm it's still broken
+> hey just a heads up, the website link in your bio isn't loading for me. tried it a couple times
+> figured you'd want to know since you've got so many posts pointing there
+
+**Inside Out Esthetics (@insideoutestheticsllc)**
+> hey! 1400+ posts is crazy consistent 👏🏾 love that you talk about skin and mental health together
+> do most of your clients find you on ig or do you get some from google too?
+
+When they reply, offer the free homepage mockup in one line: "i build sites for estheticians, want me to mock up a free homepage for you? no pressure"
