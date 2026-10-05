@@ -61,12 +61,11 @@ function ir_seo_image( $id ) {
 add_action( 'wp_head', function () {
 	$gsc = get_option( 'ir_seo_gsc' );
 	if ( $gsc ) { echo '<meta name="google-site-verification" content="' . esc_attr( $gsc ) . '">' . "\n"; }
-	if ( ir_seo_is_noindex() ) { echo '<meta name="robots" content="noindex, follow">' . "\n"; return; }
+	if ( ir_seo_is_noindex() ) { return; }
 	$c = ir_seo_current();
 	if ( ! $c ) { return; }
 	$url = is_front_page() ? home_url( '/' ) : get_permalink( $c['id'] );
 	$img = ir_seo_image( $c['id'] );
-	echo '<meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1">' . "\n";
 	if ( $c['desc'] ) { echo '<meta name="description" content="' . esc_attr( $c['desc'] ) . '">' . "\n"; }
 	$og = [ 'og:locale' => 'en_US', 'og:type' => is_front_page() ? 'website' : 'article', 'og:site_name' => 'Igho Reuben', 'og:title' => $c['title'], 'og:description' => $c['desc'], 'og:url' => $url, 'og:image' => $img ];
 	foreach ( $og as $k => $v ) { if ( $v ) { echo '<meta property="' . $k . '" content="' . esc_attr( $v ) . '">' . "\n"; } }
@@ -103,4 +102,10 @@ add_filter( 'wp_sitemaps_posts_query_args', function ( $args ) {
 } );
 add_filter( 'wp_sitemaps_add_provider', function ( $provider, $name ) { return $name === 'users' ? false : $provider; }, 10, 2 );
 add_filter( 'wp_sitemaps_taxonomies', function ( $tax ) { return array_intersect_key( $tax, array_flip( [ 'category', 'product_cat' ] ) ); } );
-add_filter( 'wp_sitemaps_post_types', function ( $types ) { unset( $types['attachment'] ); return $types; } );
+add_filter( 'wp_sitemaps_post_types', function ( $types ) { foreach ( [ 'attachment', 'lesson', 'tutor_assignments', 'tutor_quiz', 'tutor_zoom_meeting' ] as $t ) { unset( $types[ $t ] ); } return $types; } );
+
+/* One robots tag, through core. */
+add_filter( 'wp_robots', function ( $r ) {
+	if ( ir_seo_is_noindex() || is_singular( [ 'lesson', 'tutor_assignments', 'tutor_quiz' ] ) ) { return [ 'noindex' => true, 'follow' => true ]; }
+	return array_merge( $r, [ 'max-image-preview' => 'large', 'max-snippet' => '-1', 'max-video-preview' => '-1' ] );
+}, 99 );
