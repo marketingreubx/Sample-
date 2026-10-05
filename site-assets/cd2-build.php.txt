@@ -1,0 +1,231 @@
+<?php
+/** Cold DM Playbook v2 sales page (page 2069). Requires ir-build.php + ir-landing.php loaded with IR_BUILD. */
+if ( defined( 'ABSPATH' ) && defined( 'IR_BUILD' ) && ! function_exists( 'ir_cd2_build' ) ) {
+
+function ir_cd2_img( $key ) {
+	$m = get_option( 'ir_cd2_imgs', [] ); $id = (int) ( $m[ $key ] ?? 0 );
+	return [ 'id' => $id, 'url' => wp_get_attachment_url( $id ), 'alt' => get_post_meta( $id, '_wp_attachment_image_alt', true ) ];
+}
+function ir_cd2_card( $els, $dark, $o = [] ) {
+	return ir_c( array_merge( [ 'bg' => $dark ? 'irbandcard' : 'irsurface', 'border' => $dark ? 'irbandborder' : 'irborder', 'radius' => 22, 'pad' => [ 28, 26 ], 'gap' => 12, 'cls' => 'ir-card' ], $o ), $els );
+}
+function ir_cd2_head( $eyebrow, $h2, $sub, $dark, $center = true ) {
+	$al = $center ? [ 'align' => 'center' ] : [];
+	$els = [ ir_eyebrow( $eyebrow, $dark ? 'irbandaccent' : 'iraccent', $al ), ir_h( $h2, 'h2', 'irh2', $dark ? 'irwhite' : 'irtext', $al ) ];
+	if ( $sub ) { $els[] = ir_text( '<p>' . $sub . '</p>', $dark ? 'irbandmuted' : 'irmuted', 'irlead', array_merge( $al, [ 'maxw' => 680 ] ) ); }
+	return ir_c( [ 'gap' => 14, 'align' => $center ? 'center' : 'flex-start', 'title' => 'Section heading' ], $els );
+}
+function ir_cd2_cta( $text = 'Get The Playbook for ₦10,000', $o = [] ) {
+	return ir_btn( $text . ' →', '#checkout', 'primary', array_merge( [ 'cls' => 'ir-cd-cta' ], $o ) );
+}
+
+function ir_cd2_build() {
+	$S = [];
+	$ck = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
+	$x  = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>';
+	$av = '';
+	foreach ( [ 'avatar-1', 'avatar-2', 'avatar-3' ] as $k ) { $i = ir_cd2_img( $k ); if ( $i['id'] ) { $av .= '<img src="' . esc_url( $i['url'] ) . '" alt="" width="40" height="40">'; } }
+
+	// 0. Top bar.
+	$S[] = ir_section( [ 'bg' => 'irband', 'cls' => 'ir-on-band ir-cd-top', 'pad' => [ 14, 24 ], 'pad_m' => [ 12, 18 ], 'gap' => 16, 'dir' => 'row', 'justify' => 'space-between', 'align' => 'center', 'title' => 'Top bar' ], [
+		ir_h( 'Cold DM Playbook<span class="ir-accent">.</span>', 'div', 'irlogo', 'irwhite', [ 'auto' => 1 ] ),
+		ir_btn( 'Get The Playbook', '#checkout', 'primary', [ 'auto' => 1, 'cls' => 'ir-cd-topbtn' ] ),
+	] );
+
+	// 1. Hero.
+	$mock = ir_cd2_img( 'mockup' );
+	$S[] = ir_section( [ 'bg' => 'irband', 'cls' => 'ir-on-band ir-cd-hero', 'pad' => [ 72, 24, 88, 24 ], 'pad_m' => [ 40, 22, 56, 22 ], 'gap' => 56, 'gap_m' => 36, 'dir' => 'row', 'dir_t' => 'column', 'align' => 'center', 'title' => 'Hero' ], [
+		ir_c( [ 'gap' => 20, 'w' => 52, 'w_t' => 100, 'title' => 'Hero copy' ], [
+			ir_eyebrow( 'For freelancers &amp; service providers', 'irbandaccent' ),
+			ir_h( 'You\'re not broke because you lack skill. <span class="ir-accent">No one knows you exist.</span>', 'h1', 'irh1', 'irwhite' ),
+			ir_text( '<p>Right now, your next client is on Instagram, scrolling, ready to pay and looking for exactly what you do. The Cold DM Playbook gives you the exact messages to reach them first, without bidding against 60 strangers on a job board.</p>', 'irbandmuted', 'irlead', [ 'maxw' => 580 ] ),
+			ir_c( [ 'dir' => 'row', 'gap' => 12, 'wrap' => 1, 'title' => 'Hero buttons' ], [
+				ir_cd2_cta( 'Get The Scripts' ),
+				ir_btn( 'See how it works', '#how', 'ghost-band', [ 'cls' => 'ir-ico-down' ] ),
+			] ),
+			ir_html( '<div class="ir-cd-proof"><span class="ir-cd-avs">' . $av . '</span><span><b class="ir-cd-stars">★★★★★</b><br>600+ freelancers already inside</span></div>' ),
+		] ),
+		ir_c( [ 'w' => 48, 'w_t' => 100, 'cls' => 'ir-media', 'title' => 'Product mockup' ], [ ir_img( $mock, 'free', [ 'cls' => 'ir-cd-mock' ] ) ] ),
+	] );
+
+	// 2. Story.
+	$S[] = ir_section( [ 'bg' => 'irbg', 'gap' => 48, 'gap_m' => 28, 'dir' => 'row', 'dir_t' => 'column', 'align' => 'flex-start', 'title' => 'Story' ], [
+		ir_c( [ 'gap' => 14, 'w' => 42, 'w_t' => 100, 'title' => 'Story heading' ], [
+			ir_eyebrow( 'The story behind this' ),
+			ir_h( 'I used to apply for 12 gigs a week and <span class="ir-accent">land zero.</span>', 'h2', 'irh2', 'irtext' ),
+		] ),
+		ir_c( [ 'gap' => 18, 'w' => 58, 'w_t' => 100, 'title' => 'Story text' ], [
+			ir_text( '<p>Two years ago I was refreshing Upwork every morning, writing proposal after proposal for ₦3,000 and ₦5,000 jobs, competing against 60 other people willing to work for less than I was.</p><p>I was a good social media manager. I just had no idea how to find the people who could pay me what I was worth.</p>', 'irmuted', 'irbody' ),
+			ir_cd2_card( [ ir_text( '<p>"Then I sent one very specific, very intentional message to a business owner I found on Instagram. She replied within 4 hours. By day 3, I had a ₦150,000 retainer. Not from a job post. From one DM I wrote myself."</p>', 'irtext', 'irlead' ) ], false, [ 'cls' => 'ir-card ir-cd-quote' ] ),
+			ir_text( '<p>The problem was never my skill. I was waiting for clients to find me instead of going to find them. Cold DM is simply that: going first.</p>', 'irmuted', 'irbody' ),
+		] ),
+	] );
+
+	// 3. Three lies.
+	$lies = [
+		[ '01', 'The lie you were told', '"Cold DM is spam. Nobody wants to be messaged out of nowhere."', 'You believe this because you\'ve received bad cold DMs: pitchy, generic, "Hi, I offer services." The CPS framework does the opposite. It opens with something specific to them, not a pitch about you.', 'A specific, thoughtful message is not spam. It\'s the most personal marketing you can do.' ],
+		[ '02', 'The confidence myth', '"I\'m not confident enough. I don\'t know what to say."', 'You don\'t need confidence. You need a script. Confidence is what you feel after you send 10 DMs and see replies. The playbook gives you the exact words. You fill in your niche and send.', 'The scripts are already written. Copy, personalise, send.' ],
+		[ '03', 'The small account excuse', '"I have a small account. My niche is too competitive."', 'Cold DM bypasses your follower count. You\'re not posting for an algorithm, you\'re messaging a real person. They don\'t care how many followers you have. They care whether you can solve their problem.', '500 followers is more than enough to land your first paying client.' ],
+	];
+	$cards = [];
+	foreach ( $lies as $l ) {
+		$cards[] = ir_cd2_card( [
+			ir_h( $l[0], 'div', 'irh3', 'iraccent', [ 'cls' => 'ir-cd-num' ] ),
+			ir_eyebrow( $l[1], 'irmuted' ),
+			ir_h( $l[2], 'h3', 'irh4', 'irtext' ),
+			ir_text( '<p>' . $l[3] . '</p>', 'irmuted', 'irbody' ),
+			ir_html( '<div class="ir-cd-truth">' . $ck . '<span>' . esc_html( $l[4] ) . '</span></div>' ),
+		], false );
+	}
+	$S[] = ir_section( [ 'bg' => 'irsoft', 'gap' => 40, 'title' => 'Three lies' ], [
+		ir_cd2_head( 'What\'s really stopping you', 'Three lies keeping you from <span class="ir-accent">getting clients.</span>', 'As long as you believe even one of them, you\'ll never take the action that actually works.', false ),
+		ir_c( [ 'grid' => [ 3, 1, 1 ], 'gap' => 20, 'title' => 'Lie cards' ], $cards ),
+	] );
+
+	// 4. Old way vs new way.
+	$old = [ 'Post content daily and wait for DMs', 'Apply to job boards and compete on price', 'Ask friends for referrals and hope', 'Get ghosted, start over, repeat', 'Never build a predictable income' ];
+	$new = [ 'Find the exact person who needs you now', 'Send one specific, personal message', 'Turn the reply into a real conversation', 'Turn the conversation into a paid project', 'Repeat 10 times this week' ];
+	$li = function ( $items, $icon, $cls ) { $h = '<ul class="ir-cd-list ' . $cls . '">'; foreach ( $items as $t ) { $h .= '<li>' . $icon . '<span>' . esc_html( $t ) . '</span></li>'; } return $h . '</ul>'; };
+	$S[] = ir_section( [ 'bg' => 'irband', 'cls' => 'ir-on-band', 'gap' => 40, 'title' => 'Old way vs Cold DM way' ], [
+		ir_cd2_head( 'The new strategy', 'The highest-paid freelancers <span class="ir-accent">don\'t apply for work.</span>', 'While you bid against 60 strangers, the freelancer who gets hired reached out directly, before the job existed and before the competition started.', true ),
+		ir_c( [ 'grid' => [ 2, 1, 1 ], 'gap' => 20, 'title' => 'Compare' ], [
+			ir_cd2_card( [ ir_eyebrow( 'The passive way', 'irbandmuted' ), ir_h( 'Waiting for clients', 'h3', 'irh3', 'irwhite' ), ir_html( $li( $old, $x, 'is-old' ) ) ], true ),
+			ir_cd2_card( [ ir_eyebrow( 'The Cold DM way', 'irbandaccent' ), ir_h( 'Going to get clients', 'h3', 'irh3', 'irwhite' ), ir_html( $li( $new, $ck, 'is-new' ) ) ], true, [ 'cls' => 'ir-card ir-cd-win' ] ),
+		] ),
+	] );
+
+	// 5. CPS framework.
+	$steps = [
+		[ 'C', 'Compliment specifically', 'Not "love your page." Something precise. It proves you actually looked at them and earns you the right to say the next thing.' ],
+		[ 'P', 'Point out the gap', 'Show them one specific thing costing them money. Not a criticism, an observation: "I noticed X, which means Y is probably happening."' ],
+		[ 'S', 'Soft ask, easy yes', 'Offer a next step so easy it would feel awkward to refuse: "Want me to send you a quick idea on this?" The conversation is the sale.' ],
+	];
+	$sc = [];
+	foreach ( $steps as $s ) {
+		$sc[] = ir_cd2_card( [ ir_html( '<div class="ir-cd-letter">' . $s[0] . '</div>' ), ir_h( $s[1], 'h3', 'irh3', 'irtext' ), ir_text( '<p>' . $s[2] . '</p>', 'irmuted', 'irbody' ) ], false );
+	}
+	$S[] = ir_section( [ 'bg' => 'irbg', 'gap' => 40, 'id' => 'how', 'title' => 'CPS framework' ], [
+		ir_cd2_head( 'The CPS framework', '3 steps that turn strangers into <span class="ir-accent">paying clients.</span>', 'Every script in the playbook is built on this. It works because it doesn\'t feel like a pitch. It feels like a real conversation.', false ),
+		ir_c( [ 'grid' => [ 3, 1, 1 ], 'gap' => 20, 'title' => 'Steps' ], $sc ),
+	] );
+
+	// 6. Receipts.
+	$rc = [];
+	for ( $i = 1; $i <= 7; $i++ ) { $im = ir_cd2_img( 'receipt-' . $i ); if ( $im['id'] ) { $rc[] = ir_w( 'image', [ 'image' => [ 'id' => $im['id'], 'url' => $im['url'], 'alt' => $im['alt'], 'source' => 'library' ], 'image_size' => 'full', 'width' => ir_px( 100, '%' ), 'link_to' => 'file', 'open_lightbox' => 'yes' ], [], [ 'cls' => 'ir-cd-receipt' ] ); } }
+	$S[] = ir_section( [ 'bg' => 'irband', 'cls' => 'ir-on-band', 'gap' => 36, 'title' => 'Receipts' ], [
+		ir_cd2_head( 'Real receipts', '₦900,000+ in 3 weeks using <span class="ir-accent">these exact scripts.</span>', 'Not theory. Real client payments from cold DMs, using the same framework you\'re about to get. Tap any receipt to see it full size.', true ),
+		ir_c( [ 'cls' => 'ir-cd-receipts', 'gap' => 0, 'title' => 'Receipt gallery' ], $rc ),
+		ir_text( '<p>Individual results vary. Your results depend on your niche, effort and execution.</p>', 'irbandmuted', 'irsmall', [ 'align' => 'center' ] ),
+	] );
+
+	// 7. Testimonials.
+	$tq = [
+		[ 'I thought cold DMs were spam. Then I used the Compliment + Gap script on a Tuesday. She replied the same day. By Thursday I had a signed client.', 'Amaka O.', 'Freelance Designer · Lagos' ],
+		[ 'A client said "it\'s too expensive." I used the objection script word for word. He booked at ₦170,000. Full rate, no negotiation.', 'Josh M.', 'Video Editor · Abuja' ],
+		[ 'I always froze at "what do I say?" Now I copy the script, swap my niche and send. Three replies in my first week.', 'Tobi A.', 'Social Media Manager · Port Harcourt' ],
+	];
+	$tc = [];
+	foreach ( $tq as $t ) {
+		$tc[] = ir_cd2_card( [ ir_html( '<div class="ir-cd-stars">★★★★★</div>' ), ir_text( '<p>"' . $t[0] . '"</p>', 'irtext', 'irbody' ), ir_h( $t[1], 'div', 'irh4', 'irtext' ), ir_text( '<p>' . $t[2] . '</p>', 'irmuted', 'irsmall' ) ], false );
+	}
+	$S[] = ir_section( [ 'bg' => 'irsoft', 'gap' => 40, 'title' => 'Testimonials' ], [
+		ir_cd2_head( 'What buyers are saying', 'From "I don\'t know what to say" <span class="ir-accent">to booked.</span>', '', false ),
+		ir_c( [ 'grid' => [ 3, 1, 1 ], 'gap' => 20, 'title' => 'Testimonial cards' ], $tc ),
+	] );
+
+	// 8. What's inside.
+	$stack = [
+		[ '7 Cold DM scripts', 'Built on the CPS framework: problem-focused, compliment + audit, soft question, value-based, direct, niche-expertise and result-oriented. One for every prospect type.', '₦15,000', false ],
+		[ '10 word-for-word objection killers', '"It\'s too expensive." "I\'ll think about it." "I already have someone." A reply for every one, so you stop losing conversations.', '₦12,000', false ],
+		[ '4-stage follow-up system', 'Day 2, day 5, day 7 and 1-month follow-ups. Most clients need 3 to 5 touches before they say yes.', '₦8,000', false ],
+		[ 'Instagram DM guidelines & limits', 'How many DMs to send, when, and what to avoid, so you prospect actively without risking your account.', '₦5,000', false ],
+		[ 'Grand Slam Offer Builder', 'The 5-step formula to package your service as a result, not hours. The difference between charging ₦15,000 and ₦150,000.', '₦8,000', true ],
+		[ 'Cold Email Script Pack', 'The same CPS framework adapted for email, with subject lines, opening hooks and calls to action.', '₦7,000', true ],
+		[ 'Cold DM support community', 'Share your DMs, get feedback, celebrate wins and ask questions, so you send more and second-guess less.', '₦5,000', true ],
+	];
+	$rows = [];
+	foreach ( $stack as $r ) {
+		$rows[] = ir_c( [ 'dir' => 'row', 'gap' => 18, 'align' => 'flex-start', 'cls' => 'ir-cd-row' . ( $r[3] ? ' is-bonus' : '' ), 'title' => $r[0] ], [
+			ir_html( '<span class="ir-cd-tick">' . $ck . '</span>', [ 'auto' => 1 ] ),
+			ir_c( [ 'gap' => 4, 'grow' => 1, 'title' => 'Item text' ], [
+				ir_h( ( $r[3] ? '<span class="ir-cd-bonus">Free bonus</span> ' : '' ) . $r[0], 'h3', 'irh4', 'irtext' ),
+				ir_text( '<p>' . $r[1] . '</p>', 'irmuted', 'irbody' ),
+			] ),
+			ir_h( $r[3] ? '<s>' . $r[2] . '</s> FREE' : $r[2], 'div', 'irh4', 'irtext', [ 'auto' => 1, 'cls' => 'ir-cd-val' ] ),
+		] );
+	}
+	$rows[] = ir_c( [ 'dir' => 'row', 'justify' => 'space-between', 'align' => 'center', 'cls' => 'ir-cd-row ir-cd-total', 'title' => 'Total value' ], [ ir_h( 'Total value', 'div', 'irh3', 'irtext', [ 'auto' => 1 ] ), ir_h( '₦60,000', 'div', 'irh3', 'irtext', [ 'auto' => 1 ] ) ] );
+	$S[] = ir_section( [ 'bg' => 'irbg', 'gap' => 36, 'boxed' => 900, 'id' => 'inside', 'title' => 'What\'s inside' ], [
+		ir_cd2_head( 'Everything you\'re getting', 'Here\'s exactly <span class="ir-accent">what\'s inside.</span>', 'Every element, what it does and what it\'s worth. Then we\'ll talk price.', false ),
+		ir_cd2_card( $rows, false, [ 'gap' => 0, 'pad' => [ 8, 28 ], 'cls' => 'ir-card ir-cd-stack' ] ),
+	] );
+
+	// 9. Offer.
+	$S[] = ir_section( [ 'bg' => 'irband', 'cls' => 'ir-on-band', 'gap' => 0, 'boxed' => 760, 'id' => 'order', 'title' => 'Offer' ], [
+		ir_cd2_card( [
+			ir_eyebrow( 'Everything above · one price', 'irbandaccent', [ 'align' => 'center' ] ),
+			ir_img( $mock, 'free', [ 'cls' => 'ir-cd-mock-sm' ] ),
+			ir_text( '<p><s>₦60,000 total value</s> · Founding price</p>', 'irbandmuted', 'irbody', [ 'align' => 'center' ] ),
+			ir_h( '₦10,000', 'div', 'irstat', 'irwhite', [ 'align' => 'center', 'cls' => 'ir-cd-price' ] ),
+			ir_text( '<p>One payment. Lifetime access. The founding price goes back to ₦20,000 once this launch batch fills.</p>', 'irbandmuted', 'irbody', [ 'align' => 'center' ] ),
+			ir_html( $li( [ 'If it helps you land one ₦50,000 client, is ₦10,000 worth it?', 'If one objection script saves a deal you would have lost, is it worth it?', 'If the follow-up system recovers one lead you\'d given up on, is it worth it?' ], $ck, 'is-new ir-cd-worth' ) ),
+			ir_cd2_cta( 'Yes, Get Me The Playbook', [ 'align' => 'justify' ] ),
+			ir_html( '<div class="ir-cd-chips"><span>' . $ck . 'Paystack secured</span><span>' . $ck . '14-day guarantee</span><span>' . $ck . 'Works in any niche</span></div>' ),
+		], true, [ 'pad' => [ 40, 36 ], 'pad_m' => [ 28, 20 ], 'gap' => 16, 'align' => 'center', 'cls' => 'ir-card ir-cd-offer' ] ),
+	] );
+
+	// 10. Guarantee.
+	$S[] = ir_section( [ 'bg' => 'irbg', 'gap' => 0, 'boxed' => 900, 'title' => 'Guarantee' ], [
+		ir_cd2_card( [
+			ir_html( '<div class="ir-cd-seal"><span>14-day</span><b>Send 10 DMs</b><span>guarantee</span></div>', [ 'auto' => 1 ] ),
+			ir_c( [ 'gap' => 10, 'grow' => 1, 'title' => 'Guarantee text' ], [
+				ir_h( 'The 14-Day "Send 10 DMs" Guarantee', 'h2', 'irh3', 'irtext' ),
+				ir_text( '<p>Use the scripts. Send 10 DMs in the next 14 days. If you don\'t get a single reply, a single conversation or a single spark of interest, you get every naira back. No awkward questions. The only way you lose is if you never try.</p>', 'irmuted', 'irbody' ),
+			] ),
+		], false, [ 'dir' => 'row', 'dir_m' => 'column', 'gap' => 28, 'align' => 'center', 'pad' => [ 32, 32 ] ] ),
+	] );
+
+	// 11. Cost of waiting.
+	$S[] = ir_section( [ 'bg' => 'irsoft', 'gap' => 28, 'boxed' => 900, 'title' => 'Cost of waiting' ], [
+		ir_cd2_head( 'The cost of waiting', 'Every day you wait is another day <span class="ir-accent">someone else gets that client.</span>', 'The person who can pay you is on Instagram right now. Will you be the one in their inbox, or will someone else?', true ),
+		ir_html( $li( [ 'Another week of posting with no enquiries', 'Another bid written, another gig lost on price', 'Another month of unpredictable income', 'Another "maybe" that goes completely quiet' ], $x, 'is-old ir-cd-center' ) ),
+		ir_cd2_cta( 'Stop Waiting. Get The Playbook', [ 'align' => 'center' ] ),
+	] );
+
+	// 12. FAQ.
+	$S[] = ir_section( [ 'bg' => 'irbg', 'gap' => 32, 'boxed' => 900, 'title' => 'FAQ' ], [
+		ir_cd2_head( 'Questions', 'You\'re thinking it. <span class="ir-accent">Let\'s clear it up.</span>', '', true ),
+		ir_faq( [
+			[ 'What exactly is cold DM?', 'Reaching out to a potential client who doesn\'t know you yet, with a specific, relevant, personal message. It\'s the digital version of walking up to someone at an event and starting a real conversation. The CPS framework makes it personal and hard to ignore.' ],
+			[ 'I have a tiny following. Will this still work?', 'Yes. Cold DM bypasses your follower count. You\'re messaging one specific person. They don\'t see your followers, they see your message. 200 followers is enough to land your first client with this system.' ],
+			[ 'What if I get no replies at all?', 'That\'s what the 4-stage follow-up system is for. Most clients don\'t answer the first message because life happens. And if you send 10 DMs with the scripts and see zero response, you get a full refund.' ],
+			[ 'Does this work for my niche?', 'Any service where clients are reachable online: social media management, design, video editing, copywriting, web development, coaching, photography and consulting. All 7 scripts have fill-in-the-blank niche slots.' ],
+			[ 'Why is it only ₦10,000?', 'It\'s the founding price. Early buyers help shape the next version through their feedback and results. Once this launch batch fills, the price returns to ₦20,000.' ],
+			[ 'Is this just for Instagram?', 'No. The framework works on any direct messaging platform: X, LinkedIn, WhatsApp, Telegram and Facebook. The Cold Email Script Pack bonus takes the same system to email.' ],
+			[ 'How do I receive the playbook?', 'Pay securely with Paystack, then tap the WhatsApp button on the confirmation screen. Your order details are filled in for you, and I send your access straight away.' ],
+		] ),
+	] );
+
+	// 13. Final CTA.
+	$S[] = ir_section( [ 'bg' => 'irband', 'cls' => 'ir-on-band', 'gap' => 20, 'boxed' => 860, 'align' => 'center', 'title' => 'Final CTA' ], [
+		ir_eyebrow( 'Two choices', 'irbandaccent', [ 'align' => 'center' ] ),
+		ir_h( 'Keep waiting for clients to find you. <span class="ir-accent">Or go get them.</span>', 'h2', 'irh2', 'irwhite', [ 'align' => 'center' ] ),
+		ir_text( '<p>The scripts are written. The framework is proven. The only thing between you and your next paying client is the decision to stop waiting, and ₦10,000.</p>', 'irbandmuted', 'irlead', [ 'align' => 'center', 'maxw' => 640 ] ),
+		ir_cd2_cta( 'Get The Cold DM Playbook', [ 'align' => 'center' ] ),
+		ir_text( '<p><b>P.S.</b> You get 7 cold DM scripts, 10 objection killers, the 4-stage follow-up system, the Grand Slam Offer Builder, the Cold Email Pack and the support community. ₦60,000 in value for ₦10,000. Send 10 DMs in 14 days. If nothing moves, every naira back.</p>', 'irbandmuted', 'irbody', [ 'align' => 'center', 'maxw' => 680 ] ),
+	] );
+
+	// 14. Footer.
+	$S[] = ir_section( [ 'bg' => 'irband', 'cls' => 'ir-on-band ir-cd-foot', 'pad' => [ 28, 24, 110, 24 ], 'pad_m' => [ 24, 22, 120, 22 ], 'gap' => 6, 'align' => 'center', 'title' => 'Footer' ], [
+		ir_text( '<p>Cold DM Playbook by Socialreubx · <a href="' . esc_url( home_url( '/' ) ) . '">ighoreuben.com</a></p><p>Not affiliated with Instagram, Facebook, X or LinkedIn. Individual results vary. © ' . gmdate( 'Y' ) . ' Socialreubx.</p>', 'irbandmuted', 'irsmall', [ 'align' => 'center' ] ),
+	] );
+
+	// 15. Checkout engine (Paystack popup, order bump, upsells, sticky bar).
+	$eng = ir_c( [ 'title' => 'Checkout engine: Paystack popup, order bump, upsells, sticky bar (do not delete)', 'cls' => 'ir-cd-engine' ], [ ir_html( file_get_contents( WP_CONTENT_DIR . '/uploads/ir-cd2/engine.html' ) ) ] );
+	$eng['isInner'] = false;
+	$S[] = $eng;
+
+	return $S;
+}
+
+} // end guard
