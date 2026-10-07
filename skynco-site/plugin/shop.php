@@ -312,6 +312,15 @@ add_action(
 .sk-next{margin:0 0 28px;padding:28px;border-radius:24px;background:#3B1530;color:#F3DCE8}
 .sk-next h2{color:#FFF8F6;font-family:Fraunces,serif;font-weight:400;margin:0 0 8px}
 .sk-next .button{background:#D1127E!important;color:#fff!important;border-radius:999px!important;padding:14px 24px!important}
+.woocommerce div.product .product_title{font-size:clamp(32px,4vw,44px)!important;line-height:1.1!important;margin-bottom:10px}
+.woocommerce div.product p.price{font-size:22px!important;font-weight:700}
+.woocommerce div.product p.price del{color:#9A8791;font-weight:500}
+.woocommerce div.product p.price ins{text-decoration:none}
+.woocommerce-message,.woocommerce-info{border-top-color:#D1127E!important;background:#FBEFF0!important;border-radius:14px}
+.woocommerce-message::before,.woocommerce-info::before{color:#D1127E!important}
+.woocommerce .woocommerce-message .button,.woocommerce .woocommerce-info .button{background:#3B1530!important;color:#fff!important;border-radius:999px!important}
+.woocommerce div.product .woocommerce-tabs ul.tabs li.active a{color:#3B1530}
+.woocommerce .cart-collaterals h2,.woocommerce-checkout h3,.woocommerce .cross-sells h2,.woocommerce .upsells h2,.woocommerce .related h2{font-family:Fraunces,serif;font-weight:400;color:#3B1530}
 .woocommerce ul.products li.product .button{display:inline-flex!important;align-items:center;white-space:nowrap;padding:11px 18px!important;font-size:14px!important;line-height:1!important;margin-top:10px!important}
 .woocommerce ul.products li.product .price{display:block;margin:4px 0 0;color:#2A1A24;font-weight:700}
 .woocommerce ul.products li.product .price ins{color:#D1127E;text-decoration:none}
