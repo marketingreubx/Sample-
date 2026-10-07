@@ -321,3 +321,14 @@ add_action(
 		<?php
 	}
 );
+
+/* Old URL from the first build. */
+add_action(
+	'template_redirect',
+	function () {
+		if ( is_404() && false !== strpos( (string) $_SERVER['REQUEST_URI'], '/booking-conditions' ) ) {
+			wp_safe_redirect( home_url( '/policies/' ), 301 );
+			exit;
+		}
+	}
+);
