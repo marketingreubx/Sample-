@@ -96,11 +96,19 @@ function lux_page_hero( $title, $eyebrow, $h1, $text, array $buttons, $right = n
 }
 
 /** Full-bleed photo hero with a plum overlay (light text). */
-function lux_photo_hero( $title, $eyebrow, $h1, $text, array $buttons, $image ) {
-	$k = lux_inner_kit();
+function lux_photo_hero( $title, $eyebrow, $h1, $text, array $buttons, $image, $video = null ) {
+	$k     = lux_inner_kit();
+	$media = get_option( 'skynco_media_ids', [] );
+	$vid   = $video && ! empty( $media[ 'video-' . $video ] ) ? wp_get_attachment_url( $media[ 'video-' . $video ] ) : '';
+	$extra = $vid ? [
+		'background_background'     => 'video',
+		'background_video_link'     => $vid,
+		'background_play_on_mobile' => 'yes',
+		'background_video_fallback' => $k['img']( 'poster-' . $video ),
+	] : [];
 	return lux_section(
 		$title,
-		[
+		$extra + [
 			'background_background'          => 'classic',
 			'background_image'               => $k['img']( $image ),
 			'background_position'            => 'center center',
@@ -119,7 +127,7 @@ function lux_photo_hero( $title, $eyebrow, $h1, $text, array $buttons, $image ) 
 			'flex_gap'                       => lux_gap( 22 ),
 			'padding'                        => lux_box( 96, 24, 96, 24 ),
 			'padding_mobile'                 => lux_box( 64, 16, 64, 16 ),
-			'css_classes'                    => 'lux-photo-hero',
+			'css_classes'                    => 'lux-photo-hero' . ( $vid ? ' lux-video-hero' : '' ),
 		],
 		[
 			lux_eyebrow( $eyebrow, 'dark' ),
@@ -172,20 +180,17 @@ function lux_services_elements() {
 	$row = [ 'flex_direction' => 'row' ];
 	$els = [];
 
-	$els[] = lux_page_hero(
+	$els[] = lux_photo_hero(
 		'01 Hero',
 		'Services and prices',
 		'Treatments for every <em>skin goal.</em>',
 		'Customized facials, advanced skin treatments and waxing at our Watertown studio. Every price is listed below, and a deposit holds your appointment when you book online.',
 		[
-			lux_button( 'Book Appointment', $k['book'] ),
-			lux_button( 'Shop home care', home_url( '/shop/' ), 'outline' ),
+			lux_button( 'Book Appointment', $k['book'], 'lime' ),
+			lux_button( 'Shop home care', home_url( '/shop/' ), 'outline-light' ),
 		],
-		lux_con(
-			$col + [ 'width' => lux_u( 40, '%' ), 'width_tablet' => lux_u( 100, '%' ), 'flex_align_items' => 'center' ],
-			[ lux_img( 'Glo2 Facial with LED light therapy', [ 'image' => $k['img']( 'skynco-glo2-facial.jpg' ), '_css_classes' => 'lux-ratio-45', 'image_border_radius' => lux_box( 220, 220, 28, 28 ), 'space' => lux_u( 420 ) ] ) ],
-			'Hero image'
-		)
+		'skynco-glo2-facial.jpg',
+		'services'
 	);
 
 	/* Start here: new clients */
@@ -547,7 +552,8 @@ function lux_contact_elements() {
 			lux_button( 'Call ' . $k['phone'], $k['tel'], 'lime' ),
 			lux_button( 'Book Appointment', $k['book'], 'outline-light' ),
 		],
-		'skynco-new-client-facial.jpg'
+		'skynco-new-client-facial.jpg',
+		'contact'
 	);
 
 	$ways = [
@@ -597,7 +603,29 @@ function lux_contact_elements() {
 	);
 
 	$els[] = lux_section(
-		'03 Quick answers',
+		'03 Contact form',
+		[ 'padding' => lux_box( 0, 24, 96, 24 ), 'padding_mobile' => lux_box( 0, 16, 64, 16 ), '_element_id' => 'contact-form' ],
+		[
+			lux_con(
+				$k['card']( 'white', $k['border']() ) + [ 'flex_direction' => 'row', 'flex_direction_tablet' => 'column', 'flex_gap' => lux_gap( 56 ), 'padding' => lux_box( 48 ), 'padding_mobile' => lux_box( 28, 20, 28, 20 ), 'border_radius' => lux_box( 32 ) ],
+				[
+					lux_con(
+						$col + [ 'width' => lux_u( 36, '%' ), 'width_tablet' => lux_u( 100, '%' ), 'flex_gap' => lux_gap( 16 ), 'flex_align_items' => 'flex-start' ],
+						[
+							lux_eyebrow( 'Send a message' ),
+							lux_heading( 'We’d love to <em>hear from you.</em>', 'h2', 'h2' ),
+							lux_text( '<p>Ask about a treatment, a booking, products or gift cards. Hana replies within one business day.</p><p>Need an answer today? Call or text <a href="' . $k['tel'] . '">' . $k['phone'] . '</a>.</p>', 'body', 'muted' ),
+						]
+					),
+					lux_con( $col + [ 'width' => lux_u( 64, '%' ), 'width_tablet' => lux_u( 100, '%' ) ], [ lux_w( 'shortcode', [ 'shortcode' => '[skynco_contact_form]' ], 'Contact form' ) ] ),
+				],
+				'Form card'
+			),
+		]
+	);
+
+	$els[] = lux_section(
+		'04 Quick answers',
 		[ 'padding' => lux_box( 0, 24, 120, 24 ), 'padding_mobile' => lux_box( 0, 16, 72, 16 ) ],
 		[
 			lux_con(
@@ -681,7 +709,9 @@ function lux_reviews_data() {
 function lux_reviews_section( $title = 'Reviews' ) {
 	$cards = '';
 	foreach ( lux_reviews_data() as $r ) {
-		$cards .= '<figure class="lux-review"><div class="lux-review__stars" aria-label="5 out of 5 stars">★★★★★</div><blockquote>“' . $r[2] . '”</blockquote><figcaption><span class="lux-review__avatar" aria-hidden="true">' . mb_substr( $r[0], 0, 1 ) . '</span><span><strong>' . $r[0] . '</strong><em>' . $r[1] . '</em></span></figcaption></figure>';
+		$pid    = (int) ( get_option( 'skynco_media_ids', [] )[ 'review-' . sanitize_title( strtok( $r[0], ' ' ) ) ] ?? 0 );
+		$avatar = $pid ? '<img class="lux-review__photo" src="' . esc_url( wp_get_attachment_image_url( $pid, 'thumbnail' ) ) . '" alt="" width="48" height="48" loading="lazy">' : '<span class="lux-review__avatar" aria-hidden="true">' . mb_substr( $r[0], 0, 1 ) . '</span>';
+		$cards .= '<figure class="lux-review"><div class="lux-review__stars" aria-label="5 out of 5 stars">★★★★★</div><blockquote>“' . $r[2] . '”</blockquote><figcaption>' . $avatar . '<span><strong>' . $r[0] . '</strong><em>' . $r[1] . '</em></span></figcaption></figure>';
 	}
 	$html = '<div class="lux-reviews" role="region" aria-label="Client reviews"><div class="lux-reviews__track"><div class="lux-reviews__set">' . $cards . '</div><div class="lux-reviews__set" aria-hidden="true">' . $cards . '</div></div></div>';
 

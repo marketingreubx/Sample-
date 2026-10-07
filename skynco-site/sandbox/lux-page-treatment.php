@@ -128,6 +128,8 @@ function lux_treatment_elements( array $t ) {
 		'Good to know'
 	);
 	$els[] = lux_section( '02 Details', [ 'flex_gap' => lux_gap( 16 ) ], [ lux_con( $k['grid']( 3, 1, 1, 16 ), $cards, 'Detail cards' ) ] );
+	// Before & after slider. Renders only once real client photos are added in Studio → Before & After.
+	$els[] = lux_section( '03 Before and after', [ 'padding' => lux_box( 0, 0, 0, 0 ), 'css_classes' => 'lux-ba-section' ], [ lux_w( 'shortcode', [ 'shortcode' => '[skynco_before_after slug="' . $t[0] . '"]' ], 'Before & after slider' ) ] );
 
 	$els[] = lux_shop_strip( 'Pair it with the right <em>home care.</em>', 'Hana’s picks to protect and extend your ' . esc_html( $t[1] ) . ' results.', lux_shop_recs_for( $t[0] ), 'tight' );
 

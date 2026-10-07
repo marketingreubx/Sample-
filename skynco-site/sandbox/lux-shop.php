@@ -203,17 +203,14 @@ function lux_shop_elements() {
 	$col = [ 'flex_direction' => 'column' ];
 	$els = [];
 
-	$els[] = lux_page_hero(
+	$els[] = lux_photo_hero(
 		'01 Hero',
 		'Shop home care',
 		'Studio results, <em>at home.</em>',
 		'The cleansers, serums and SPF Hana uses and recommends, chosen to extend every facial. Free shipping over $75, or free pickup at the studio.',
-		[ lux_button( 'Shop the kits', '#kits', 'lime' ), lux_button( 'Find your routine', '#routine', 'outline' ) ],
-		lux_con(
-			$col + [ 'width' => lux_u( 40, '%' ), 'width_tablet' => lux_u( 100, '%' ), 'flex_align_items' => 'center' ],
-			[ lux_img( 'Skincare bottles on a marble table', [ 'image' => $k['img']( 'skynco-shop-hero' ), '_css_classes' => 'lux-ratio-45', 'image_border_radius' => lux_box( 220, 220, 28, 28 ), 'space' => lux_u( 420 ) ] ) ],
-			'Hero image'
-		)
+		[ lux_button( 'Shop the kits', '#kits', 'lime' ), lux_button( 'Find your routine', '#routine', 'outline-light' ) ],
+		'skynco-shop-hero',
+		'shop'
 	);
 
 	// Offer bar.

@@ -246,5 +246,8 @@ body{background:#FFF8F6}
 .lux-concerns-dark .lux-concerns b,.lux-concerns-dark .lux-concerns a{color:#FFD6EC;text-decoration:none}
 .lux-concerns-dark .lux-concerns a:hover{color:#fff}
 .lux-photo-hero .elementor-heading-title em{color:#FFB8DD}
+.lux-review__photo{width:48px;height:48px;border-radius:50%;object-fit:cover;flex-shrink:0;border:2px solid #fff;box-shadow:0 4px 12px rgba(59,21,48,.15)}
+.lux-video-hero{min-height:560px}
+@media(prefers-reduced-motion:reduce){.lux-video-hero .elementor-background-video-container{display:none}}
 CSS;
 }
