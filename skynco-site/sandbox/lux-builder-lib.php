@@ -261,7 +261,8 @@ function lux_install_css( $css ) {
 	$current = (string) wp_get_custom_css();
 	$block   = "/* LUX-START (managed by builder) */\n" . trim( $css ) . "\n/* LUX-END */";
 	if ( false !== strpos( $current, '/* LUX-START' ) ) {
-		$current = preg_replace( '#/\* LUX-START.*?/\* LUX-END \*/#s', $block, $current );
+		// Callback, not a replacement string: the CSS contains backslashes (e.g. "\2192") that would be read as backreferences.
+		$current = preg_replace_callback( '#/\* LUX-START.*?/\* LUX-END \*/#s', fn() => $block, $current );
 	} else {
 		$current = trim( $current . "\n\n" . $block );
 	}
