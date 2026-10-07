@@ -270,17 +270,40 @@ function lux_shop_elements() {
 		1296
 	);
 
-	// Everything, by category.
-	$cats  = [ 'cleansers' => 'Cleansers', 'serums' => 'Serums', 'moisturizers-spf' => 'Moisturizers &amp; SPF', 'masks-treatments' => 'Masks &amp; spot care', 'gift-cards' => 'Gift cards' ];
-	$parts = [];
-	foreach ( $cats as $slug => $label ) {
-		$parts[] = lux_heading( $label, 'h3', [ 'f' => 'Fraunces', 's' => 26, 'w' => '400', 'lh' => 1.2 ], 'primary', [ '_margin' => lux_box( 24, 0, 0, 0 ) ] );
-		$parts[] = lux_w( 'shortcode', [ 'shortcode' => '[skynco_products category="' . $slug . '" columns="4"]' ], $label );
-	}
+	// Everything else in one grid, in routine order.
 	$els[] = lux_section(
 		'05 All products',
-		[ 'flex_gap' => lux_gap( 16 ), '_element_id' => 'all' ],
-		array_merge( [ lux_heading( 'Shop all home care.', 'h2', 'h2' ) ], $parts )
+		[ 'flex_gap' => lux_gap( 36 ), '_element_id' => 'all' ],
+		[
+			lux_head_row(
+				[ lux_eyebrow( 'Shop all' ), lux_heading( 'Cleanse, treat, <em>protect.</em>', 'h2', 'h2' ), lux_text( '<p>Every product is one Hana uses in the studio. Build your routine in that order: cleanser, serum, moisturizer, SPF.</p>', 'body', 'muted' ) ],
+				null,
+				680
+			),
+			lux_w( 'shortcode', [ 'shortcode' => '[skynco_products slugs="gentle-cleansing-gel,vitamin-c-brightening-serum,hydrating-hyaluronic-serum,barrier-repair-moisturizer,daily-mineral-spf-40,enzyme-exfoliating-mask,clarifying-spot-treatment,post-treatment-recovery-balm" columns="4"]' ], 'All products' ),
+		]
+	);
+
+	// Gift card band.
+	$els[] = lux_section(
+		'06 Gift card',
+		[ 'padding' => lux_box( 0, 24, 96, 24 ), 'padding_mobile' => lux_box( 0, 16, 64, 16 ) ],
+		[
+			lux_con(
+				$k['card']( 'sagemist' ) + [ 'flex_direction' => 'row', 'flex_direction_tablet' => 'column', 'flex_justify_content' => 'space-between', 'flex_align_items' => 'center', 'flex_gap' => lux_gap( 24 ), 'padding' => lux_box( 40 ), 'padding_mobile' => lux_box( 28, 22, 28, 22 ), 'border_radius' => lux_box( 28 ) ],
+				[
+					lux_con(
+						$col + [ 'flex_gap' => lux_gap( 8 ), 'width' => lux_u( 62, '%' ), 'width_tablet' => lux_u( 100, '%' ) ],
+						[
+							lux_heading( 'Not sure what they’d like? <em>Give a gift card.</em>', 'h2', [ 'f' => 'Fraunces', 's' => 30, 'w' => '400', 'lh' => 1.2 ] ),
+							lux_text( '<p>Redeemable for any treatment or product, delivered by email and never expires.</p>', 'body', 'muted' ),
+						]
+					),
+					lux_button( 'Buy a $100 gift card', home_url( '/product/skynco-gift-card/' ) ),
+				],
+				'Gift band'
+			),
+		]
 	);
 
 	$els[] = lux_page_cta(
