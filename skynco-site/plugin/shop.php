@@ -312,6 +312,11 @@ add_action(
 .sk-next{margin:0 0 28px;padding:28px;border-radius:24px;background:#3B1530;color:#F3DCE8}
 .sk-next h2{color:#FFF8F6;font-family:Fraunces,serif;font-weight:400;margin:0 0 8px}
 .sk-next .button{background:#D1127E!important;color:#fff!important;border-radius:999px!important;padding:14px 24px!important}
+.woocommerce ul.products li.product .button{display:inline-flex!important;align-items:center;white-space:nowrap;padding:11px 18px!important;font-size:14px!important;line-height:1!important;margin-top:10px!important}
+.woocommerce ul.products li.product .price{display:block;margin:4px 0 0;color:#2A1A24;font-weight:700}
+.woocommerce ul.products li.product .price ins{color:#D1127E;text-decoration:none}
+.woocommerce ul.products li.product img{border-radius:20px}
+.woocommerce ul.products li.product .woocommerce-loop-product__title{font-family:Fraunces,serif!important;font-weight:400!important;font-size:19px!important;color:#3B1530}
 .woocommerce ul.products li.product .button,.woocommerce .single_add_to_cart_button,.woocommerce button.button.alt,.woocommerce a.button.alt,.woocommerce #respond input#submit.alt{background:#D1127E;border-radius:999px}
 .woocommerce button.button.alt:hover,.woocommerce a.button.alt:hover{background:#B00E6A}
 .woocommerce span.onsale{background:#3B1530;border-radius:999px;min-height:auto;line-height:1;padding:8px 12px}
@@ -321,6 +326,9 @@ add_action(
 		<?php
 	}
 );
+
+/* Free /shop/ for the designed page: the product archive lives at /all-products/. */
+add_filter( 'woocommerce_register_post_type_product', fn( $a ) => array_merge( $a, [ 'has_archive' => 'all-products' ] ) );
 
 /* Old URL from the first build. */
 add_action(
