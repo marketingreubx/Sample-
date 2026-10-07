@@ -76,7 +76,6 @@ function lux_home_elements() {
 			'flex_gap'         => lux_gap( 24 ),
 		],
 		[
-			lux_eyebrow( 'Skin studio in Watertown, MA', 'dark' ),
 			lux_heading( 'Your road to beautiful skin <em>starts here.</em>', 'h1', [ 'f' => 'Fraunces', 's' => 68, 'st' => 54, 'sm' => 42, 'w' => '500', 'lh' => 1.06, 'ls' => -0.015 ], 'cream' ),
 			lux_text(
 				'<p>Customized facials, advanced skin treatments and waxing, led by licensed esthetician Hana Rahim. Every treatment is matched to your skin, and you leave with a home routine you can keep.</p>',
@@ -509,6 +508,9 @@ HTML;
 
 	/* ---------------- 08 SHOP: HOME CARE ---------------- */
 	$els[] = lux_shop_strip( 'Keep your results going <em>at home.</em>', 'The products Hana uses and recommends most, chosen to extend every facial.' );
+
+	/* ---------------- 08b REAL RESULTS (before & after sliders) ---------------- */
+	$els[] = lux_section( '08b Real results', [ 'padding' => lux_box( 0, 0, 96, 0 ), 'padding_mobile' => lux_box( 0, 0, 56, 0 ) ], [ lux_w( 'shortcode', [ 'shortcode' => '[skynco_before_after]' ], 'Before & after sliders (featured)' ) ] );
 
 	/* ---------------- 09 REVIEWS ---------------- */
 	$els[] = lux_reviews_section();

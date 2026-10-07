@@ -98,14 +98,13 @@ function lux_page_hero( $title, $eyebrow, $h1, $text, array $buttons, $right = n
 /** Full-bleed photo hero with a plum overlay (light text). */
 function lux_photo_hero( $title, $eyebrow, $h1, $text, array $buttons, $image, $video = null ) {
 	$k     = lux_inner_kit();
+	// Photo backgrounds only. $video names a hero still (poster-{name}) taken from the studio footage.
 	$media = get_option( 'skynco_media_ids', [] );
-	$vid   = $video && ! empty( $media[ 'video-' . $video ] ) ? wp_get_attachment_url( $media[ 'video-' . $video ] ) : '';
-	$extra = $vid ? [
-		'background_background'     => 'video',
-		'background_video_link'     => $vid,
-		'background_play_on_mobile' => 'yes',
-		'background_video_fallback' => $k['img']( 'poster-' . $video ),
-	] : [];
+	if ( $video && ! empty( $media[ 'poster-' . $video ] ) ) {
+		$image = 'poster-' . $video;
+	}
+	$vid   = '';
+	$extra = [];
 	return lux_section(
 		$title,
 		$extra + [

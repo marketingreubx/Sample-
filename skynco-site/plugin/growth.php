@@ -278,6 +278,19 @@ add_shortcode(
 	function ( $atts ) {
 		$slug  = sanitize_title( $atts['slug'] ?? '' );
 		$pairs = skynco_ba_pairs( $slug );
+		if ( ! $slug ) {
+			// Featured: the first pair of each treatment that has photos, captioned with the treatment.
+			$names = function_exists( 'lux_lp_treatments' ) ? wp_list_pluck( array_map( fn( $t ) => [ 's' => $t[0], 'n' => $t[1] ], lux_lp_treatments() ), 'n', 's' ) : [];
+			foreach ( array_keys( (array) get_option( 'skynco_before_after', [] ) ) as $s ) {
+				$p = skynco_ba_pairs( $s );
+				if ( $p ) {
+					$p[0]['caption'] = ( $names[ $s ] ?? $s );
+					$p[0]['link']    = home_url( '/services/' . $s . '/' );
+					$pairs[]         = $p[0];
+				}
+			}
+			$pairs = array_slice( $pairs, 0, 3 );
+		}
 		if ( ! $pairs ) {
 			if ( current_user_can( SKYNCO_STUDIO_CAP ) ) {
 				return '<div class="skba-block"><div class="skba-empty"><b>Only you can see this:</b> add real before &amp; after photos for this treatment in <a href="' . esc_url( admin_url( 'admin.php?page=skynco-before-after#' . $slug ) ) . '">Studio → Before &amp; After</a> and the slider will appear here.</div></div>';
@@ -294,7 +307,7 @@ add_shortcode(
 				. '<span class="skba__tag skba__tag--b">Before</span><span class="skba__tag skba__tag--a">After</span>'
 				. '<span class="skba__handle" aria-hidden="true"></span>'
 				. '<input class="skba__range" type="range" min="0" max="100" value="50" aria-label="Drag to compare before and after">'
-				. '</div>' . ( ! empty( $p['caption'] ) ? '<figcaption>' . esc_html( $p['caption'] ) . '</figcaption>' : '' ) . '</figure>';
+				. '</div>' . ( ! empty( $p['caption'] ) ? '<figcaption>' . ( ! empty( $p['link'] ) ? '<a href="' . esc_url( $p['link'] ) . '">' . esc_html( $p['caption'] ) . ' →</a>' : esc_html( $p['caption'] ) ) . '</figcaption>' : '' ) . '</figure>';
 		}
 		$out .= '</div><p class="skba-note">Real client results, shared with permission. Individual results vary.</p>';
 		return '<div class="skba-block"><p class="skba-eyebrow">Real results</p><h2 class="skba-title">Drag to see the <em>difference.</em></h2>' . $out . '</div>';
@@ -486,6 +499,7 @@ add_action(
 .skba__tag{position:absolute;top:14px;padding:6px 12px;border-radius:999px;background:rgba(38,16,31,.75);color:#fff;font:700 12px Manrope,sans-serif;pointer-events:none}
 .skba__tag--b{left:14px}.skba__tag--a{right:14px}
 .skba figcaption{margin-top:10px;font:500 14px Manrope,sans-serif;color:#6E5A66;text-align:center}
+.skba figcaption a{color:#D1127E;font-weight:700;text-decoration:none}
 .skba-note{margin:12px 0 0;font:400 13px Manrope,sans-serif;color:#9A8791;text-align:center}
 .skba-empty{padding:18px 20px;border:2px dashed #D1127E;border-radius:18px;background:#FFF8F6;font:400 15px Manrope,sans-serif;color:#3B1530}
 .skba-empty a{color:#D1127E}
