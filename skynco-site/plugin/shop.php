@@ -339,6 +339,18 @@ add_action(
 /* Free /shop/ for the designed page: the product archive lives at /all-products/. */
 add_filter( 'woocommerce_register_post_type_product', fn( $a ) => array_merge( $a, [ 'has_archive' => 'all-products' ] ) );
 
+/* POS-only payment methods never appear on the public checkout. */
+add_filter(
+	'woocommerce_available_payment_gateways',
+	function ( $gateways ) {
+		if ( ! ( defined( 'REST_REQUEST' ) && REST_REQUEST ) ) {
+			unset( $gateways['wepos_cash'], $gateways['skynco_pos_card'], $gateways['skynco_pos_venmo'] );
+		}
+		return $gateways;
+	},
+	99
+);
+
 /* Old URL from the first build. */
 add_action(
 	'template_redirect',
