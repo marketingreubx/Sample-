@@ -216,7 +216,7 @@ add_shortcode(
 		<label>Email<input type="email" name="email" required autocomplete="email"></label>
 	</div>
 	<div class="skc__row">
-		<label>Phone <span>(optional)</span><input type="tel" name="phone" autocomplete="tel"></label>
+		<label>Phone (optional)<input type="tel" name="phone" autocomplete="tel"></label>
 		<label>What is it about?<select name="topic"><?php foreach ( $topics as $t ) : ?><option><?php echo esc_html( $t ); ?></option><?php endforeach; ?></select></label>
 	</div>
 	<label>Message<textarea name="message" rows="5" required></textarea></label>
@@ -456,7 +456,7 @@ add_action(
 .skc__row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
 .skc label{display:flex;flex-direction:column;gap:6px;font:600 14px Manrope,sans-serif;color:#3B1530}
 .skc label span{font-weight:400;color:#9A8791}
-.skc input:not([type=checkbox]),.skc select,.skc textarea{width:100%;padding:13px 15px;border:1px solid #EADDE0;border-radius:14px;background:#fff;font:400 15px Manrope,sans-serif;color:#2A1A24}
+.skc input:not([type=checkbox]),.skc select,.skc textarea{width:100%;min-height:50px;height:auto;line-height:1.4;padding:13px 15px;border:1px solid #EADDE0;border-radius:14px;background:#fff;font:400 15px Manrope,sans-serif;color:#2A1A24}
 .skc input:focus,.skc select:focus,.skc textarea:focus{outline:2px solid #D1127E;outline-offset:1px;border-color:transparent}
 .skc .skc__check{flex-direction:row;align-items:center;gap:10px;font-weight:500;color:#6E5A66}
 .skc__check input{width:18px;height:18px;accent-color:#D1127E}

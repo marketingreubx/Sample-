@@ -710,7 +710,7 @@ function lux_reviews_section( $title = 'Reviews' ) {
 	$cards = '';
 	foreach ( lux_reviews_data() as $r ) {
 		$pid    = (int) ( get_option( 'skynco_media_ids', [] )[ 'review-' . sanitize_title( strtok( $r[0], ' ' ) ) ] ?? 0 );
-		$avatar = $pid ? '<img class="lux-review__photo" src="' . esc_url( wp_get_attachment_image_url( $pid, 'thumbnail' ) ) . '" alt="" width="48" height="48" loading="lazy">' : '<span class="lux-review__avatar" aria-hidden="true">' . mb_substr( $r[0], 0, 1 ) . '</span>';
+		$avatar = $pid ? '<img class="lux-review__photo" src="' . esc_url( wp_get_attachment_image_url( $pid, 'thumbnail' ) ) . '" alt="" width="48" height="48" style="width:48px;height:48px;border-radius:50%;object-fit:cover" loading="lazy">' : '<span class="lux-review__avatar" aria-hidden="true">' . mb_substr( $r[0], 0, 1 ) . '</span>';
 		$cards .= '<figure class="lux-review"><div class="lux-review__stars" aria-label="5 out of 5 stars">★★★★★</div><blockquote>“' . $r[2] . '”</blockquote><figcaption>' . $avatar . '<span><strong>' . $r[0] . '</strong><em>' . $r[1] . '</em></span></figcaption></figure>';
 	}
 	$html = '<div class="lux-reviews" role="region" aria-label="Client reviews"><div class="lux-reviews__track"><div class="lux-reviews__set">' . $cards . '</div><div class="lux-reviews__set" aria-hidden="true">' . $cards . '</div></div></div>';
