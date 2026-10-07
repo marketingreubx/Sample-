@@ -346,7 +346,7 @@ HTML;
 						lux_button( 'Full menu and prices ↗', $menu, 'lime' ),
 						640
 					),
-					lux_con( $grid( 4, 2, 1, 16 ), $cards, 'Treatment cards' ),
+					lux_con( $grid( 4, 2, 1, 16 ) + [ 'css_classes' => 'lux-mscroll' ], $cards, 'Treatment cards' ),
 				],
 				'Treatments panel'
 			),
@@ -400,6 +400,7 @@ HTML;
 							'border_radius'        => lux_box( 28 ),
 							'flex_justify_content' => 'center',
 							'flex_align_items'     => 'center',
+							'hide_mobile'          => 'hidden-mobile',
 						],
 						[ lux_img( 'Treatment mask being brushed on', [ 'image' => $img( 'skynco-peel-mask.png' ), 'width' => lux_u( 100, '%' ), 'space' => lux_u( 340 ) ] ) ],
 						'Card: image'
@@ -457,7 +458,7 @@ HTML;
 				lux_button( 'Book Appointment', $book ),
 				640
 			),
-			lux_con( $grid( 4, 2, 1, 32 ), $step_els, 'Steps' ),
+			lux_con( $grid( 4, 2, 2, 32 ) + [ 'grid_gaps_mobile' => lux_gap( 20 ), 'css_classes' => 'lux-steps' ], $step_els, 'Steps' ),
 		]
 	);
 
@@ -484,7 +485,7 @@ HTML;
 		],
 		[
 			lux_con(
-				$col + [ 'width' => lux_u( 44, '%' ), 'width_tablet' => lux_u( 100, '%' ), 'flex_align_items' => 'center' ],
+				$col + [ 'width' => lux_u( 44, '%' ), 'width_tablet' => lux_u( 100, '%' ), 'flex_align_items' => 'center', 'css_classes' => 'lux-story-img' ],
 				[ lux_img( 'Skincare and self-care moments', [ 'image' => $img( 'skynco-our-story.png' ), 'width' => lux_u( 100, '%' ), 'space' => lux_u( 520 ) ] ) ],
 				'Story image'
 			),
