@@ -240,7 +240,8 @@ body{background:#FFF8F6}
 .lux-textlink--light a{color:#FFD6EC!important;border-bottom-color:rgba(255,214,236,.55)!important}
 .lux-textlink--light a:hover{color:#fff!important;border-bottom-color:#fff!important}
 .lux-counter .elementor-counter-number-wrapper{justify-content:flex-start;font-variant-numeric:tabular-nums}
-.lux-counter .elementor-counter-title{text-align:left}
+.lux-counter .elementor-counter-title{text-align:left;text-transform:none!important;letter-spacing:0!important;font:500 15px/1.4 Manrope,sans-serif!important;color:#6E5A66}
+.lux-counter .elementor-counter-number-wrapper{font-family:Fraunces,serif!important;color:#3B1530}
 .lux-concerns-dark .lux-concerns li{border-bottom-color:#5A2E4C;color:#F3DCE8}
 .lux-concerns-dark .lux-concerns b,.lux-concerns-dark .lux-concerns a{color:#FFD6EC;text-decoration:none}
 .lux-concerns-dark .lux-concerns a:hover{color:#fff}

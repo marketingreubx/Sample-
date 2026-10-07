@@ -547,7 +547,7 @@ function lux_contact_elements() {
 			lux_button( 'Call ' . $k['phone'], $k['tel'], 'lime' ),
 			lux_button( 'Book Appointment', $k['book'], 'outline-light' ),
 		],
-		'skynco-facial-treatment-room.png'
+		'skynco-new-client-facial.jpg'
 	);
 
 	$ways = [
@@ -618,8 +618,7 @@ function lux_contact_elements() {
 				],
 				'FAQ band'
 			),
-		],
-		1296
+		]
 	);
 	return $els;
 }
