@@ -869,7 +869,7 @@ a.skd-notice:hover{border-color:#D1127E}
 .skd-notice__b{flex:1;min-width:0;display:flex;flex-direction:column}
 .skd-notice__t{font-size:12px;color:#9A8791;white-space:nowrap;margin-top:2px}
 .skd-notice.is-new .skd-t::after{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;background:#D1127E;margin-left:8px;vertical-align:middle}
-@media(max-width:767px){.skd-notice{flex-wrap:wrap}.skd-notice__t{width:100%;padding-left:52px;margin-top:-4px}.skd-badge{margin-left:6px}.skd-top--page h1{font-size:30px!important}}
+@media(max-width:767px){.skd-back{display:none!important}.skd-top--page h1{margin-top:0!important}.skd-notice{flex-wrap:wrap}.skd-notice__t{width:100%;padding-left:52px;margin-top:-4px}.skd-badge{margin-left:6px}.skd-top--page h1{font-size:30px!important}}
 </style>
 		<?php
 	}
@@ -985,4 +985,14 @@ add_action(
 		}
 	},
 	5
+);
+
+/* Mobile: keep the current page's tab in view. */
+add_action(
+	'wp_footer',
+	function () {
+		if ( is_page( 'account' ) && is_user_logged_in() ) {
+			echo '<script>(function(){var a=document.querySelector(".skd-nav a.is-on");if(a&&a.parentNode.scrollWidth>a.parentNode.clientWidth){a.parentNode.scrollLeft=a.offsetLeft-16;}})();</script>';
+		}
+	}
 );
