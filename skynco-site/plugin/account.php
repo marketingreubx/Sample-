@@ -372,7 +372,7 @@ function skynco_account_signin( $msg ) {
 		'expired'   => 'That link has expired or was already used. Enter your email for a new one.',
 		'bad-email' => 'Please enter a valid email address.',
 	];
-	$h  = '<div class="ska"><section class="ska-hero ska-hero--in"><div class="ska-wrap ska-in">';
+	$h  = '<div class="ska ska--in"><section class="ska-hero ska-hero--in"><div class="ska-wrap ska-in">';
 	$h .= '<div><p class="ska-eyebrow">Client dashboard</p><h1>Your visits, orders <em>and rewards.</em></h1><p class="ska-lead">See upcoming appointments, rebook in a tap, track orders and collect your loyalty treats.</p></div>';
 	$h .= '<div class="ska-signin"><h2>Sign in or create an account</h2><p class="ska-s">No password needed. Use the email you booked or ordered with and we’ll send you a secure link.</p>';
 	if ( isset( $notes[ $msg ] ) ) {
@@ -412,6 +412,8 @@ add_action(
 <style id="skynco-account">
 .ska{font-family:Manrope,sans-serif;color:#2A1A24;background:#FBF6F4;padding-bottom:72px}
 .ska *{box-sizing:border-box}
+.ska p{margin:0}.ska a{text-decoration:none!important}
+.ska .ska-t{margin-bottom:4px}.ska .ska-s a{text-decoration:underline!important}
 .ska-wrap{max-width:1080px;margin:0 auto;padding:0 24px}
 .ska-hero{background:radial-gradient(120% 140% at 85% 0%,#5A2148 0%,#3B1530 45%,#26101F 100%);color:#F7EAF0;padding:72px 0 34px}
 .ska-hero h1{font:400 clamp(34px,5vw,54px)/1.08 Fraunces,serif;margin:8px 0 12px;color:#fff;letter-spacing:-.01em}
@@ -441,7 +443,7 @@ add_action(
 .ska-pill{padding:4px 10px;border-radius:999px;background:#FBEFF0;color:#3B1530;font-size:12px;font-weight:700}
 .ska-empty{padding:18px;border:1px dashed #E2CCD4;border-radius:16px;color:#6E5A66;margin:0}.ska-empty a{color:#D1127E}
 .ska-grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-.ska-card .ska-t+.ska-s{margin-bottom:12px}
+.ska .ska-card .ska-s{margin-bottom:12px}.ska .ska-k{margin-bottom:6px}.ska .ska-lead{margin-top:0}.ska .ska-eyebrow{margin-bottom:0}
 .ska-dots{display:flex;gap:8px;margin:12px 0}
 .ska-dot{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;border:1px dashed #D9BFCB;color:#9A8791;font-size:13px;font-weight:700}
 .ska-dot.is-on{background:#D1127E;border:0;color:#fff}
@@ -452,6 +454,7 @@ add_action(
 .ska-form .ska-check input{width:18px;height:18px;accent-color:#D1127E}
 .ska-form p{grid-column:1/-1;margin:0}
 .ska-note{margin:14px 0 0;padding:12px 16px;border-radius:12px;background:#FFF0F7;border:1px solid #F5C6DD;color:#3B1530;font-size:14px}
+.ska--in{padding-bottom:0}
 .ska-hero--in{padding:80px 0 90px}
 .ska-in{display:grid;grid-template-columns:1.1fr .9fr;gap:40px;align-items:center}
 .ska-signin{color:#2A1A24}
@@ -469,7 +472,7 @@ add_action(
 .ska-hero--in{padding:44px 0 48px}
 .ska-in,.ska-grid2,.ska-form{grid-template-columns:1fr}
 .ska-rem{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;margin-left:-16px;margin-right:-16px;padding:0 16px 6px;scrollbar-width:none}
-.ska-remcard{flex:0 0 82%;scroll-snap-align:start}
+.ska-remcard{flex:0 0 82%;scroll-snap-align:start}.ska-remcard:only-child{flex-basis:100%}
 .ska-row{flex-direction:column;align-items:flex-start;gap:10px}
 .ska-head h2{font-size:24px}
 }
