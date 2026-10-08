@@ -50,9 +50,7 @@ function skynco_send_magic_link() {
 	$throttle = 'skynco_ml_wait_' . md5( strtolower( $email ) );
 	if ( ! get_transient( $throttle ) ) {
 		set_transient( $throttle, 1, MINUTE_IN_SECONDS );
-		$token = wp_generate_password( 40, false );
-		set_transient( 'skynco_ml_' . hash( 'sha256', $token ), strtolower( $email ), 30 * MINUTE_IN_SECONDS );
-		$link = add_query_arg( 'sk_login', $token, $back );
+		$link = skynco_magic_link_url( $email, 30 * MINUTE_IN_SECONDS );
 		$body = '<div style="font-family:Arial,sans-serif;max-width:520px;margin:auto;color:#2A1A24">'
 			. '<h2 style="font-family:Georgia,serif;color:#3B1530;font-weight:500">Your Skyn&amp;Co. sign-in link</h2>'
 			. '<p>Tap the button below to open your client dashboard. The link works once and expires in 30 minutes.</p>'
@@ -62,6 +60,13 @@ function skynco_send_magic_link() {
 	}
 	wp_safe_redirect( add_query_arg( [ 'sk' => 'sent', 'e' => rawurlencode( $email ) ], $back ) );
 	exit;
+}
+
+/** One-time sign-in link for an email address. */
+function skynco_magic_link_url( $email, $ttl ) {
+	$token = wp_generate_password( 40, false );
+	set_transient( 'skynco_ml_' . hash( 'sha256', $token ), strtolower( $email ), $ttl );
+	return add_query_arg( 'sk_login', $token, skynco_account_url() );
 }
 
 add_action(
@@ -484,4 +489,116 @@ add_action(
 </style>
 		<?php
 	}
+);
+
+/* ---------------------------------------------------------------------------
+ * Accounts are created automatically when someone books or orders.
+ * New clients are signed in straight away and emailed a link to their dashboard.
+ * Existing accounts are never signed in this way (that needs the emailed link).
+ * ------------------------------------------------------------------------ */
+function skynco_ensure_client_account( $email, $first = '', $last = '', $phone = '' ) {
+	$email = sanitize_email( $email );
+	if ( ! is_email( $email ) ) {
+		return [ 0, false ];
+	}
+	$user = get_user_by( 'email', $email );
+	if ( $user ) {
+		return [ $user->ID, false ];
+	}
+	$uid = wp_insert_user(
+		[
+			'user_login'   => skynco_unique_login( $email ),
+			'user_email'   => $email,
+			'user_pass'    => wp_generate_password( 24 ),
+			'role'         => get_role( 'customer' ) ? 'customer' : 'subscriber',
+			'first_name'   => $first,
+			'last_name'    => $last,
+			'display_name' => $first ?: strstr( $email, '@', true ),
+		]
+	);
+	if ( is_wp_error( $uid ) ) {
+		return [ 0, false ];
+	}
+	foreach ( [ 'billing_first_name' => $first, 'billing_last_name' => $last, 'billing_email' => $email, 'billing_phone' => $phone ] as $k => $v ) {
+		if ( $v ) {
+			update_user_meta( $uid, $k, $v );
+		}
+	}
+	skynco_link_client_records( get_user_by( 'id', $uid ) );
+	$link = skynco_magic_link_url( $email, 7 * DAY_IN_SECONDS );
+	$body = '<div style="font-family:Arial,sans-serif;max-width:520px;margin:auto;color:#2A1A24">'
+		. '<h2 style="font-family:Georgia,serif;color:#3B1530;font-weight:500">Your Skyn&amp;Co. account is ready' . ( $first ? ', ' . esc_html( $first ) : '' ) . '</h2>'
+		. '<p>We made you a client dashboard so you can see your visits and orders, rebook in a tap and collect loyalty rewards. No password needed.</p>'
+		. '<p style="margin:28px 0"><a href="' . esc_url( $link ) . '" style="background:#D1127E;color:#fff;text-decoration:none;padding:14px 26px;border-radius:999px;font-weight:bold">Open my dashboard</a></p>'
+		. '<p style="font-size:13px;color:#6E5A66">Next time, just enter your email at ' . esc_html( preg_replace( '#^https?://#', '', skynco_account_url() ) ) . ' and we will send you a new link.</p></div>';
+	wp_mail( $email, 'Your Skyn&Co. client dashboard', $body, [ 'Content-Type: text/html; charset=UTF-8' ] );
+	return [ $uid, true ];
+}
+
+function skynco_sign_in_new_client( $uid ) {
+	if ( $uid && ! is_user_logged_in() && ! headers_sent() ) {
+		wp_set_current_user( $uid );
+		wp_set_auth_cookie( $uid, true );
+	}
+}
+
+/* LatePoint bookings. */
+add_action(
+	'latepoint_order_created',
+	function ( $order ) {
+		if ( empty( $order->customer_id ) || ! class_exists( 'OsCustomerModel' ) ) {
+			return;
+		}
+		$c = new OsCustomerModel( $order->customer_id );
+		if ( empty( $c->email ) ) {
+			return;
+		}
+		[ $uid, $new ] = skynco_ensure_client_account( $c->email, $c->first_name, $c->last_name, $c->phone );
+		if ( $new ) {
+			skynco_sign_in_new_client( $uid );
+		}
+	},
+	20
+);
+
+/* WooCommerce orders placed as a guest. */
+add_action(
+	'woocommerce_checkout_order_processed',
+	function ( $order_id ) {
+		$o = wc_get_order( $order_id );
+		if ( ! $o || $o->get_customer_id() ) {
+			return;
+		}
+		[ $uid, $new ] = skynco_ensure_client_account( $o->get_billing_email(), $o->get_billing_first_name(), $o->get_billing_last_name(), $o->get_billing_phone() );
+		if ( $uid ) {
+			$o->set_customer_id( $uid );
+			$o->save();
+		}
+		if ( $new ) {
+			skynco_sign_in_new_client( $uid );
+		}
+	},
+	5
+);
+
+/* LatePoint's own "My bookings" area is replaced by the client dashboard. */
+add_action(
+	'template_redirect',
+	function () {
+		if ( is_page( 'my-bookings' ) ) {
+			wp_safe_redirect( skynco_account_url() );
+			exit;
+		}
+	}
+);
+
+/* Booking confirmation: point to the dashboard. */
+add_action(
+	'latepoint_after_step_content',
+	function ( $step ) {
+		if ( 'confirmation' === $step ) {
+			echo '<p class="sk-lpacct" style="margin:18px 0 0;padding:14px 18px;border-radius:14px;background:#FBEFF0;font:500 14px/1.5 Manrope,sans-serif;color:#3B1530">Your visit is saved in <a href="' . esc_url( skynco_account_url() ) . '">your client dashboard</a>, where you can see your bookings, rebook and collect rewards.</p>';
+		}
+	},
+	5
 );

@@ -298,7 +298,7 @@ add_action(
 .sk-ship__bar span{display:block;height:100%;background:linear-gradient(90deg,#D1127E,#FF8CC8);border-radius:99px;transition:width .6s ease}
 .sk-bump{display:flex;gap:12px;align-items:flex-start;border:2px dashed #D1127E;background:#FFF8F6;border-radius:16px;padding:16px;margin:0 0 18px;cursor:pointer}
 .sk-bump input{margin-top:4px;width:18px;height:18px;accent-color:#D1127E}
-.sk-bump span{display:flex;flex-direction:column;gap:4px;font:400 14px/1.45 Manrope,sans-serif;color:#2A1A24}
+.sk-bump>span{display:flex;flex-direction:column;gap:4px;font:400 14px/1.45 Manrope,sans-serif;color:#2A1A24}
 .sk-bump s{color:#9A8791}
 .sk-bump em{font-style:normal;color:#6E5A66}
 .sk-assure{list-style:none;margin:18px 0 0;padding:16px 18px;background:#FBEFF0;border-radius:16px;font:500 14px/1.6 Manrope,sans-serif;color:#2A1A24}
