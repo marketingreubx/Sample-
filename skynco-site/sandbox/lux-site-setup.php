@@ -319,5 +319,13 @@ body{background:#FFF8F6}
 .ast-header-woo-cart .astra-icon[data-cart-total="0"]::after{display:none!important}
 .ast-header-woo-cart .ast-site-header-cart-data{display:none!important}
 .ast-mobile-header-wrap .ast-grid-right-section{gap:10px}
+
+/* ===== v6b: mobile menu layout fixes ===== */
+#ast-mobile-popup .main-header-menu,#ast-mobile-popup .main-navigation ul{display:flex!important;flex-direction:column!important;width:100%!important}
+#ast-mobile-popup .main-header-menu>.menu-item{width:100%!important;margin:0!important}
+#ast-mobile-popup .ast-mobile-popup-content>.ast-builder-layout-element,#ast-mobile-popup .ast-mobile-popup-content .ast-builder-menu-mobile,#ast-mobile-popup .main-header-bar-navigation,#ast-mobile-popup .site-navigation{width:100%!important;margin:0!important;padding:0!important}
+#ast-mobile-popup .ast-header-button-1,#ast-mobile-popup .ast-header-html-1{justify-content:stretch!important;padding:0!important}
+#ast-mobile-popup .ast-header-button-1 .ast-custom-button{padding:0 24px!important}
+@media (max-width:767px){#ast-scroll-top{bottom:88px!important;right:16px!important;border-radius:50%!important;width:44px;height:44px;display:flex;align-items:center;justify-content:center;background:#3B1530!important}}
 CSS;
 }
