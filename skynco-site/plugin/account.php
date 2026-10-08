@@ -751,7 +751,7 @@ add_action(
 .skd-next__date{flex:none;flex-direction:row;gap:10px;justify-content:flex-start;align-self:flex-start;padding:10px 14px;border-radius:16px}
 .skd-next__date b{font-size:30px}
 .skd-next h2{font-size:26px!important}
-.skd-next__acts .skd-btn{flex:1 1 0;padding:11px 8px;min-width:0}
+.skd-next__acts .skd-btn{flex:1 1 0;padding:11px 8px;min-width:0}.skd-next__acts .skd-btn:first-child:not(:only-child){flex-basis:100%}
 .skd-stats{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
 .skd-stat{padding:14px}
 .skd-quick{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;gap:10px;margin:0;padding:0 0 4px;scrollbar-width:none}
