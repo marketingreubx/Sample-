@@ -508,3 +508,94 @@ add_action(
 	}
 );
 
+
+/* ===========================================================================
+ * Booking upsells (LatePoint)
+ * 1. Review step: "Enhance your visit" add-ons, added to the same booking cart in one tap.
+ * 2. Confirmation step: home-care products, 10% off with GLOW10.
+ * ======================================================================== */
+function skynco_lp_addons() {
+	$ids = get_option( 'skynco_lp_addon_ids', [] );
+	return [
+		[ $ids['led'] ?? 0, 'LED Light Therapy', '+15 min', 25, 'Calms redness and clears breakouts.' ],
+		[ $ids['derma'] ?? 0, 'Dermaplaning', '+20 min', 35, 'Smoother skin, better product absorption.' ],
+		[ $ids['jelly'] ?? 0, 'Hydro-Jelly Mask', '+10 min', 15, 'Cooling, deep hydration to finish.' ],
+		[ $ids['lip'] ?? 0, 'Upper Lip Wax', '+15 min', 10, 'While you’re already here.' ],
+	];
+}
+
+add_action(
+	'latepoint_after_verify_step_content',
+	function () {
+		$cards = '';
+		foreach ( skynco_lp_addons() as $a ) {
+			if ( ! $a[0] ) {
+				continue;
+			}
+			$cards .= '<button type="button" class="sk-lpbump__item" data-service-id="' . (int) $a[0] . '"><span class="sk-lpbump__name">' . esc_html( $a[1] ) . '</span><span class="sk-lpbump__meta">' . esc_html( $a[2] ) . ' · <b>$' . (int) $a[3] . '</b></span><span class="sk-lpbump__desc">' . esc_html( $a[4] ) . '</span><span class="sk-lpbump__add">+ Add</span></button>';
+		}
+		if ( $cards ) {
+			echo '<div class="sk-lpbump"><p class="sk-lpbump__eyebrow">Enhance your visit</p><p class="sk-lpbump__title">Most clients add one of these</p><div class="sk-lpbump__grid">' . $cards . '</div><p class="sk-lpbump__fine">Booked straight after your treatment. Pay at the studio.</p></div>'; // phpcs:ignore
+		}
+	}
+);
+
+add_action(
+	'latepoint_after_step_content',
+	function ( $step ) {
+		if ( 'confirmation' !== $step ) {
+			return;
+		}
+		echo '<div class="sk-lpafter"><p class="sk-lpbump__eyebrow">Before you go</p><p class="sk-lpbump__title">Prep and protect your results at home</p><p class="sk-lpafter__text">Order now and pick it up at your appointment. Use code <b>GLOW10</b> for 10% off.</p>' . do_shortcode( '[skynco_products slugs="glow-kit,recovery-kit,daily-mineral-spf-40" columns="3"]' ) . '</div>'; // phpcs:ignore
+	}
+);
+
+add_action(
+	'wp_footer',
+	function () {
+		?>
+<script>
+(function(){
+	document.addEventListener('click',function(e){
+		var b=e.target.closest('.sk-lpbump__item'); if(!b) return;
+		var form=b.closest('.latepoint-w')||document, trig=form.querySelector('.latepoint-add-another-item-trigger');
+		if(!trig) return; b.classList.add('is-loading');
+		var id=b.getAttribute('data-service-id'), tries=0;
+		trig.click();
+		var t=setInterval(function(){
+			var it=form.querySelector('.os-selectable-item[data-item-id="'+id+'"] .os-service-selector, .os-selectable-item[data-item-id="'+id+'"]');
+			if(it){ clearInterval(t); it.click(); }
+			if(++tries>60) clearInterval(t);
+		},150);
+	});
+})();
+</script>
+		<?php
+	},
+	60
+);
+
+add_action(
+	'wp_head',
+	function () {
+		?>
+<style id="skynco-bump">
+.sk-lpbump,.sk-lpafter{margin:22px 0 6px;padding:20px;border-radius:20px;background:#FBEFF0;border:1px solid #EADDE0;font-family:Manrope,sans-serif}
+.sk-lpbump__eyebrow{margin:0 0 4px;font:700 11px/1 Manrope,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#D1127E}
+.sk-lpbump__title{margin:0 0 14px;font:500 20px/1.25 Fraunces,serif;color:#3B1530}
+.sk-lpbump__grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.sk-lpbump__item{position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:3px;text-align:left;padding:14px 14px 40px;border-radius:16px;border:1px solid #EADDE0;background:#fff;cursor:pointer;transition:border-color .2s,transform .2s}
+.sk-lpbump__item:hover{border-color:#D1127E;transform:translateY(-2px)}
+.sk-lpbump__name{font:600 15px/1.3 Manrope,sans-serif;color:#2A1A24}
+.sk-lpbump__meta{font:500 13px Manrope,sans-serif;color:#6E5A66}.sk-lpbump__meta b{color:#D1127E}
+.sk-lpbump__desc{font:400 12.5px/1.4 Manrope,sans-serif;color:#6E5A66}
+.sk-lpbump__add{position:absolute;left:14px;bottom:12px;font:700 13px Manrope,sans-serif;color:#D1127E}
+.sk-lpbump__item.is-loading{opacity:.6;pointer-events:none}
+.sk-lpbump__fine{margin:10px 0 0;font-size:12px;color:#9A8791}
+.sk-lpafter__text{margin:-6px 0 14px;font-size:14px;color:#6E5A66}
+.sk-lpafter .sk-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+@media(max-width:560px){.sk-lpafter .sk-grid{grid-template-columns:1fr 1fr}}
+</style>
+		<?php
+	}
+);

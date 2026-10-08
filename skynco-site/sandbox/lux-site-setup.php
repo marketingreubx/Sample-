@@ -261,7 +261,7 @@ body{background:#FFF8F6}
 #ast-mobile-popup .main-header-menu .menu-item{border:0!important;background:transparent!important}
 #ast-mobile-popup .main-header-menu .menu-link{display:block!important;padding:13px 0!important;border-bottom:1px solid rgba(255,214,236,.12)!important;font:500 18px/1.3 Manrope,sans-serif!important;letter-spacing:.01em;color:#FFF8F6!important;background:transparent!important}
 #ast-mobile-popup .main-header-menu .current-menu-item>.menu-link{color:#FF8CC8!important}
-#ast-mobile-popup .ast-header-button-1{width:100%;margin-top:28px}
+#ast-mobile-popup .ast-header-button-1{width:100%;margin-top:32px!important}
 #ast-mobile-popup .ast-header-button-1 .ast-builder-button-wrap{width:100%}
 #ast-mobile-popup .ast-header-button-1 .ast-custom-button-link{display:block;width:100%}
 #ast-mobile-popup .ast-header-button-1 .ast-custom-button{display:flex!important;justify-content:center;align-items:center;width:100%;min-height:58px;border-radius:999px!important;background:#D1127E!important;color:#fff!important;font:700 17px Manrope,sans-serif!important}
@@ -285,11 +285,17 @@ body{background:#FFF8F6}
 /* ===== v6: mobile layout ===== */
 @media (max-width:767px){
   /* Mirror the desktop grids at a smaller scale instead of stacking everything */
-  .lux-mscroll{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:10px!important}
-  .lux-mscroll>.e-con{min-height:230px!important;border-radius:20px!important;padding:8px!important}
-  .lux-mscroll .elementor-heading-title{font-size:16px!important;line-height:1.25!important}
-  .lux-mscroll .elementor-widget-text-editor{font-size:13px!important;line-height:19px!important}
-  .lux-mscroll .elementor-widget-icon{display:none}
+  /* Swipeable carousels: one card and a peek of the next */
+  .lux-mscroll{display:flex!important;overflow-x:auto;scroll-snap-type:x mandatory;gap:12px!important;margin:0 -16px;padding:0 16px 4px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+  .lux-mscroll::-webkit-scrollbar,.sk-grid::-webkit-scrollbar{display:none}
+  .lux-mscroll>.e-con{flex:0 0 80%!important;width:80%!important;min-height:360px!important;scroll-snap-align:center}
+  .sk-grid:not(.sk-grid--feature),.sk-grid.sk-grid--feature{display:flex!important;overflow-x:auto;scroll-snap-type:x mandatory;gap:12px!important;margin:0 -16px;padding:0 16px 6px;scrollbar-width:none}
+  .sk-grid>.sk-card{flex:0 0 72%;scroll-snap-align:center}
+  .sk-grid--feature>.sk-card{flex-basis:82%}
+  .sk-grid:not(.sk-grid--feature) .sk-card__short{display:block}
+  .sk-grid:not(.sk-grid--feature) .sk-add{width:auto}
+  .sk-card__title{font-size:19px!important}
+  .sk-lpafter .sk-grid>.sk-card{flex-basis:70%}
   .skba-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:10px}
   .skba-grid .skba:nth-child(3){grid-column:1/-1}
   .skba-grid .skba:nth-child(3) .skba__frame{aspect-ratio:16/10}
@@ -335,5 +341,10 @@ body{background:#FFF8F6}
 
 /* hero overlay: stronger on phones where text sits over the whole photo */
 @media (max-width:767px){.lux-photo-hero>.elementor-background-overlay,.lux-photo-hero::before{background-image:linear-gradient(180deg,rgba(38,16,31,.55) 0%,rgba(38,16,31,.86) 100%)!important}}
+
+/* No light strip under the footer (iOS shows the page background behind the toolbar) */
+html{background:#26101F}
+body{background-color:#FFF8F6}
+.site-footer{padding-bottom:env(safe-area-inset-bottom)}
 CSS;
 }
