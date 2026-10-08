@@ -64,3 +64,55 @@ function lux_snap( $url, $img_max = 420, $menu_open = false, $cookies = [] ) {
 	}
 	return base64_encode( gzencode( $html, 9 ) );
 }
+
+/** Portfolio-quality snapshot: every uploaded image embedded at up to $max px, JPEG quality $q. */
+function lux_snap_hq( $url, $max = 1800, $q = 82, $cookies = [] ) {
+	$html = wp_remote_retrieve_body( wp_remote_get( add_query_arg( 'snap', time(), $url ), [ 'timeout' => 40, 'sslverify' => false, 'cookies' => $cookies ] ) );
+	$site = home_url();
+	$html = preg_replace_callback(
+		'#<link[^>]+href=[\'"](' . preg_quote( $site, '#' ) . '[^\'"]+\.css)(\?[^\'"]*)?[\'"][^>]*>#',
+		function ( $m ) use ( $site ) {
+			$css = @file_get_contents( ABSPATH . ltrim( substr( $m[1], strlen( $site ) ), '/' ) );
+			return false === $css ? '' : '<style>' . $css . '</style>';
+		},
+		$html
+	);
+	$html = preg_replace( '#<script\b[^>]*>.*?</script>#is', '', $html );
+	$html = preg_replace( '#\s(srcset|sizes|data-src)="[^"]*"#', '', $html );
+	$html = str_replace( [ 'loading="lazy"', 'elementor-invisible' ], [ '', '' ], $html );
+	$html = preg_replace( '/class="elementor-element /', 'class="e-lazyloaded elementor-element ', $html );
+	$up   = wp_get_upload_dir();
+	preg_match_all( '#' . preg_quote( $up['baseurl'], '#' ) . '/[^"\'\)\s]+?\.(?:jpe?g|png|webp)#i', $html, $m );
+	$done = [];
+	foreach ( array_unique( $m[0] ) as $u ) {
+		$orig = preg_replace( '/-\d+x\d+(\.(jpe?g|png|webp))$/i', '$1', $u );
+		$file = $up['basedir'] . substr( $orig, strlen( $up['baseurl'] ) );
+		if ( ! file_exists( $file ) ) {
+			$file = $up['basedir'] . substr( $u, strlen( $up['baseurl'] ) );
+		}
+		if ( ! file_exists( $file ) ) {
+			continue;
+		}
+		if ( ! isset( $done[ $file ] ) ) {
+			$im = @imagecreatefromstring( file_get_contents( $file ) );
+			if ( ! $im ) {
+				continue;
+			}
+			$w   = imagesx( $im );
+			$h   = imagesy( $im );
+			$sc  = min( 1, $max / max( $w, $h ) );
+			$n   = imagecreatetruecolor( max( 1, (int) ( $w * $sc ) ), max( 1, (int) ( $h * $sc ) ) );
+			$png = (bool) preg_match( '/\.png$/i', $file );
+			if ( $png ) {
+				imagealphablending( $n, false );
+				imagesavealpha( $n, true );
+			}
+			imagecopyresampled( $n, $im, 0, 0, 0, 0, imagesx( $n ), imagesy( $n ), $w, $h );
+			ob_start();
+			$png ? imagepng( $n, null, 8 ) : imagejpeg( $n, null, $q );
+			$done[ $file ] = 'data:image/' . ( $png ? 'png' : 'jpeg' ) . ';base64,' . base64_encode( ob_get_clean() );
+		}
+		$html = str_replace( $u, $done[ $file ], $html );
+	}
+	return base64_encode( gzencode( $html, 9 ) );
+}
