@@ -80,7 +80,9 @@ add_action(
 	function ( $m ) {
 		$s = skynco_smtp_settings();
 		if ( ! skynco_smtp_on() ) {
-			$m->addReplyTo( get_option( 'admin_email' ), $s['from_name'] ?: 'Skyn&Co.' );
+			if ( ! $m->getReplyToAddresses() ) {
+				$m->addReplyTo( get_option( 'admin_email' ), $s['from_name'] ?: 'Skyn&Co.' );
+			}
 			return;
 		}
 		$m->isSMTP();
