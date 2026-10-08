@@ -533,7 +533,7 @@ add_action(
 	'latepoint_after_verify_step_content',
 	function () {
 		$key    = skynco_lp_cart_key();
-		$chosen = $key ? (array) get_transient( $key ) : [];
+		$chosen = $key ? array_filter( (array) get_transient( $key ) ) : [];
 		$cards  = '';
 		foreach ( skynco_lp_addons() as $k => $a ) {
 			$on     = in_array( $k, $chosen, true );
@@ -551,7 +551,7 @@ function skynco_ajax_lp_addon() {
 	if ( ! $key || ! isset( skynco_lp_addons()[ $addon ] ) ) {
 		wp_send_json_error();
 	}
-	$chosen = (array) get_transient( $key );
+	$chosen = array_filter( (array) get_transient( $key ) );
 	$chosen = ! empty( $_POST['on'] ) ? array_values( array_unique( array_merge( $chosen, [ $addon ] ) ) ) : array_values( array_diff( $chosen, [ $addon ] ) );
 	set_transient( $key, $chosen, DAY_IN_SECONDS );
 	wp_send_json_success( $chosen );
@@ -561,7 +561,7 @@ add_action(
 	'latepoint_order_created',
 	function ( $order ) {
 		$key = skynco_lp_cart_key();
-		if ( ! $key || ! ( $chosen = (array) get_transient( $key ) ) ) {
+		if ( ! $key || ! ( $chosen = array_filter( (array) get_transient( $key ) ) ) ) {
 			return;
 		}
 		$all   = skynco_lp_addons();
