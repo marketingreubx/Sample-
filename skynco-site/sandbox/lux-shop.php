@@ -307,7 +307,7 @@ function lux_shop_elements() {
 		'Your best skin is a <em>routine.</em>',
 		'Products work best alongside regular facials. Book your next visit and Hana will check in on your home care.',
 		null,
-		[ lux_button( 'Book Appointment', $k['book'], 'lime' ), lux_button( 'Gift card', home_url( '/product/skynco-gift-card/' ), 'outline-light' ) ]
+		[ lux_button( 'Book Appointment', $k['services'], 'lime' ), lux_button( 'Gift card', home_url( '/product/skynco-gift-card/' ), 'outline-light' ) ]
 	);
 	return $els;
 }

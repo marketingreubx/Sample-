@@ -288,13 +288,13 @@ function skynco_account_shortcode() {
 	$h .= '</section>';
 
 	// Visits.
-	$h .= '<section class="ska-wrap ska-sec" id="visits"><div class="ska-head"><h2>Visits</h2><a class="ska-btn ska-btn--ghost" href="' . esc_url( $book ) . '">Book a visit</a></div>';
+	$h .= '<section class="ska-wrap ska-sec" id="visits"><div class="ska-head"><h2>Visits</h2><a class="ska-btn ska-btn--ghost" href="' . esc_url( home_url( '/services/' ) ) . '">Book a visit</a></div>';
 	if ( $bookings['upcoming'] ) {
 		foreach ( $bookings['upcoming'] as $b ) {
 			$h .= '<div class="ska-row ska-row--next"><div><p class="ska-t">' . esc_html( $b->service ) . '</p><p class="ska-s">' . esc_html( $b->when ) . ' · ' . (int) $b->duration . ' min · Code ' . esc_html( $b->booking_code ) . '</p></div><div class="ska-acts"><span class="ska-pill">' . esc_html( ucfirst( $b->status ) ) . '</span><a href="' . esc_url( $tel . '?&body=' . rawurlencode( 'Hi Hana, I need to change my booking ' . $b->booking_code ) ) . '">Change</a></div></div>';
 		}
 	} else {
-		$h .= '<p class="ska-empty">No upcoming visits. <a href="' . esc_url( $book ) . '">Book your next one</a>.</p>';
+		$h .= '<p class="ska-empty">No upcoming visits. <a href="' . esc_url( home_url( '/services/' ) ) . '">Book your next one</a>.</p>';
 	}
 	if ( $bookings['past'] ) {
 		$h .= '<p class="ska-sub">Past visits</p>';

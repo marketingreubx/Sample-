@@ -78,7 +78,7 @@ function lux_faq_elements() {
 		'FAQ',
 		'Questions, <em>answered.</em>',
 		'Everything clients ask before their first visit, about results and downtime, booking, and our shop. Still unsure? Call ' . $k['phone'] . '.',
-		[ lux_button( 'Book Appointment', $k['book'], 'lime' ), lux_button( 'Studio policies', home_url( '/policies/' ), 'outline-light' ) ],
+		[ lux_button( 'Book Appointment', $k['services'], 'lime' ), lux_button( 'Studio policies', home_url( '/policies/' ), 'outline-light' ) ],
 		'skynco-peel-mask.png',
 		'faq'
 	);

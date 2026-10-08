@@ -10,6 +10,7 @@ if ( ! defined( 'ABSPATH' ) || function_exists( 'lux_home_elements' ) ) {
 function lux_home_elements() {
 	$book  = home_url( '/book/' );
 	$menu  = '/services/';
+	$svcs  = home_url( '/services/' );
 	$terms = '/policies/';
 	$tel   = 'tel:+18572284708';
 
@@ -86,7 +87,7 @@ function lux_home_elements() {
 			lux_con(
 				$row + [ 'flex_wrap' => 'wrap', 'flex_gap' => lux_gap( 12 ), 'margin' => lux_box( 12, 0, 0, 0 ) ],
 				[
-					lux_button( 'Book Appointment', $book, 'lime', [ 'align_mobile' => 'justify', '_element_width_mobile' => 'inherit' ] ),
+					lux_button( 'Book Appointment', $svcs, 'lime', [ 'align_mobile' => 'justify', '_element_width_mobile' => 'inherit' ] ),
 					lux_button( 'View Treatments ↓', '#treatments', 'outline-light', [ 'align_mobile' => 'justify', '_element_width_mobile' => 'inherit' ] ),
 				],
 				'Buttons'
@@ -455,7 +456,7 @@ HTML;
 		[
 			lux_head_row(
 				[ lux_heading( 'Four steps, and you always know what comes next.', 'h2', 'h2' ) ],
-				lux_button( 'Book Appointment', $book ),
+				lux_button( 'Book Appointment', $svcs ),
 				640
 			),
 			lux_con( $grid( 4, 2, 2, 32 ) + [ 'grid_gaps_mobile' => lux_gap( 20 ), 'css_classes' => 'lux-steps' ], $step_els, 'Steps' ),
@@ -500,7 +501,7 @@ HTML;
 						[ lux_counter( 10, '+', 'years in beauty' ), lux_counter( 8, '+', 'years hands-on' ), lux_counter( 90, '', 'five-star reviews' ) ],
 						'Stats'
 					),
-					lux_button( 'Book with Hana', $book, 'outline' ),
+					lux_button( 'Book with Hana', $svcs, 'outline' ),
 				],
 				'Story text'
 			),
@@ -536,7 +537,7 @@ HTML;
 					lux_con(
 						$row + [ 'flex_wrap' => 'wrap', 'flex_justify_content' => 'center', 'flex_gap' => lux_gap( 12 ), 'margin' => lux_box( 18, 0, 0, 0 ) ],
 						[
-							lux_button( 'Book Appointment', $book, 'lime' ),
+							lux_button( 'Book Appointment', $svcs, 'lime' ),
 							lux_button( 'Call (857) 228-4708', $tel, 'outline-light' ),
 						],
 						'Buttons'
