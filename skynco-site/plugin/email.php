@@ -26,6 +26,17 @@ function skynco_smtp_settings() {
 	);
 }
 
+/** SMTP is only used once a password has been saved, so mail never stops working. */
+function skynco_smtp_on() {
+	$s = skynco_smtp_settings();
+	return '1' === $s['enabled'] && $s['host'] && $s['user'] && $s['pass'];
+}
+
+/** Sender used while SMTP is not connected: the site's own domain, never a Gmail address it can't send for. */
+function skynco_site_sender() {
+	return 'noreply@' . preg_replace( '/^www\./', '', (string) wp_parse_url( home_url(), PHP_URL_HOST ) );
+}
+
 function skynco_smtp_presets() {
 	return [
 		'gmail'     => [ 'Gmail / Google Workspace', 'smtp.gmail.com', '587', 'tls', 'Use an App Password (Google Account → Security → 2-Step Verification → App passwords).' ],
@@ -39,7 +50,7 @@ add_filter(
 	'wp_mail_from',
 	function ( $from ) {
 		$s = skynco_smtp_settings();
-		return '1' === $s['enabled'] && $s['from_email'] ? $s['from_email'] : $from;
+		return skynco_smtp_on() ? ( $s['from_email'] ?: $s['user'] ) : skynco_site_sender();
 	},
 	99
 );
@@ -56,7 +67,10 @@ foreach ( [ 'woocommerce_email_from_address' => 'from_email', 'woocommerce_email
 		'pre_option_' . $opt,
 		function ( $v ) use ( $key ) {
 			$s = skynco_smtp_settings();
-			return '1' === $s['enabled'] && $s[ $key ] ? $s[ $key ] : $v;
+			if ( 'from_email' === $key ) {
+				return skynco_smtp_on() ? ( $s['from_email'] ?: $s['user'] ) : skynco_site_sender();
+			}
+			return $s[ $key ] ?: $v;
 		}
 	);
 }
@@ -65,7 +79,8 @@ add_action(
 	'phpmailer_init',
 	function ( $m ) {
 		$s = skynco_smtp_settings();
-		if ( '1' !== $s['enabled'] || ! $s['host'] || ! $s['user'] ) {
+		if ( ! skynco_smtp_on() ) {
+			$m->addReplyTo( get_option( 'admin_email' ), $s['from_name'] ?: 'Skyn&Co.' );
 			return;
 		}
 		$m->isSMTP();
@@ -144,7 +159,7 @@ function skynco_page_email() {
 	if ( isset( $msgs[ $n ] ) ) {
 		echo '<div class="notice notice-' . ( 'test-fail' === $n ? 'error' : 'success' ) . '"><p>' . esc_html( $msgs[ $n ] ) . '</p></div>';
 	}
-	$on = '1' === $s['enabled'] && $s['host'] && $s['user'];
+	$on = skynco_smtp_on();
 	echo '<div class="sk-card"><p>Status: <b>' . ( $on ? 'Sending through ' . esc_html( $s['host'] ) . ' as ' . esc_html( $s['from_email'] ) : 'Not connected. Emails are sent by the web server and often land in spam.' ) . '</b></p>';
 	echo '<p>Pick your provider to fill in the server details, then add the mailbox login.</p><p>';
 	foreach ( skynco_smtp_presets() as $k => $p ) {

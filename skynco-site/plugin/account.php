@@ -27,8 +27,8 @@ function skynco_loyalty() {
 	return [ 6, 'a complimentary LED Light Therapy add-on' ];
 }
 
-function skynco_account_url() {
-	return home_url( '/account/' );
+function skynco_account_url( $tab = '' ) {
+	return home_url( '/account/' . ( $tab ? $tab . '/' : '' ) );
 }
 
 /* ---------------------------------------------------------------------------
@@ -231,7 +231,7 @@ add_action(
 		update_user_meta( $uid, 'billing_first_name', $first );
 		update_user_meta( $uid, 'skynco_wa_optin', empty( $_POST['wa'] ) ? '0' : '1' );
 		update_user_meta( $uid, 'skynco_birthday', sanitize_text_field( wp_unslash( $_POST['birthday'] ?? '' ) ) );
-		wp_safe_redirect( add_query_arg( 'sk', 'saved', skynco_account_url() ) . '#profile' );
+		wp_safe_redirect( add_query_arg( 'sk', 'saved', skynco_account_url( 'profile' ) ) );
 		exit;
 	}
 );
@@ -240,6 +240,36 @@ add_action(
  * Shortcode
  * ------------------------------------------------------------------------ */
 add_shortcode( 'skynco_account', 'skynco_account_shortcode' );
+
+/* Separate pages: /account/visits/, /account/orders/ … */
+function skynco_dash_tabs() {
+	return [
+		''              => [ 'home', 'Overview', 'Your next visit, reminders and shortcuts.' ],
+		'visits'        => [ 'calendar', 'Visits', 'Upcoming appointments and your treatment history.' ],
+		'orders'        => [ 'bag', 'Orders', 'Your home-care orders and gift cards.' ],
+		'rewards'       => [ 'star', 'Rewards', 'Your Glow Club card, perks and gifts.' ],
+		'notifications' => [ 'bell', 'Notifications', 'Booking and order updates from the studio.' ],
+		'profile'       => [ 'user', 'Profile', 'Your details and how we keep in touch.' ],
+	];
+}
+
+add_action(
+	'init',
+	function () {
+		add_rewrite_rule( '^account/(visits|orders|rewards|notifications|profile)/?$', 'index.php?pagename=account&sk_tab=$matches[1]', 'top' );
+		if ( get_option( 'skynco_dash_rewrite' ) !== '2' ) {
+			flush_rewrite_rules( false );
+			update_option( 'skynco_dash_rewrite', '2' );
+		}
+	}
+);
+add_filter(
+	'query_vars',
+	function ( $v ) {
+		$v[] = 'sk_tab';
+		return $v;
+	}
+);
 
 /** Small line icons (no emoji). */
 function skynco_icon( $name ) {
@@ -256,8 +286,34 @@ function skynco_icon( $name ) {
 		'sparkle'  => '<path d="M12 3.5c.7 4.3 2.2 5.8 6.5 6.5-4.3.7-5.8 2.2-6.5 6.5-.7-4.3-2.2-5.8-6.5-6.5 4.3-.7 5.8-2.2 6.5-6.5zM18.5 15.5c.3 1.7.9 2.3 2.5 2.5-1.6.3-2.2.9-2.5 2.5-.3-1.6-.9-2.2-2.5-2.5 1.6-.2 2.2-.8 2.5-2.5z"/>',
 		'out'      => '<path d="M14 4.5h5.5v15H14M10 8l-4 4 4 4M6 12h10"/>',
 		'arrow'    => '<path d="M5 12h14M13 6l6 6-6 6"/>',
+		'bell'     => '<path d="M6 16.5V11a6 6 0 0 1 12 0v5.5l1.5 2h-15z"/><path d="M10 20.5a2 2 0 0 0 4 0"/>',
 	];
 	return '<svg class="skd-i" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' . ( $p[ $name ] ?? '' ) . '</svg>';
+}
+
+/** Everything the dashboard pages need, gathered once. */
+function skynco_dash_context() {
+	$user = wp_get_current_user();
+	$c    = [
+		'user'     => $user,
+		'first'    => $user->first_name ?: skynco_client_first_name( $user->user_email ) ?: $user->display_name,
+		'bookings' => skynco_client_bookings( $user ),
+		'orders'   => skynco_client_orders( $user ),
+		'book'     => home_url( '/book/' ),
+		'svcs'     => home_url( '/services/' ),
+		'sms'      => 'sms:+18572284708',
+		'map'      => 'https://maps.google.com/?q=' . rawurlencode( 'Skyn&Co. 150 Arsenal St Suite 210 Watertown MA 02472' ),
+		'bday'     => get_user_meta( $user->ID, 'skynco_birthday', true ),
+	];
+	$c['bookings'] += [ 'upcoming' => [], 'past' => [] ];
+	$c['next']      = $c['bookings']['upcoming'][0] ?? null;
+	$c['last']      = $c['bookings']['past'][0] ?? null;
+	[ $c['goal'], $c['treat'] ] = skynco_loyalty();
+	$c['visits'] = count( $c['bookings']['past'] );
+	$c['stamp']  = $c['visits'] % $c['goal'];
+	$c['earned'] = (int) floor( $c['visits'] / $c['goal'] );
+	$c['unread'] = function_exists( 'skynco_notices_unread' ) ? skynco_notices_unread( 'client', $user->user_email ) : 0;
+	return $c;
 }
 
 function skynco_account_shortcode() {
@@ -265,219 +321,252 @@ function skynco_account_shortcode() {
 	if ( ! is_user_logged_in() ) {
 		return skynco_account_signin( $msg );
 	}
-	$user     = wp_get_current_user();
-	$first    = $user->first_name ?: skynco_client_first_name( $user->user_email ) ?: $user->display_name;
-	$bookings = skynco_client_bookings( $user );
-	$orders   = skynco_client_orders( $user );
-	$book     = home_url( '/book/' );
-	$svcs     = home_url( '/services/' );
-	$sms      = 'sms:+18572284708';
-	$map      = 'https://maps.google.com/?q=' . rawurlencode( 'Skyn&Co. 150 Arsenal St Suite 210 Watertown MA 02472' );
-	$next     = $bookings['upcoming'][0] ?? null;
-	$last     = $bookings['past'][0] ?? null;
-	[ $goal, $treat ] = skynco_loyalty();
-	$visits   = count( $bookings['past'] );
-	$stamp    = $visits % $goal;
-	$earned   = (int) floor( $visits / $goal );
-	$initials = strtoupper( mb_substr( $first, 0, 1 ) . mb_substr( $user->last_name ?: '', 0, 1 ) );
-	$hour     = (int) wp_date( 'G' );
-	$greet    = $hour < 12 ? 'Good morning' : ( $hour < 18 ? 'Good afternoon' : 'Good evening' );
-	$since    = $user->user_registered ? wp_date( 'F Y', strtotime( $user->user_registered ) ) : '';
-	$bday     = get_user_meta( $user->ID, 'skynco_birthday', true );
+	$tabs = skynco_dash_tabs();
+	$tab  = sanitize_key( (string) get_query_var( 'sk_tab' ) );
+	$tab  = isset( $tabs[ $tab ] ) ? $tab : '';
+	$c    = skynco_dash_context();
 
-	$h = '<div class="skd"><div class="skd-wrap">';
-
-	/* ---------- Sidebar ---------- */
-	$nav = [ 'overview' => [ 'home', 'Overview' ], 'visits' => [ 'calendar', 'Visits' ], 'orders' => [ 'bag', 'Orders' ], 'rewards' => [ 'star', 'Rewards' ], 'profile' => [ 'user', 'Profile' ] ];
-	$h  .= '<aside class="skd-side"><div class="skd-me"><span class="skd-avatar">' . esc_html( $initials ?: 'S' ) . '</span><div><p class="skd-name">' . esc_html( $first ) . '</p><p class="skd-since">' . ( $since ? 'Client since ' . esc_html( $since ) : 'Skyn&amp;Co. client' ) . '</p></div></div>';
-	$h  .= '<div class="skd-tier"><span class="skd-tier__k">Glow Club</span><span class="skd-tier__v">' . (int) $stamp . ' of ' . (int) $goal . ' visits to your treat</span><span class="skd-tier__bar"><i style="width:' . (int) round( $stamp / $goal * 100 ) . '%"></i></span></div>';
-	$h  .= '<nav class="skd-nav" aria-label="Dashboard">';
-	foreach ( $nav as $id => $n ) {
-		$h .= '<a href="#' . $id . '" data-sec="' . $id . '"' . ( 'overview' === $id ? ' class="is-on"' : '' ) . '>' . skynco_icon( $n[0] ) . '<span>' . $n[1] . '</span></a>';
-	}
-	$h .= '</nav><a class="skd-signout" href="' . esc_url( wp_logout_url( home_url( '/' ) ) ) . '">' . skynco_icon( 'out' ) . 'Sign out</a>';
-	$h .= '<div class="skd-help"><p>Questions about your skin or a booking?</p><a href="' . esc_url( $sms ) . '">' . skynco_icon( 'chat' ) . 'Text Hana</a></div></aside>';
-
-	/* ---------- Main ---------- */
+	$h  = '<div class="skd"><div class="skd-wrap">' . skynco_dash_sidebar( $c, $tab );
 	$h .= '<main class="skd-main">';
 	if ( 'saved' === $msg ) {
 		$h .= '<p class="skd-note">Your details are saved.</p>';
 	}
-	$h .= '<header class="skd-top" id="overview"><p class="skd-eyebrow">' . esc_html( $greet ) . '</p><h1>Hi ' . esc_html( $first ) . ', <em>welcome back.</em></h1><p class="skd-date">' . esc_html( wp_date( 'l, F j' ) ) . '</p></header>';
+	if ( '' === $tab ) {
+		$hour  = (int) wp_date( 'G' );
+		$greet = $hour < 12 ? 'Good morning' : ( $hour < 18 ? 'Good afternoon' : 'Good evening' );
+		$h    .= '<header class="skd-top"><p class="skd-eyebrow">' . esc_html( $greet ) . '</p><h1>Hi ' . esc_html( $c['first'] ) . ', <em>welcome back.</em></h1><p class="skd-date">' . esc_html( wp_date( 'l, F j' ) ) . '</p></header>';
+	} else {
+		$h .= '<header class="skd-top skd-top--page"><a class="skd-back" href="' . esc_url( skynco_account_url() ) . '">' . skynco_icon( 'home' ) . 'Overview</a><h1>' . esc_html( $tabs[ $tab ][1] ) . '</h1><p class="skd-date">' . esc_html( $tabs[ $tab ][2] ) . '</p></header>';
+	}
+	$fn = 'skynco_dash_page_' . ( $tab ?: 'overview' );
+	$h .= $fn( $c );
+	$h .= '</main></div></div>';
+	return $h;
+}
 
-	// Next appointment hero.
+function skynco_dash_sidebar( $c, $tab ) {
+	$user     = $c['user'];
+	$initials = strtoupper( mb_substr( $c['first'], 0, 1 ) . mb_substr( $user->last_name ?: '', 0, 1 ) );
+	$since    = $user->user_registered ? wp_date( 'F Y', strtotime( $user->user_registered ) ) : '';
+	$h        = '<aside class="skd-side"><div class="skd-me"><span class="skd-avatar">' . esc_html( $initials ?: 'S' ) . '</span><div><p class="skd-name">' . esc_html( $c['first'] ) . '</p><p class="skd-since">' . ( $since ? 'Client since ' . esc_html( $since ) : 'Skyn&amp;Co. client' ) . '</p></div></div>';
+	$h       .= '<div class="skd-tier"><span class="skd-tier__k">Glow Club</span><span class="skd-tier__v">' . (int) $c['stamp'] . ' of ' . (int) $c['goal'] . ' visits to your treat</span><span class="skd-tier__bar"><i style="width:' . (int) round( $c['stamp'] / $c['goal'] * 100 ) . '%"></i></span></div>';
+	$h       .= '<nav class="skd-nav" aria-label="Dashboard">';
+	foreach ( skynco_dash_tabs() as $id => $n ) {
+		$badge = 'notifications' === $id && $c['unread'] ? '<em class="skd-badge">' . (int) $c['unread'] . '</em>' : '';
+		$h    .= '<a href="' . esc_url( skynco_account_url( $id ) ) . '"' . ( $id === $tab ? ' class="is-on" aria-current="page"' : '' ) . '>' . skynco_icon( $n[0] ) . '<span>' . esc_html( $n[1] ) . '</span>' . $badge . '</a>';
+	}
+	$h .= '</nav><a class="skd-signout" href="' . esc_url( wp_logout_url( home_url( '/' ) ) ) . '">' . skynco_icon( 'out' ) . 'Sign out</a>';
+	$h .= '<div class="skd-help"><p>Questions about your skin or a booking?</p><a href="' . esc_url( $c['sms'] ) . '">' . skynco_icon( 'chat' ) . 'Text Hana</a></div></aside>';
+	return $h;
+}
+
+function skynco_dash_next_card( $c ) {
+	$next = $c['next'];
+	$last = $c['last'];
 	if ( $next ) {
 		$days = max( 0, (int) floor( ( $next->ts - time() ) / DAY_IN_SECONDS ) );
 		$when = $days ? 'In ' . $days . ' day' . ( 1 === $days ? '' : 's' ) : 'Today';
-		$h   .= '<section class="skd-next"><div class="skd-next__date"><span>' . esc_html( wp_date( 'M', $next->ts ) ) . '</span><b>' . esc_html( wp_date( 'j', $next->ts ) ) . '</b><span>' . esc_html( wp_date( 'D', $next->ts ) ) . '</span></div>';
-		$h   .= '<div class="skd-next__body"><p class="skd-next__k">Your next visit <span class="skd-pill skd-pill--glow">' . esc_html( $when ) . '</span></p><h2>' . esc_html( $next->service ) . '</h2><p class="skd-next__meta">' . skynco_icon( 'clock' ) . esc_html( wp_date( 'g:i a', $next->ts ) ) . ' · ' . (int) $next->duration . ' min</p><p class="skd-next__meta">' . skynco_icon( 'pin' ) . '150 Arsenal St, Suite 210, Watertown</p>';
-		$h   .= '<div class="skd-next__acts">';
+		$h    = '<section class="skd-next"><div class="skd-next__date"><span>' . esc_html( wp_date( 'M', $next->ts ) ) . '</span><b>' . esc_html( wp_date( 'j', $next->ts ) ) . '</b><span>' . esc_html( wp_date( 'D', $next->ts ) ) . '</span></div>';
+		$h   .= '<div class="skd-next__body"><p class="skd-next__k">Your next visit <span class="skd-pill skd-pill--glow">' . esc_html( $when ) . '</span></p><h2>' . esc_html( $next->service ) . '</h2><p class="skd-next__meta">' . skynco_icon( 'clock' ) . esc_html( wp_date( 'g:i a', $next->ts ) ) . ' · ' . (int) $next->duration . ' min</p><p class="skd-next__meta">' . skynco_icon( 'pin' ) . '150 Arsenal St, Suite 210, Watertown</p><div class="skd-next__acts">';
 		if ( function_exists( 'skynco_gcal_url' ) && ! empty( $next->end_datetime_utc ) ) {
 			$h .= '<a class="skd-btn skd-btn--light" href="' . esc_url( skynco_gcal_url( $next ) ) . '" target="_blank" rel="noopener">Add to calendar</a>';
 		}
-		$h .= '<a class="skd-btn skd-btn--ghost" href="' . esc_url( $map ) . '" target="_blank" rel="noopener">Directions</a><a class="skd-btn skd-btn--ghost" href="' . esc_url( $sms . '?&body=' . rawurlencode( 'Hi Hana, I need to change my booking ' . $next->booking_code ) ) . '">Change</a></div></div></section>';
-	} else {
-		$label = $last ? 'Time for your next ' . $last->service . '?' : 'Ready for your first glow?';
-		$link  = $last ? add_query_arg( 'service', (int) $last->service_id, $book ) : add_query_arg( 'service', 'new-client-facial', $book );
-		$h    .= '<section class="skd-next skd-next--empty"><div class="skd-next__body"><p class="skd-next__k">No upcoming visits</p><h2>' . esc_html( $label ) . '</h2><p class="skd-next__meta">' . ( $last ? 'Regular visits keep your results going. Most clients rebook every 4 to 6 weeks.' : 'Start with the New Client Facial &amp; Consultation, made for your skin.' ) . '</p><div class="skd-next__acts"><a class="skd-btn skd-btn--light" href="' . esc_url( $link ) . '">' . ( $last ? 'Rebook' : 'Book now' ) . '</a><a class="skd-btn skd-btn--ghost" href="' . esc_url( $svcs ) . '">See treatments</a></div></div></section>';
+		return $h . '<a class="skd-btn skd-btn--ghost" href="' . esc_url( $c['map'] ) . '" target="_blank" rel="noopener">Directions</a><a class="skd-btn skd-btn--ghost" href="' . esc_url( $c['sms'] . '?&body=' . rawurlencode( 'Hi Hana, I need to change my booking ' . $next->booking_code ) ) . '">Change</a></div></div></section>';
 	}
+	$label = $last ? 'Time for your next ' . $last->service . '?' : 'Ready for your first glow?';
+	$link  = $last ? add_query_arg( 'service', (int) $last->service_id, $c['book'] ) : add_query_arg( 'service', 'new-client-facial', $c['book'] );
+	return '<section class="skd-next skd-next--empty"><div class="skd-next__body"><p class="skd-next__k">No upcoming visits</p><h2>' . esc_html( $label ) . '</h2><p class="skd-next__meta">' . ( $last ? 'Regular visits keep your results going. Most clients rebook every 4 to 6 weeks.' : 'Start with the New Client Facial &amp; Consultation, made for your skin.' ) . '</p><div class="skd-next__acts"><a class="skd-btn skd-btn--light" href="' . esc_url( $link ) . '">' . ( $last ? 'Rebook' : 'Book now' ) . '</a><a class="skd-btn skd-btn--ghost" href="' . esc_url( $c['svcs'] ) . '">See treatments</a></div></div></section>';
+}
 
-	// Stats.
+/* ---------- Overview ---------- */
+function skynco_dash_page_overview( $c ) {
+	$h     = skynco_dash_next_card( $c );
 	$stats = [
-		[ 'calendar', count( $bookings['upcoming'] ), 'Upcoming', '#visits' ],
-		[ 'sparkle', $visits, 'Visits so far', '#visits' ],
-		[ 'bag', count( $orders ), 'Orders', '#orders' ],
-		[ 'star', $stamp . '/' . $goal, 'Loyalty stamps', '#rewards' ],
+		[ 'calendar', count( $c['bookings']['upcoming'] ), 'Upcoming', 'visits' ],
+		[ 'bag', count( $c['orders'] ), 'Orders', 'orders' ],
+		[ 'star', $c['stamp'] . '/' . $c['goal'], 'Loyalty stamps', 'rewards' ],
+		[ 'bell', $c['unread'], 'New updates', 'notifications' ],
 	];
 	$h .= '<section class="skd-stats">';
 	foreach ( $stats as $s ) {
-		$h .= '<a class="skd-stat" href="' . $s[3] . '"><span class="skd-stat__i">' . skynco_icon( $s[0] ) . '</span><b>' . esc_html( (string) $s[1] ) . '</b><span>' . esc_html( $s[2] ) . '</span></a>';
+		$h .= '<a class="skd-stat" href="' . esc_url( skynco_account_url( $s[3] ) ) . '"><span class="skd-stat__i">' . skynco_icon( $s[0] ) . '</span><b>' . esc_html( (string) $s[1] ) . '</b><span>' . esc_html( $s[2] ) . '</span></a>';
 	}
 	$h .= '</section>';
 
-	// For you (reminders).
+	// Reminders.
 	$rem = [];
-	if ( $last && ! $next ) {
-		$due   = $last->ts + skynco_rebook_weeks( $last->service ) * WEEK_IN_SECONDS;
-		$rem[] = [ 'calendar', $due <= time() ? 'Your ' . $last->service . ' is due' : 'Next ' . $last->service . ' due ' . wp_date( 'M j', $due ), 'Book now to keep your favourite time.', add_query_arg( 'service', (int) $last->service_id, $book ), 'Rebook' ];
+	if ( $c['last'] && ! $c['next'] ) {
+		$due   = $c['last']->ts + skynco_rebook_weeks( $c['last']->service ) * WEEK_IN_SECONDS;
+		$rem[] = [ 'calendar', $due <= time() ? 'Your ' . $c['last']->service . ' is due' : 'Next ' . $c['last']->service . ' due ' . wp_date( 'M j', $due ), 'Book now to keep your favourite time.', add_query_arg( 'service', (int) $c['last']->service_id, $c['book'] ), 'Rebook' ];
 	}
-	if ( $next ) {
-		$rem[] = [ 'sparkle', 'Prep for your ' . $next->service, 'Skip retinoids and exfoliants for 2 days before and arrive with clean skin.', '', '' ];
+	if ( $c['next'] ) {
+		$rem[] = [ 'sparkle', 'Prep for your ' . $c['next']->service, 'Skip retinoids and exfoliants for 2 days before and arrive with clean skin.', '', '' ];
 	}
-	foreach ( $orders as $o ) {
-		$age = time() - ( $o->get_date_created() ? $o->get_date_created()->getTimestamp() : time() );
-		if ( $age > 60 * DAY_IN_SECONDS ) {
-			foreach ( $o->get_items() as $it ) {
-				$p = $it->get_product();
-				if ( $p && ! skynco_is_gift_item( $it ) && $p->is_purchasable() ) {
-					$rem[] = [ 'bag', 'Running low on ' . $p->get_name() . '?', 'Most bottles last about two months.', add_query_arg( 'add-to-cart', $p->get_id(), wc_get_cart_url() ), 'Restock' ];
-					break 2;
-				}
-			}
-		}
-	}
-	if ( ! $orders ) {
+	if ( ! $c['orders'] ) {
 		$rem[] = [ 'gift', 'Your welcome gift: 10% off', 'Use code GLOW10 on your first home-care order.', home_url( '/shop/' ), 'Shop now' ];
+	} elseif ( ! $c['bday'] ) {
+		$rem[] = [ 'star', 'Add your birthday', 'Get 15% off in your birthday month.', skynco_account_url( 'profile' ), 'Add it' ];
 	}
-	if ( ! $bday ) {
-		$rem[] = [ 'star', 'Add your birthday', 'Get 15% off in your birthday month.', '#profile', 'Add it' ];
+	if ( $rem ) {
+		$h .= '<section class="skd-sec"><div class="skd-head"><h2>For you</h2></div><div class="skd-rem">';
+		foreach ( array_slice( $rem, 0, 2 ) as $r ) {
+			$h .= '<div class="skd-remcard"><span class="skd-remcard__i">' . skynco_icon( $r[0] ) . '</span><div><p class="skd-t">' . esc_html( $r[1] ) . '</p><p class="skd-s">' . esc_html( $r[2] ) . '</p>' . ( $r[3] ? '<a class="skd-link" href="' . esc_url( $r[3] ) . '">' . esc_html( $r[4] ) . skynco_icon( 'arrow' ) . '</a>' : '' ) . '</div></div>';
+		}
+		$h .= '</div></section>';
 	}
-	$h .= '<section class="skd-sec"><div class="skd-head"><h2>For you</h2></div><div class="skd-rem">';
-	foreach ( array_slice( $rem, 0, 3 ) as $r ) {
-		$h .= '<div class="skd-remcard"><span class="skd-remcard__i">' . skynco_icon( $r[0] ) . '</span><div><p class="skd-t">' . esc_html( $r[1] ) . '</p><p class="skd-s">' . esc_html( $r[2] ) . '</p>' . ( $r[3] ? '<a class="skd-link" href="' . esc_url( $r[3] ) . '">' . esc_html( $r[4] ) . skynco_icon( 'arrow' ) . '</a>' : '' ) . '</div></div>';
-	}
-	$h .= '</div></section>';
 
-	// Quick actions.
+	// Latest updates.
+	$notes = function_exists( 'skynco_notices_get' ) ? skynco_notices_get( 'client', $c['user']->user_email, 3 ) : [];
+	if ( $notes ) {
+		$h .= '<section class="skd-sec"><div class="skd-head"><h2>Latest updates</h2><a class="skd-link" href="' . esc_url( skynco_account_url( 'notifications' ) ) . '">See all' . skynco_icon( 'arrow' ) . '</a></div>' . skynco_dash_notice_list( $notes ) . '</section>';
+	}
+
 	$quick = [
-		[ 'calendar', 'Book a visit', $svcs ],
+		[ 'calendar', 'Book a visit', $c['svcs'] ],
 		[ 'bag', 'Shop home care', home_url( '/shop/' ) ],
 		[ 'gift', 'Send a gift card', home_url( '/product/skynco-gift-card/' ) ],
-		[ 'chat', 'Text Hana', $sms ],
+		[ 'chat', 'Text Hana', $c['sms'] ],
 	];
 	$h .= '<section class="skd-quick">';
 	foreach ( $quick as $q ) {
 		$h .= '<a href="' . esc_url( $q[2] ) . '"><span>' . skynco_icon( $q[0] ) . '</span>' . esc_html( $q[1] ) . '</a>';
 	}
-	$h .= '</section>';
+	return $h . '</section>';
+}
 
-	/* Visits */
-	$h .= '<section class="skd-sec" id="visits"><div class="skd-head"><h2>Visits</h2><a class="skd-btn skd-btn--dark" href="' . esc_url( $svcs ) . '">Book a visit</a></div>';
-	if ( $bookings['upcoming'] ) {
-		$h .= '<p class="skd-sub">Upcoming</p><div class="skd-list">';
-		foreach ( $bookings['upcoming'] as $b ) {
-			$h .= '<div class="skd-row"><div class="skd-chip"><span>' . esc_html( wp_date( 'M', $b->ts ) ) . '</span><b>' . esc_html( wp_date( 'j', $b->ts ) ) . '</b></div><div class="skd-row__body"><p class="skd-t">' . esc_html( $b->service ) . '</p><p class="skd-s">' . esc_html( wp_date( 'l · g:i a', $b->ts ) ) . ' · ' . (int) $b->duration . ' min · ' . esc_html( $b->booking_code ) . '</p></div><div class="skd-row__acts"><span class="skd-pill">' . esc_html( 'approved' === $b->status ? 'Confirmed' : ucfirst( $b->status ) ) . '</span><a class="skd-link" href="' . esc_url( $sms . '?&body=' . rawurlencode( 'Hi Hana, I need to change my booking ' . $b->booking_code ) ) . '">Change</a></div></div>';
-		}
-		$h .= '</div>';
+/* ---------- Visits ---------- */
+function skynco_dash_page_visits( $c ) {
+	$b = $c['bookings'];
+	$h = '';
+	if ( $c['next'] ) {
+		$h .= skynco_dash_next_card( $c );
 	}
-	if ( $bookings['past'] ) {
-		$h .= '<p class="skd-sub">Past visits</p><div class="skd-timeline">';
-		foreach ( array_slice( $bookings['past'], 0, 8 ) as $b ) {
-			$h .= '<div class="skd-tl"><span class="skd-tl__dot"></span><div class="skd-row__body"><p class="skd-t">' . esc_html( $b->service ) . '</p><p class="skd-s">' . esc_html( wp_date( 'F j, Y', $b->ts ) ) . '</p></div><a class="skd-link" href="' . esc_url( add_query_arg( 'service', (int) $b->service_id, $book ) ) . '">Book again</a></div>';
-		}
-		$h .= '</div>';
-	}
-	if ( ! $bookings['upcoming'] && ! $bookings['past'] ) {
-		$h .= '<div class="skd-empty">' . skynco_icon( 'calendar' ) . '<p>No visits yet. Your bookings will appear here.</p><a class="skd-link" href="' . esc_url( $svcs ) . '">Explore treatments' . skynco_icon( 'arrow' ) . '</a></div>';
-	}
-	$h .= '</section>';
-
-	/* Orders */
-	$h .= '<section class="skd-sec" id="orders"><div class="skd-head"><h2>Orders</h2><a class="skd-btn skd-btn--dark" href="' . esc_url( home_url( '/shop/' ) ) . '">Shop</a></div>';
-	if ( $orders ) {
-		$h .= '<div class="skd-orders">';
-		foreach ( array_slice( $orders, 0, 8 ) as $o ) {
-			$thumbs = '';
-			$names  = [];
-			$again  = '';
-			foreach ( $o->get_items() as $it ) {
-				$p       = $it->get_product();
-				$names[] = $it->get_name() . ( $it->get_quantity() > 1 ? ' × ' . $it->get_quantity() : '' );
-				if ( $p && substr_count( $thumbs, '<img' ) < 3 ) {
-					$thumbs .= $p->get_image( [ 120, 120 ] );
-				}
-				if ( ! $again && $p && $p->is_purchasable() ) {
-					$again = '<a class="skd-link" href="' . esc_url( add_query_arg( 'add-to-cart', $p->get_id(), wc_get_cart_url() ) ) . '">Buy again</a>';
-				}
-			}
-			$status = $o->get_status();
-			$tone   = in_array( $status, [ 'completed' ], true ) ? 'done' : ( in_array( $status, [ 'processing', 'on-hold' ], true ) ? 'live' : '' );
-			$view   = (int) $o->get_customer_id() === $user->ID ? '<a class="skd-link" href="' . esc_url( $o->get_view_order_url() ) . '">Details</a>' : '';
-			$h     .= '<article class="skd-order"><div class="skd-order__thumbs">' . $thumbs . '</div><div class="skd-order__body"><div class="skd-order__top"><p class="skd-t">Order #' . esc_html( $o->get_order_number() ) . '</p><span class="skd-pill skd-pill--' . $tone . '">' . esc_html( wc_get_order_status_name( $status ) ) . '</span></div><p class="skd-s">' . esc_html( wc_format_datetime( $o->get_date_created(), 'M j, Y' ) ) . ' · ' . esc_html( implode( ', ', $names ) ) . '</p><div class="skd-order__foot"><b>' . wp_kses_post( $o->get_formatted_order_total() ) . '</b><span>' . $view . $again . '</span></div></div></article>';
+	$h .= '<section class="skd-sec"><div class="skd-head"><h2>Upcoming</h2><a class="skd-btn skd-btn--dark" href="' . esc_url( $c['svcs'] ) . '">Book a visit</a></div>';
+	if ( $b['upcoming'] ) {
+		$h .= '<div class="skd-list">';
+		foreach ( $b['upcoming'] as $v ) {
+			$h .= '<div class="skd-row"><div class="skd-chip"><span>' . esc_html( wp_date( 'M', $v->ts ) ) . '</span><b>' . esc_html( wp_date( 'j', $v->ts ) ) . '</b></div><div class="skd-row__body"><p class="skd-t">' . esc_html( $v->service ) . '</p><p class="skd-s">' . esc_html( wp_date( 'l · g:i a', $v->ts ) ) . ' · ' . (int) $v->duration . ' min · ' . esc_html( $v->booking_code ) . '</p></div><div class="skd-row__acts"><span class="skd-pill">' . esc_html( 'approved' === $v->status ? 'Confirmed' : ucfirst( $v->status ) ) . '</span><a class="skd-link" href="' . esc_url( $c['sms'] . '?&body=' . rawurlencode( 'Hi Hana, I need to change my booking ' . $v->booking_code ) ) . '">Change</a></div></div>';
 		}
 		$h .= '</div>';
 	} else {
-		$h .= '<div class="skd-empty">' . skynco_icon( 'bag' ) . '<p>No orders yet. Your first home-care order is 10% off with code <b>GLOW10</b>.</p><a class="skd-link" href="' . esc_url( home_url( '/shop/' ) ) . '">Visit the shop' . skynco_icon( 'arrow' ) . '</a></div>';
+		$h .= '<div class="skd-empty">' . skynco_icon( 'calendar' ) . '<p>No upcoming visits.</p><a class="skd-link" href="' . esc_url( $c['svcs'] ) . '">Explore treatments' . skynco_icon( 'arrow' ) . '</a></div>';
 	}
-	$h .= '</section>';
+	$h .= '</section><section class="skd-sec"><div class="skd-head"><h2>History</h2></div>';
+	if ( $b['past'] ) {
+		$h .= '<div class="skd-timeline">';
+		foreach ( array_slice( $b['past'], 0, 20 ) as $v ) {
+			$h .= '<div class="skd-tl"><span class="skd-tl__dot"></span><div class="skd-row__body"><p class="skd-t">' . esc_html( $v->service ) . '</p><p class="skd-s">' . esc_html( wp_date( 'F j, Y', $v->ts ) ) . '</p></div><a class="skd-link" href="' . esc_url( add_query_arg( 'service', (int) $v->service_id, $c['book'] ) ) . '">Book again</a></div>';
+		}
+		$h .= '</div>';
+	} else {
+		$h .= '<div class="skd-empty">' . skynco_icon( 'sparkle' ) . '<p>Your past treatments will appear here after your first visit.</p></div>';
+	}
+	return $h . '</section>';
+}
 
-	/* Rewards */
-	$dots = '';
+/* ---------- Orders ---------- */
+function skynco_dash_page_orders( $c ) {
+	$user = $c['user'];
+	$h    = '<section class="skd-sec"><div class="skd-head"><h2>Your orders</h2><a class="skd-btn skd-btn--dark" href="' . esc_url( home_url( '/shop/' ) ) . '">Shop</a></div>';
+	if ( ! $c['orders'] ) {
+		return $h . '<div class="skd-empty">' . skynco_icon( 'bag' ) . '<p>No orders yet. Your first home-care order is 10% off with code <b>GLOW10</b>.</p><a class="skd-link" href="' . esc_url( home_url( '/shop/' ) ) . '">Visit the shop' . skynco_icon( 'arrow' ) . '</a></div></section>';
+	}
+	$h .= '<div class="skd-orders">';
+	foreach ( array_slice( $c['orders'], 0, 20 ) as $o ) {
+		$thumbs = '';
+		$names  = [];
+		$again  = '';
+		foreach ( $o->get_items() as $it ) {
+			$p       = $it->get_product();
+			$names[] = $it->get_name() . ( $it->get_quantity() > 1 ? ' × ' . $it->get_quantity() : '' );
+			if ( $p && substr_count( $thumbs, '<img' ) < 3 ) {
+				$thumbs .= $p->get_image( [ 120, 120 ] );
+			}
+			if ( ! $again && $p && $p->is_purchasable() ) {
+				$again = '<a class="skd-link" href="' . esc_url( add_query_arg( 'add-to-cart', $p->get_id(), wc_get_cart_url() ) ) . '">Buy again</a>';
+			}
+		}
+		$status = $o->get_status();
+		$tone   = 'completed' === $status ? 'done' : ( in_array( $status, [ 'processing', 'on-hold' ], true ) ? 'live' : '' );
+		$view   = (int) $o->get_customer_id() === $user->ID ? '<a class="skd-link" href="' . esc_url( $o->get_view_order_url() ) . '">Details</a>' : '';
+		$h     .= '<article class="skd-order"><div class="skd-order__thumbs">' . $thumbs . '</div><div class="skd-order__body"><div class="skd-order__top"><p class="skd-t">Order #' . esc_html( $o->get_order_number() ) . '</p><span class="skd-pill skd-pill--' . $tone . '">' . esc_html( wc_get_order_status_name( $status ) ) . '</span></div><p class="skd-s">' . esc_html( wc_format_datetime( $o->get_date_created(), 'M j, Y' ) ) . ' · ' . esc_html( implode( ', ', $names ) ) . '</p><div class="skd-order__foot"><b>' . wp_kses_post( $o->get_formatted_order_total() ) . '</b><span>' . $view . $again . '</span></div></div></article>';
+	}
+	return $h . '</div></section>';
+}
+
+/* ---------- Rewards ---------- */
+function skynco_dash_page_rewards( $c ) {
+	$goal  = $c['goal'];
+	$stamp = $c['stamp'];
+	$dots  = '';
 	for ( $i = 1; $i <= $goal; $i++ ) {
 		$dots .= '<span class="skd-stamp' . ( $i <= $stamp ? ' is-on' : '' ) . ( $i === $goal ? ' is-goal' : '' ) . '">' . ( $i === $goal ? skynco_icon( 'gift' ) : ( $i <= $stamp ? skynco_icon( 'sparkle' ) : $i ) ) . '</span>';
 	}
 	$gifts = [];
-	foreach ( $orders as $o ) {
+	foreach ( $c['orders'] as $o ) {
 		foreach ( $o->get_items() as $it ) {
 			if ( skynco_is_gift_item( $it ) ) {
 				$gifts[] = '<div class="skd-giftrow">' . skynco_icon( 'gift' ) . '<div><p class="skd-t">' . esc_html( $it->get_name() ) . ' · ' . wp_kses_post( wc_price( $it->get_total() ) ) . '</p><p class="skd-s">Bought ' . esc_html( wc_format_datetime( $o->get_date_created(), 'M j, Y' ) ) . ' · sent by email</p></div></div>';
 			}
 		}
 	}
-	$h .= '<section class="skd-sec" id="rewards"><div class="skd-head"><h2>Rewards &amp; gifts</h2></div><div class="skd-rewards">';
-	$h .= '<div class="skd-loyalty"><div class="skd-loyalty__top"><p>Glow Club card</p><span>Skyn&amp;Co.</span></div><p class="skd-loyalty__big">' . ( $stamp ? ( $goal - $stamp ) . ' more visit' . ( $goal - $stamp > 1 ? 's' : '' ) . ' to go' : 'Your card is ready' ) . '</p><div class="skd-stamps">' . $dots . '</div><p class="skd-loyalty__fine">Every ' . $goal . 'th visit includes ' . esc_html( $treat ) . '.' . ( $earned ? ' Treats earned: ' . $earned . '.' : '' ) . '</p><p class="skd-loyalty__name">' . esc_html( trim( $first . ' ' . $user->last_name ) ) . '</p></div>';
-	$h .= '<div class="skd-gifts">';
-	$h .= '<div class="skd-perk"><span class="skd-perk__i">' . skynco_icon( 'gift' ) . '</span><div><p class="skd-t">' . ( $orders ? 'Member perk: free shipping over $75' : 'Welcome gift: 10% off' ) . '</p><p class="skd-s">' . ( $orders ? 'Or free pickup at the studio, any time.' : 'Use <b>GLOW10</b> on your first home-care order.' ) . '</p></div></div>';
-	$h .= '<div class="skd-perk"><span class="skd-perk__i">' . skynco_icon( 'star' ) . '</span><div><p class="skd-t">' . ( $bday ? 'Birthday treat in ' . esc_html( wp_date( 'F', strtotime( $bday ) ) ) : 'Birthday treat: 15% off' ) . '</p><p class="skd-s">' . ( $bday ? 'Your code arrives at the start of your birthday month.' : '<a href="#profile">Add your birthday</a> to unlock it.' ) . '</p></div></div>';
-	$h .= '<a class="skd-giftcta" href="' . esc_url( home_url( '/product/skynco-gift-card/' ) ) . '">' . skynco_icon( 'gift' ) . '<span><b>Send a gift card</b>Delivered by email, never expires</span>' . skynco_icon( 'arrow' ) . '</a>';
-	$h .= '</div></div>';
+	$name = trim( $c['first'] . ' ' . $c['user']->last_name );
+	$h    = '<section class="skd-sec"><div class="skd-rewards">';
+	$h   .= '<div class="skd-loyalty"><div class="skd-loyalty__top"><p>Glow Club card</p><span>Skyn&amp;Co.</span></div><p class="skd-loyalty__big">' . ( $stamp ? ( $goal - $stamp ) . ' more visit' . ( $goal - $stamp > 1 ? 's' : '' ) . ' to go' : 'Your card is ready' ) . '</p><div class="skd-stamps">' . $dots . '</div><p class="skd-loyalty__fine">Every ' . $goal . 'th visit includes ' . esc_html( $c['treat'] ) . '.' . ( $c['earned'] ? ' Treats earned: ' . $c['earned'] . '.' : '' ) . '</p><p class="skd-loyalty__name">' . esc_html( $name ) . '</p></div>';
+	$h   .= '<div class="skd-gifts">';
+	$h   .= '<div class="skd-perk"><span class="skd-perk__i">' . skynco_icon( 'gift' ) . '</span><div><p class="skd-t">' . ( $c['orders'] ? 'Member perk: free shipping over $75' : 'Welcome gift: 10% off' ) . '</p><p class="skd-s">' . ( $c['orders'] ? 'Or free pickup at the studio, any time.' : 'Use <b>GLOW10</b> on your first home-care order.' ) . '</p></div></div>';
+	$h   .= '<div class="skd-perk"><span class="skd-perk__i">' . skynco_icon( 'star' ) . '</span><div><p class="skd-t">' . ( $c['bday'] ? 'Birthday treat in ' . esc_html( wp_date( 'F', strtotime( $c['bday'] ) ) ) : 'Birthday treat: 15% off' ) . '</p><p class="skd-s">' . ( $c['bday'] ? 'Your code arrives at the start of your birthday month.' : '<a href="' . esc_url( skynco_account_url( 'profile' ) ) . '">Add your birthday</a> to unlock it.' ) . '</p></div></div>';
+	$h   .= '<a class="skd-giftcta" href="' . esc_url( home_url( '/product/skynco-gift-card/' ) ) . '">' . skynco_icon( 'gift' ) . '<span><b>Send a gift card</b>Delivered by email, never expires</span>' . skynco_icon( 'arrow' ) . '</a></div></div>';
 	if ( $gifts ) {
-		$h .= '<p class="skd-sub">Gift cards you sent</p><div class="skd-list">' . implode( '', $gifts ) . '</div>';
+		$h .= '<p class="skd-sub" style="margin-top:22px!important">Gift cards you sent</p><div class="skd-list">' . implode( '', $gifts ) . '</div>';
 	}
 	$h .= '</section>';
 
-	/* Recommended */
 	$slugs = 'glow-kit,daily-mineral-spf-40,hydrating-hyaluronic-serum';
-	$ref   = $last ?: $next;
+	$ref   = $c['last'] ?: $c['next'];
 	if ( $ref && function_exists( 'lux_tslug' ) && function_exists( 'lux_shop_recs_for' ) && ( $ts = lux_tslug( $ref->service ) ) ) {
 		$slugs = implode( ',', array_slice( lux_shop_recs_for( $ts ), 0, 3 ) );
 	}
-	$h .= '<section class="skd-sec skd-recs"><div class="skd-head"><h2>Picked for your skin</h2><a class="skd-link" href="' . esc_url( home_url( '/shop/' ) ) . '">See all' . skynco_icon( 'arrow' ) . '</a></div>' . do_shortcode( '[skynco_products slugs="' . esc_attr( $slugs ) . '" columns="3"]' ) . '</section>';
+	return $h . '<section class="skd-sec skd-recs"><div class="skd-head"><h2>Picked for your skin</h2><a class="skd-link" href="' . esc_url( home_url( '/shop/' ) ) . '">See all' . skynco_icon( 'arrow' ) . '</a></div>' . do_shortcode( '[skynco_products slugs="' . esc_attr( $slugs ) . '" columns="3"]' ) . '</section>';
+}
 
-	/* Profile */
+/* ---------- Notifications ---------- */
+function skynco_dash_notice_list( $notes ) {
+	$icons = [ 'booking' => 'calendar', 'order' => 'bag' ];
+	$h     = '<div class="skd-notes">';
+	foreach ( $notes as $n ) {
+		$base = strtok( $n->type, '-' );
+		$tag  = $n->link ? 'a href="' . esc_url( $n->link ) . '"' : 'div';
+		$h   .= '<' . $tag . ' class="skd-notice' . ( $n->read_at ? '' : ' is-new' ) . '"><span class="skd-notice__i">' . skynco_icon( $icons[ $base ] ?? 'bell' ) . '</span><span class="skd-notice__b"><span class="skd-t">' . esc_html( $n->title ) . '</span><span class="skd-s">' . esc_html( $n->body ) . '</span></span><span class="skd-notice__t">' . esc_html( skynco_notice_time( $n->created_at ) ) . '</span></' . ( $n->link ? 'a' : 'div' ) . '>';
+	}
+	return $h . '</div>';
+}
+
+function skynco_dash_page_notifications( $c ) {
+	$email = $c['user']->user_email;
+	$notes = function_exists( 'skynco_notices_get' ) ? skynco_notices_get( 'client', $email, 50 ) : [];
+	if ( function_exists( 'skynco_notices_mark_read' ) ) {
+		skynco_notices_mark_read( 'client', $email );
+	}
+	$h = '<section class="skd-sec">';
+	if ( ! $notes ) {
+		return $h . '<div class="skd-empty">' . skynco_icon( 'bell' ) . '<p>No updates yet. Booking confirmations and order updates will appear here.</p></div></section>';
+	}
+	return $h . skynco_dash_notice_list( $notes ) . '</section>';
+}
+
+/* ---------- Profile ---------- */
+function skynco_dash_page_profile( $c ) {
+	$user  = $c['user'];
 	$phone = get_user_meta( $user->ID, 'billing_phone', true );
 	$wa    = '0' !== get_user_meta( $user->ID, 'skynco_wa_optin', true );
-	$h    .= '<section class="skd-sec" id="profile"><div class="skd-head"><h2>Profile</h2></div>';
-	$h    .= '<form class="skd-form" method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">' . wp_nonce_field( 'skynco_profile', '_wpnonce', true, false ) . '<input type="hidden" name="action" value="skynco_profile">';
-	$h    .= '<label>First name<input name="first_name" value="' . esc_attr( $user->first_name ?: $first ) . '" autocomplete="given-name"></label>';
+	$h     = '<section class="skd-sec"><form class="skd-form" method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">' . wp_nonce_field( 'skynco_profile', '_wpnonce', true, false ) . '<input type="hidden" name="action" value="skynco_profile">';
+	$h    .= '<label>First name<input name="first_name" value="' . esc_attr( $user->first_name ?: $c['first'] ) . '" autocomplete="given-name"></label>';
 	$h    .= '<label>Email<input value="' . esc_attr( $user->user_email ) . '" disabled></label>';
 	$h    .= '<label>Mobile (WhatsApp)<input name="phone" type="tel" value="' . esc_attr( $phone ) . '" autocomplete="tel" placeholder="(617) 555-0123"></label>';
-	$h    .= '<label>Birthday<input name="birthday" type="date" value="' . esc_attr( $bday ) . '"></label>';
+	$h    .= '<label>Birthday<input name="birthday" type="date" value="' . esc_attr( $c['bday'] ) . '"></label>';
 	$h    .= '<label class="skd-switch"><input type="checkbox" name="wa" value="1"' . checked( $wa, true, false ) . '><span class="skd-switch__ui"></span><span>Send my booking and order updates on WhatsApp</span></label>';
-	$h    .= '<div class="skd-form__foot"><button class="skd-btn skd-btn--pink" type="submit">Save details</button><a class="skd-link skd-link--muted" href="' . esc_url( wp_logout_url( home_url( '/' ) ) ) . '">Sign out</a></div></form></section>';
-
-	$h .= '</main></div></div>';
-	return $h;
+	return $h . '<div class="skd-form__foot"><button class="skd-btn skd-btn--pink" type="submit">Save details</button><a class="skd-link skd-link--muted" href="' . esc_url( wp_logout_url( home_url( '/' ) ) ) . '">Sign out</a></div></form></section>';
 }
 
 function skynco_account_signin( $msg ) {
@@ -767,6 +856,20 @@ add_action(
 .skd-form__foot{flex-direction:column;align-items:stretch}.skd-form__foot .skd-btn{width:100%}
 .skd-form__foot .skd-link{justify-content:center}
 }
+.skd-badge{margin-left:auto;min-width:20px;height:20px;padding:0 6px;border-radius:99px;background:#D1127E;color:#fff;font:700 11px/20px Manrope,sans-serif;font-style:normal;text-align:center}
+.skd-nav a.is-on .skd-badge{background:#fff;color:#D1127E}
+.skd-top--page h1{margin:10px 0 4px!important}
+.skd-back{display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border-radius:999px;background:#fff;border:1px solid #EFE2E6;color:#6E5A66!important;font:700 12.5px Manrope,sans-serif}
+.skd-back .skd-i{width:15px;height:15px}
+.skd-notes{display:flex;flex-direction:column;gap:8px}
+.skd-notice{display:flex;align-items:flex-start;gap:14px;padding:14px 16px;border-radius:18px;border:1px solid #F1E6E9;background:#FDFAFA;color:inherit!important;transition:border-color .2s}
+a.skd-notice:hover{border-color:#D1127E}
+.skd-notice.is-new{background:#FFF6FA;border-color:#F5C6DD}
+.skd-notice__i{width:38px;height:38px;flex:0 0 38px;border-radius:12px;display:grid;place-items:center;background:#fff;color:#D1127E;box-shadow:0 4px 12px -6px rgba(209,18,126,.4)}
+.skd-notice__b{flex:1;min-width:0;display:flex;flex-direction:column}
+.skd-notice__t{font-size:12px;color:#9A8791;white-space:nowrap;margin-top:2px}
+.skd-notice.is-new .skd-t::after{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;background:#D1127E;margin-left:8px;vertical-align:middle}
+@media(max-width:767px){.skd-notice{flex-wrap:wrap}.skd-notice__t{width:100%;padding-left:52px;margin-top:-4px}.skd-badge{margin-left:6px}.skd-top--page h1{font-size:30px!important}}
 </style>
 		<?php
 	}
@@ -882,23 +985,4 @@ add_action(
 		}
 	},
 	5
-);
-
-add_action(
-	'wp_footer',
-	function () {
-		if ( ! is_page( 'account' ) || ! is_user_logged_in() ) {
-			return;
-		}
-		?>
-<script>
-(function(){
-	var links=document.querySelectorAll('.skd-nav a[data-sec]'); if(!links.length||!('IntersectionObserver' in window)) return;
-	var map={}; links.forEach(function(a){map[a.dataset.sec]=a;});
-	var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting&&map[e.target.id]){links.forEach(function(l){l.classList.remove('is-on');});map[e.target.id].classList.add('is-on');var n=map[e.target.id].parentNode;if(n.scrollWidth>n.clientWidth){n.scrollTo({left:map[e.target.id].offsetLeft-16,behavior:'smooth'});}}});},{rootMargin:'-35% 0px -60% 0px'});
-	Object.keys(map).forEach(function(id){var s=document.getElementById(id); if(s) io.observe(s);});
-})();
-</script>
-		<?php
-	}
 );
