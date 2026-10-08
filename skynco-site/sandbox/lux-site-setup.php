@@ -309,5 +309,15 @@ body{background:#FFF8F6}
   .lux-mbar a.lux-mbar__call svg{width:18px;height:18px;fill:#FFF8F6}
   .ast-popup-nav-open .lux-mbar{display:none}
 }
+
+/* ===== v6: header cart ===== */
+.ast-header-woo-cart .ast-site-header-cart-li>a.cart-container{display:flex;align-items:center;justify-content:center;width:44px;height:44px;border-radius:50%;background:#FBEFF0;padding:0!important;line-height:1!important}
+.ast-header-woo-cart .ast-addon-cart-wrap{padding:0!important;border:0!important;background:transparent!important}
+.ast-header-woo-cart .astra-icon{position:relative;display:flex;line-height:1}
+.ast-header-woo-cart .ast-icon svg{width:20px!important;height:20px!important;fill:#3B1530!important}
+.ast-header-woo-cart .astra-icon::after{content:attr(data-cart-total)!important;position:absolute;top:-9px;right:-11px;min-width:18px;height:18px;padding:0 4px;border-radius:999px;background:#D1127E!important;color:#fff!important;border:2px solid #FFF8F6!important;font:700 10px/14px Manrope,sans-serif!important;text-align:center;box-sizing:border-box}
+.ast-header-woo-cart .astra-icon[data-cart-total="0"]::after{display:none!important}
+.ast-header-woo-cart .ast-site-header-cart-data{display:none!important}
+.ast-mobile-header-wrap .ast-grid-right-section{gap:10px}
 CSS;
 }
