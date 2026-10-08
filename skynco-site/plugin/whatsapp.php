@@ -24,6 +24,8 @@ function skynco_wa_settings() {
 			'tpl_booking'  => 'booking_confirmed',
 			'tpl_order'    => 'order_confirmed',
 			'country'      => '1',
+			'owner_phone'  => '',
+			'owner_key'    => '',
 		]
 	);
 }
@@ -103,8 +105,7 @@ function skynco_wa_send( $to, $template, array $params = [], $kind = 'manual', $
  * Queue: collect during the request, send after the response is flushed.
  * ------------------------------------------------------------------------ */
 function skynco_wa_queue( $type, $id ) {
-	$s = skynco_wa_settings();
-	if ( '1' !== $s['enabled'] || ! $s['token'] || ! $s['phone_id'] ) {
+	if ( ! skynco_wa_client_ready() && ! skynco_wa_owner_ready() ) {
 		return;
 	}
 	$GLOBALS['skynco_wa_queue'][ $type . ':' . $id ] = [ $type, $id ];
@@ -130,6 +131,28 @@ function skynco_wa_flush() {
 	$GLOBALS['skynco_wa_queue'] = [];
 }
 
+function skynco_wa_client_ready() {
+	$s = skynco_wa_settings();
+	return '1' === $s['enabled'] && $s['token'] && $s['phone_id'];
+}
+
+function skynco_wa_owner_ready() {
+	$s = skynco_wa_settings();
+	return $s['owner_phone'] && $s['owner_key'];
+}
+
+/** Instant alert to the studio owner's own WhatsApp (free CallMeBot service). */
+function skynco_wa_owner_alert( $text, $kind ) {
+	$s = skynco_wa_settings();
+	if ( ! skynco_wa_owner_ready() ) {
+		return;
+	}
+	$to  = skynco_wa_e164( $s['owner_phone'] );
+	$res = wp_remote_get( 'https://api.callmebot.com/whatsapp.php?' . http_build_query( [ 'phone' => '+' . $to, 'text' => $text, 'apikey' => $s['owner_key'] ] ), [ 'timeout' => 12 ] );
+	$ok  = ! is_wp_error( $res ) && 200 === wp_remote_retrieve_response_code( $res ) && false === stripos( wp_remote_retrieve_body( $res ), 'error' );
+	skynco_wa_log( 'owner: ' . $kind, $to, $ok, $ok ? 'Alert sent to studio' : ( is_wp_error( $res ) ? $res->get_error_message() : wp_strip_all_tags( mb_substr( wp_remote_retrieve_body( $res ), 0, 200 ) ) ) );
+}
+
 /** Respect the opt-out toggle in the client dashboard. */
 function skynco_wa_opted_out( $email ) {
 	$u = $email ? get_user_by( 'email', $email ) : null;
@@ -153,11 +176,18 @@ function skynco_wa_notify_booking( $id ) {
 	$p = $wpdb->prefix . 'latepoint_';
 	// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 	$b = $wpdb->get_row( $wpdb->prepare( "SELECT bk.id, bk.booking_code, bk.start_date, bk.start_time, bk.status, c.first_name, c.email, c.phone, s.name AS service FROM {$p}bookings bk LEFT JOIN {$p}customers c ON c.id = bk.customer_id LEFT JOIN {$p}services s ON s.id = bk.service_id WHERE bk.id = %d", $id ) );
-	if ( ! $b || 'cancelled' === $b->status || get_option( 'skynco_wa_b_' . $id ) || skynco_wa_opted_out( $b->email ) ) {
+	if ( ! $b || 'cancelled' === $b->status || get_option( 'skynco_wa_b_' . $id ) ) {
 		return;
 	}
 	$dt   = date_create( $b->start_date . ' 00:00', wp_timezone() );
 	$when = $dt ? wp_date( 'l, F j \a\t g:i a', $dt->getTimestamp() + (int) $b->start_time * 60 ) : $b->start_date;
+	if ( ! get_option( 'skynco_wa_ob_' . $id ) ) {
+		update_option( 'skynco_wa_ob_' . $id, time(), false );
+		skynco_wa_owner_alert( "New booking: {$b->service}\n{$when}\nClient: {$b->first_name} · {$b->phone}\nCode {$b->booking_code}", 'booking #' . $id );
+	}
+	if ( ! skynco_wa_client_ready() || skynco_wa_opted_out( $b->email ) ) {
+		return;
+	}
 	$s    = skynco_wa_settings();
 	$r    = skynco_wa_send( $b->phone, $s['tpl_booking'], [ $b->first_name ?: 'there', $b->service, $when, $b->booking_code, skynco_wa_account_link() ], 'booking #' . $id );
 	if ( true === $r ) {
@@ -210,12 +240,20 @@ add_action(
 
 function skynco_wa_notify_order( $order_id ) {
 	$o = function_exists( 'wc_get_order' ) ? wc_get_order( $order_id ) : null;
-	if ( ! $o || $o->get_meta( '_skynco_wa_sent' ) || '0' === $o->get_meta( '_skynco_wa' ) || 'pos' === $o->get_created_via() || skynco_wa_opted_out( $o->get_billing_email() ) ) {
+	if ( ! $o || 'pos' === $o->get_created_via() ) {
 		return;
 	}
 	$items = [];
 	foreach ( $o->get_items() as $it ) {
 		$items[] = $it->get_name() . ( $it->get_quantity() > 1 ? ' x' . $it->get_quantity() : '' );
+	}
+	if ( ! $o->get_meta( '_skynco_wa_owner' ) ) {
+		$o->update_meta_data( '_skynco_wa_owner', time() );
+		$o->save();
+		skynco_wa_owner_alert( 'New order #' . $o->get_order_number() . ' · ' . html_entity_decode( wp_strip_all_tags( wc_price( $o->get_total() ) ) ) . "\n" . implode( ', ', $items ) . "\nClient: " . $o->get_billing_first_name() . ' · ' . $o->get_billing_phone() . "\n" . $o->get_shipping_method(), 'order #' . $order_id );
+	}
+	if ( ! skynco_wa_client_ready() || $o->get_meta( '_skynco_wa_sent' ) || '0' === $o->get_meta( '_skynco_wa' ) || skynco_wa_opted_out( $o->get_billing_email() ) ) {
+		return;
 	}
 	$s = skynco_wa_settings();
 	$r = skynco_wa_send(
@@ -264,6 +302,11 @@ add_action(
 		}
 		update_option( 'skynco_wa', $new, false );
 		$note = 'saved';
+		if ( ! empty( $_POST['test_owner'] ) ) {
+			skynco_wa_owner_alert( 'Test alert from your Skyn&Co. website. Booking and order alerts will arrive here.', 'test' );
+			wp_safe_redirect( admin_url( 'admin.php?page=skynco-whatsapp&n=saved' ) );
+			exit;
+		}
 		if ( ! empty( $_POST['test_to'] ) ) {
 			$r    = skynco_wa_send( sanitize_text_field( wp_unslash( $_POST['test_to'] ) ), 'hello_world', [], 'test', 'en_US' );
 			$note = true === $r ? 'test-ok' : 'test-fail';
@@ -282,7 +325,7 @@ function skynco_page_whatsapp() {
 	if ( isset( $msgs[ $n ] ) ) {
 		echo '<div class="notice notice-' . ( 'test-fail' === $n ? 'error' : 'success' ) . '"><p>' . esc_html( $msgs[ $n ] ) . '</p></div>';
 	}
-	echo '<div class="sk-card"><p>Clients get a WhatsApp message as soon as they book or place an order. Status: <b>' . ( '1' === $s['enabled'] && $s['token'] && $s['phone_id'] ? 'On' : 'Off' ) . '</b></p>';
+	echo '<div class="sk-card"><p>Client confirmations: <b>' . ( skynco_wa_client_ready() ? 'On' : 'Off (connect the WhatsApp Business account below)' ) . '</b> · Studio alerts: <b>' . ( skynco_wa_owner_ready() ? 'On' : 'Off' ) . '</b></p>';
 	echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
 	wp_nonce_field( 'skynco_wa' );
 	echo '<input type="hidden" name="action" value="skynco_wa_save"><table class="form-table">';
@@ -294,8 +337,12 @@ function skynco_page_whatsapp() {
 	echo '<tr><th>Template language</th><td><input name="wa[lang]" value="' . $f( 'lang' ) . '" size="8"></td></tr>';
 	echo '<tr><th>Default country code</th><td><input name="wa[country]" value="' . $f( 'country' ) . '" size="4"> <span class="description">Used when a client types a local number, for example 1 for the US.</span></td></tr>';
 	echo '<tr><th>Graph API version</th><td><input name="wa[version]" value="' . $f( 'version' ) . '" size="8"></td></tr>';
+	echo '<tr><th colspan="2"><h2 style="margin:10px 0 0">Instant alerts to the studio</h2><p class="description" style="font-weight:400">Free. Get a WhatsApp message on your own phone for every booking and order. 1) Open callmebot.com → WhatsApp and save the bot number shown there in your contacts. 2) Send it the WhatsApp message <code>I allow callmebot to send me messages</code>. 3) Paste the API key it replies with below.</p></th></tr>';
+	echo '<tr><th>Your WhatsApp number</th><td><input class="regular-text" name="wa[owner_phone]" value="' . $f( 'owner_phone' ) . '" placeholder="+1 857 228 4708"></td></tr>';
+	echo '<tr><th>CallMeBot API key</th><td><input class="regular-text" name="wa[owner_key]" value="' . $f( 'owner_key' ) . '"></td></tr>';
+	echo '<tr><th colspan="2"><h2 style="margin:10px 0 0">Test</h2></th></tr>';
 	echo '<tr><th>Send a test</th><td><input name="test_to" placeholder="Your mobile, e.g. +1 857 228 4708" class="regular-text"> <span class="description">Sends Meta’s built-in hello_world template.</span></td></tr>';
-	echo '</table><p><button class="button button-primary">Save</button></p></form></div>';
+	echo '</table><p><button class="button button-primary">Save</button> <button class="button" name="test_owner" value="1">Save and send me a test alert</button></p></form></div>';
 
 	echo '<div class="sk-card"><h2>Templates to create in WhatsApp Manager</h2><p>Create these as <b>Utility</b> templates in English. Meta usually approves them within minutes.</p>';
 	echo '<p><b>booking_confirmed</b><br><code>Hi {{1}}, your {{2}} at Skyn&amp;Co. is confirmed for {{3}}. Your booking code is {{4}}. See your visits and rebook anytime: {{5}}</code></p>';
