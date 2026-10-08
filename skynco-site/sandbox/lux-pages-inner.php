@@ -271,7 +271,7 @@ function lux_services_elements() {
 				),
 				lux_heading( $f[1], 'div', [ 'f' => 'Manrope', 's' => 14, 'w' => '600', 'lh' => 1.3, 'ls' => 0.04 ], 'muted' ),
 				lux_text( '<p>' . $f[3] . '</p>', 'small', 'muted' ),
-				lux_text( '<p><a href="' . lux_tlink( $f[0] ) . '">Details and booking ↗</a></p>', [ 'f' => 'Manrope', 's' => 15, 'w' => '600', 'lh' => 1.4 ], 'primary', [ '_css_classes' => 'lux-textlink' ] ),
+				lux_text( '<p><a href="' . lux_tlink( $f[0] ) . '">Details and booking</a></p>', [ 'f' => 'Manrope', 's' => 15, 'w' => '600', 'lh' => 1.4 ], 'primary', [ '_css_classes' => 'lux-textlink' ] ),
 			],
 			'Facial: ' . $f[0]
 		);
@@ -315,7 +315,7 @@ function lux_services_elements() {
 				),
 				lux_heading( $a[1], 'div', [ 'f' => 'Manrope', 's' => 14, 'w' => '600', 'lh' => 1.3, 'ls' => 0.04 ], 'gold' ),
 				lux_text( '<p>' . $a[3] . '</p>', 'small', 'misttext' ),
-				lux_text( '<p><a href="' . lux_tlink( $a[0] ) . '">Details and booking ↗</a></p>', [ 'f' => 'Manrope', 's' => 15, 'w' => '600', 'lh' => 1.4 ], 'cream', [ '_css_classes' => 'lux-textlink lux-textlink--light' ] ),
+				lux_text( '<p><a href="' . lux_tlink( $a[0] ) . '">Details and booking</a></p>', [ 'f' => 'Manrope', 's' => 15, 'w' => '600', 'lh' => 1.4 ], 'cream', [ '_css_classes' => 'lux-textlink lux-textlink--light' ] ),
 			],
 			'Advanced: ' . $a[0]
 		);

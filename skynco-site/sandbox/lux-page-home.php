@@ -209,7 +209,7 @@ function lux_home_elements() {
     <strong>150 Arsenal St, Suite 210, Watertown</strong></div>
   <div class="lux-field"><span>Questions?</span>
     <a href="$tel">(857) 228-4708</a></div>
-  <button type="submit">Book Appointment <span aria-hidden="true">&#8599;</span></button>
+  <button type="submit">Book Appointment</button>
 </form>
 HTML;
 	$els[] = lux_section(
@@ -343,7 +343,7 @@ HTML;
 							lux_eyebrow( 'Treatments', 'dark' ),
 							lux_heading( 'Facials built around your skin, with every price <em>upfront.</em>', 'h2', 'h2', 'cream' ),
 						],
-						lux_button( 'Full menu and prices ↗', $menu, 'lime' ),
+						lux_button( 'Full menu and prices', $menu, 'lime' ),
 						640
 					),
 					lux_con( $grid( 4, 2, 1, 16 ) + [ 'css_classes' => 'lux-mscroll' ], $cards, 'Treatment cards' ),
