@@ -261,7 +261,8 @@ body{background:#FFF8F6}
 #ast-mobile-popup .main-header-menu .menu-item{border:0!important;background:transparent!important}
 #ast-mobile-popup .main-header-menu .menu-link{display:block!important;padding:13px 0!important;border-bottom:1px solid rgba(255,214,236,.12)!important;font:500 18px/1.3 Manrope,sans-serif!important;letter-spacing:.01em;color:#FFF8F6!important;background:transparent!important}
 #ast-mobile-popup .main-header-menu .current-menu-item>.menu-link{color:#FF8CC8!important}
-#ast-mobile-popup .ast-header-button-1{width:100%;margin-top:32px!important}
+#ast-mobile-popup .ast-header-button-1{width:100%;margin-top:0!important;padding-top:32px!important}
+#ast-mobile-popup .main-header-menu>.menu-item:last-child>.menu-link{border-bottom:0!important}
 #ast-mobile-popup .ast-header-button-1 .ast-builder-button-wrap{width:100%}
 #ast-mobile-popup .ast-header-button-1 .ast-custom-button-link{display:block;width:100%}
 #ast-mobile-popup .ast-header-button-1 .ast-custom-button{display:flex!important;justify-content:center;align-items:center;width:100%;min-height:58px;border-radius:999px!important;background:#D1127E!important;color:#fff!important;font:700 17px Manrope,sans-serif!important}
