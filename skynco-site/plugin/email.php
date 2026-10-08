@@ -79,6 +79,16 @@ add_action(
 	'phpmailer_init',
 	function ( $m ) {
 		$s = skynco_smtp_settings();
+		// Spam-filter hygiene: a plain-text part for every HTML email, no "PHPMailer" header,
+		// and message IDs from our own domain.
+		$m->XMailer  = ' ';
+		$m->Hostname = (string) wp_parse_url( home_url(), PHP_URL_HOST );
+		if ( 'text/html' === $m->ContentType && ! $m->AltBody ) {
+			$txt = preg_replace( '#<(br|/p|/div|/h[1-6]|/li|/tr)[^>]*>#i', "\n", $m->Body );
+			$txt = preg_replace( '#<a [^>]*href=["\']([^"\']+)["\'][^>]*>(.*?)</a>#is', '$2 ($1)', $txt );
+			$txt = html_entity_decode( wp_strip_all_tags( preg_replace( '#<(style|script)[^>]*>.*?</\1>#is', '', $txt ) ), ENT_QUOTES, 'UTF-8' );
+			$m->AltBody = trim( preg_replace( "/[ \t]+/", ' ', preg_replace( "/\n\s*\n+/", "\n\n", $txt ) ) );
+		}
 		if ( ! skynco_smtp_on() ) {
 			if ( ! $m->getReplyToAddresses() ) {
 				$m->addReplyTo( get_option( 'admin_email' ), $s['from_name'] ?: 'Skyn&Co.' );

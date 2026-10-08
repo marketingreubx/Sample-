@@ -50,10 +50,10 @@ function skynco_send_magic_link() {
 	$throttle = 'skynco_ml_wait_' . md5( strtolower( $email ) );
 	if ( ! get_transient( $throttle ) ) {
 		set_transient( $throttle, 1, MINUTE_IN_SECONDS );
-		$link = skynco_magic_link_url( $email, 30 * MINUTE_IN_SECONDS );
+		$link = skynco_magic_link_url( $email, 2 * DAY_IN_SECONDS );
 		$body = '<div style="font-family:Arial,sans-serif;max-width:520px;margin:auto;color:#2A1A24">'
 			. '<h2 style="font-family:Georgia,serif;color:#3B1530;font-weight:500">Your Skyn&amp;Co. sign-in link</h2>'
-			. '<p>Tap the button below to open your client dashboard. The link works once and expires in 30 minutes.</p>'
+			. '<p>Tap the button below to open your client dashboard. The link works for 48 hours on any device.</p>'
 			. '<p style="margin:28px 0"><a href="' . esc_url( $link ) . '" style="background:#D1127E;color:#fff;text-decoration:none;padding:14px 26px;border-radius:999px;font-weight:bold">Open my dashboard</a></p>'
 			. '<p style="font-size:13px;color:#6E5A66">If you didn’t ask for this, you can ignore this email.</p></div>';
 		wp_mail( $email, 'Your Skyn&Co. sign-in link', $body, [ 'Content-Type: text/html; charset=UTF-8' ] );
@@ -62,12 +62,48 @@ function skynco_send_magic_link() {
 	exit;
 }
 
-/** One-time sign-in link for an email address. */
-function skynco_magic_link_url( $email, $ttl ) {
-	$token = wp_generate_password( 40, false );
-	set_transient( 'skynco_ml_' . hash( 'sha256', $token ), strtolower( $email ), $ttl );
-	return add_query_arg( 'sk_login', $token, skynco_account_url() );
+/**
+ * Sign-in link for an email address. The link is signed (no stored token), so it
+ * keeps working until it expires, even if it is tapped several times or opened in
+ * a different browser (e.g. Gmail's in-app browser, then Safari).
+ */
+function skynco_magic_link_url( $email, $ttl, $tab = '' ) {
+	$email = strtolower( trim( $email ) );
+	$exp   = time() + (int) $ttl;
+	$b64   = rtrim( strtr( base64_encode( $email ), '+/', '-_' ), '=' );
+	$sig   = substr( hash_hmac( 'sha256', $email . '|' . $exp, wp_salt( 'auth' ) ), 0, 32 );
+	return add_query_arg( 'sk_login', $b64 . '.' . $exp . '.' . $sig, skynco_account_url( $tab ) );
 }
+
+/** Personal dashboard link used in emails (valid for 60 days). */
+function skynco_dashboard_link( $email, $tab = '' ) {
+	return skynco_magic_link_url( $email, 60 * DAY_IN_SECONDS, $tab );
+}
+
+/** Email address from a valid sign-in token, or ''. */
+function skynco_magic_link_email( $token ) {
+	$parts = explode( '.', (string) $token );
+	if ( 3 === count( $parts ) ) {
+		[ $b64, $exp, $sig ] = $parts;
+		$email = strtolower( (string) base64_decode( strtr( $b64, '-_', '+/' ) ) );
+		if ( (int) $exp > time() && is_email( $email ) && hash_equals( substr( hash_hmac( 'sha256', $email . '|' . (int) $exp, wp_salt( 'auth' ) ), 0, 32 ), $sig ) ) {
+			return $email;
+		}
+		return '';
+	}
+	// Links sent before signed links existed.
+	return (string) get_transient( 'skynco_ml_' . hash( 'sha256', (string) $token ) );
+}
+
+/* Clients stay signed in on their device for six months. */
+add_filter(
+	'auth_cookie_expiration',
+	function ( $len, $user_id, $remember ) {
+		return $remember && ! user_can( $user_id, 'edit_posts' ) ? 180 * DAY_IN_SECONDS : $len;
+	},
+	10,
+	3
+);
 
 add_action(
 	'template_redirect',
@@ -80,13 +116,23 @@ add_action(
 		if ( empty( $_GET['sk_login'] ) ) {
 			return;
 		}
-		$key   = 'skynco_ml_' . hash( 'sha256', sanitize_text_field( wp_unslash( $_GET['sk_login'] ) ) );
-		$email = get_transient( $key );
+		$tab   = sanitize_key( (string) get_query_var( 'sk_tab' ) );
+		$dest  = skynco_account_url( $tab );
+		$email = skynco_magic_link_email( sanitize_text_field( wp_unslash( $_GET['sk_login'] ) ) );
+		$me    = wp_get_current_user();
+		if ( $me->ID && ( ! $email || strtolower( $me->user_email ) === $email ) ) {
+			// Already signed in on this device: just open the dashboard.
+			wp_safe_redirect( $dest );
+			exit;
+		}
 		if ( ! $email ) {
 			wp_safe_redirect( add_query_arg( 'sk', 'expired', skynco_account_url() ) );
 			exit;
 		}
-		delete_transient( $key );
+		if ( $me->ID && user_can( $me, 'edit_posts' ) ) {
+			wp_safe_redirect( admin_url() );
+			exit;
+		}
 		$user = get_user_by( 'email', $email );
 		if ( ! $user ) {
 			$uid = wp_insert_user(
@@ -113,7 +159,7 @@ add_action(
 		skynco_link_client_records( $user );
 		wp_set_current_user( $user->ID );
 		wp_set_auth_cookie( $user->ID, true );
-		wp_safe_redirect( skynco_account_url() );
+		wp_safe_redirect( $dest );
 		exit;
 	}
 );
@@ -571,7 +617,7 @@ function skynco_dash_page_profile( $c ) {
 
 function skynco_account_signin( $msg ) {
 	$notes = [
-		'sent'      => 'Check your inbox. We sent a sign-in link to <b>' . esc_html( sanitize_email( wp_unslash( $_GET['e'] ?? '' ) ) ) . '</b>. It expires in 30 minutes.',
+		'sent'      => 'Check your inbox. We sent a sign-in link to <b>' . esc_html( sanitize_email( wp_unslash( $_GET['e'] ?? '' ) ) ) . '</b>. It works for 48 hours.',
 		'expired'   => 'That link has expired or was already used. Enter your email for a new one.',
 		'bad-email' => 'Please enter a valid email address.',
 	];
@@ -582,7 +628,7 @@ function skynco_account_signin( $msg ) {
 		$h .= '<p class="ska-note">' . $notes[ $msg ] . '</p>';
 	}
 	$h .= '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '"><input type="hidden" name="action" value="skynco_magic"><input type="hidden" name="_sknonce" value="' . esc_attr( wp_create_nonce( 'skynco_magic' ) ) . '">';
-	$h .= '<label class="ska-sr" for="ska-email">Email</label><input id="ska-email" type="email" name="email" required autocomplete="email" placeholder="you@example.com"><button class="ska-btn" type="submit">Email me a sign-in link</button></form>';
+	$h .= '<label class="ska-sr" for="ska-email">Email</label><input id="ska-email" type="email" name="email" required autocomplete="email" placeholder="you@example.com" value="' . esc_attr( sanitize_email( wp_unslash( $_GET['e'] ?? '' ) ) ) . '"><button class="ska-btn" type="submit">Email me a sign-in link</button></form>';
 	$h .= '<details class="ska-pw"><summary>Use a password instead</summary>' . wp_login_form( [ 'echo' => false, 'redirect' => skynco_account_url(), 'label_username' => 'Email', 'remember' => true ] ) . '<a href="' . esc_url( wp_lostpassword_url( skynco_account_url() ) ) . '">Forgot password?</a></details>';
 	$h .= '</div></div></section></div>';
 	return $h;
@@ -909,7 +955,7 @@ function skynco_ensure_client_account( $email, $first = '', $last = '', $phone =
 		}
 	}
 	skynco_link_client_records( get_user_by( 'id', $uid ) );
-	$link = skynco_magic_link_url( $email, 7 * DAY_IN_SECONDS );
+	$link = skynco_dashboard_link( $email );
 	$body = '<div style="font-family:Arial,sans-serif;max-width:520px;margin:auto;color:#2A1A24">'
 		. '<h2 style="font-family:Georgia,serif;color:#3B1530;font-weight:500">Your Skyn&amp;Co. account is ready' . ( $first ? ', ' . esc_html( $first ) : '' ) . '</h2>'
 		. '<p>We made you a client dashboard so you can see your visits and orders, rebook in a tap and collect loyalty rewards. No password needed.</p>'
@@ -995,4 +1041,31 @@ add_action(
 			echo '<script>(function(){var a=document.querySelector(".skd-nav a.is-on");if(a&&a.parentNode.scrollWidth>a.parentNode.clientWidth){a.parentNode.scrollLeft=a.offsetLeft-16;}})();</script>';
 		}
 	}
+);
+
+/* ---------------------------------------------------------------------------
+ * Personal "Open my dashboard" button in booking and order emails.
+ * ------------------------------------------------------------------------ */
+add_filter(
+	'latepoint_replace_customer_vars',
+	function ( $text, $customer ) {
+		if ( false !== strpos( (string) $text, '{{skynco_dashboard_url}}' ) && ! empty( $customer->email ) ) {
+			$text = str_replace( '{{skynco_dashboard_url}}', esc_url( skynco_dashboard_link( $customer->email, 'visits' ) ), $text );
+		}
+		return $text;
+	},
+	10,
+	2
+);
+
+add_action(
+	'woocommerce_email_after_order_table',
+	function ( $order, $sent_to_admin ) {
+		if ( $sent_to_admin || ! $order || ! $order->get_billing_email() ) {
+			return;
+		}
+		echo '<p style="margin:24px 0;text-align:center"><a href="' . esc_url( skynco_dashboard_link( $order->get_billing_email(), 'orders' ) ) . '" style="display:inline-block;background:#D1127E;color:#ffffff;text-decoration:none;padding:13px 26px;border-radius:999px;font-weight:bold">Open my client dashboard</a></p><p style="text-align:center;font-size:13px;color:#6E5A66">Track this order, your visits and rewards. No password needed.</p>';
+	},
+	20,
+	2
 );

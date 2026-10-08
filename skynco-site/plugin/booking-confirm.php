@@ -67,7 +67,13 @@ add_action(
 		$h .= '<div class="skbc-card skbc-card--soft"><p class="skbc-k">Studio</p><p class="skbc-t">Skyn&amp;Co. Skincare &amp; Wellness</p><p class="skbc-s">150 Arsenal St, Suite 210, Watertown, MA 02472</p><a class="skbc-link" href="' . esc_url( $map ) . '" target="_blank" rel="noopener">Get directions</a></div>';
 		$h .= '<div class="skbc-card skbc-card--soft"><p class="skbc-k">Payment</p><div class="skbc-rows"><div><span>Total</span><b>' . wp_kses_post( $total ) . '</b></div><div><span>Status</span><b>' . ( $paid ? 'Paid' : 'Pay at your visit' ) . '</b></div></div>' . ( $addons ? '<p class="skbc-s" style="margin-top:10px">Add-ons: ' . esc_html( $addons ) . '</p>' : '' ) . '</div>';
 		$h .= '<div class="skbc-card skbc-card--soft"><p class="skbc-k">Before you come</p><ul class="skbc-list"><li>Arrive with clean skin, or come as you are and we will cleanse.</li><li>Skip retinoids and exfoliants for 2 days before.</li><li>Need to change? Text (857) 228-4708 at least 24 hours before.</li></ul></div>';
-		$h .= '<a class="skbc-cta" href="' . esc_url( function_exists( 'skynco_account_url' ) ? skynco_account_url() : home_url( '/' ) ) . '">View my client dashboard</a>';
+		$email = ! empty( $order->customer->email ) ? $order->customer->email : '';
+		$me    = wp_get_current_user();
+		if ( $me->ID && $email && strtolower( $me->user_email ) === strtolower( $email ) ) {
+			$h .= '<a class="skbc-cta" href="' . esc_url( skynco_account_url( 'visits' ) ) . '">Open my client dashboard</a>';
+		} else {
+			$h .= '<a class="skbc-cta" href="' . esc_url( add_query_arg( 'e', rawurlencode( $email ), skynco_account_url() ) ) . '">Open my client dashboard</a><p class="skbc-s" style="text-align:center;margin-top:8px">Your personal dashboard link is also in your confirmation email.</p>';
+		}
 		$h .= '</div>';
 		echo $h; // phpcs:ignore
 	}
