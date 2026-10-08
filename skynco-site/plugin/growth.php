@@ -511,32 +511,77 @@ add_action(
 
 /* ===========================================================================
  * Booking upsells (LatePoint)
- * 1. Review step: "Enhance your visit" add-ons, added to the same booking cart in one tap.
+ * 1. Review step: "Enhance your visit" add-ons. LatePoint free has no multi-service cart,
+ *    so add-ons are ticked here, saved with the order, emailed to the studio and paid in studio.
+ *    Only add-ons short enough to fit in the treatment's turnover buffer are offered.
  * 2. Confirmation step: home-care products, 10% off with GLOW10.
  * ======================================================================== */
 function skynco_lp_addons() {
-	$ids = get_option( 'skynco_lp_addon_ids', [] );
 	return [
-		[ $ids['led'] ?? 0, 'LED Light Therapy', '+15 min', 25, 'Calms redness and clears breakouts.' ],
-		[ $ids['derma'] ?? 0, 'Dermaplaning', '+20 min', 35, 'Smoother skin, better product absorption.' ],
-		[ $ids['jelly'] ?? 0, 'Hydro-Jelly Mask', '+10 min', 15, 'Cooling, deep hydration to finish.' ],
-		[ $ids['lip'] ?? 0, 'Upper Lip Wax', '+15 min', 10, 'While you’re already here.' ],
+		'led'   => [ 'LED Light Therapy', '+15 min', 25, 'Calms redness and clears breakouts.' ],
+		'jelly' => [ 'Hydro-Jelly Mask', '+10 min', 15, 'Cooling, deep hydration to finish.' ],
+		'lip'   => [ 'Upper Lip Wax', '+5 min', 10, 'While you’re already here.' ],
 	];
+}
+
+function skynco_lp_cart_key() {
+	$uuid = defined( 'LATEPOINT_CART_COOKIE' ) && isset( $_COOKIE[ LATEPOINT_CART_COOKIE ] ) ? sanitize_key( wp_unslash( $_COOKIE[ LATEPOINT_CART_COOKIE ] ) ) : '';
+	return $uuid ? 'skynco_addons_' . md5( $uuid ) : '';
 }
 
 add_action(
 	'latepoint_after_verify_step_content',
 	function () {
-		$cards = '';
-		foreach ( skynco_lp_addons() as $a ) {
-			if ( ! $a[0] ) {
-				continue;
+		$key    = skynco_lp_cart_key();
+		$chosen = $key ? (array) get_transient( $key ) : [];
+		$cards  = '';
+		foreach ( skynco_lp_addons() as $k => $a ) {
+			$on     = in_array( $k, $chosen, true );
+			$cards .= '<button type="button" class="sk-lpbump__item' . ( $on ? ' is-on' : '' ) . '" data-addon="' . esc_attr( $k ) . '" aria-pressed="' . ( $on ? 'true' : 'false' ) . '"><span class="sk-lpbump__name">' . esc_html( $a[0] ) . '</span><span class="sk-lpbump__meta">' . esc_html( $a[1] ) . ' · <b>$' . (int) $a[2] . '</b></span><span class="sk-lpbump__desc">' . esc_html( $a[3] ) . '</span><span class="sk-lpbump__add"><span class="sk-off">+ Add to my visit</span><span class="sk-on">✓ Added</span></span></button>';
+		}
+		echo '<div class="sk-lpbump"><p class="sk-lpbump__eyebrow">Enhance your visit</p><p class="sk-lpbump__title">Most clients add one of these</p><div class="sk-lpbump__grid">' . $cards . '</div><p class="sk-lpbump__fine">Done during your appointment and paid at the studio. Hana will confirm when you arrive.</p></div>'; // phpcs:ignore
+	}
+);
+
+add_action( 'wp_ajax_skynco_lp_addon', 'skynco_ajax_lp_addon' );
+add_action( 'wp_ajax_nopriv_skynco_lp_addon', 'skynco_ajax_lp_addon' );
+function skynco_ajax_lp_addon() {
+	$key   = skynco_lp_cart_key();
+	$addon = sanitize_key( $_POST['addon'] ?? '' );
+	if ( ! $key || ! isset( skynco_lp_addons()[ $addon ] ) ) {
+		wp_send_json_error();
+	}
+	$chosen = (array) get_transient( $key );
+	$chosen = ! empty( $_POST['on'] ) ? array_values( array_unique( array_merge( $chosen, [ $addon ] ) ) ) : array_values( array_diff( $chosen, [ $addon ] ) );
+	set_transient( $key, $chosen, DAY_IN_SECONDS );
+	wp_send_json_success( $chosen );
+}
+
+add_action(
+	'latepoint_order_created',
+	function ( $order ) {
+		$key = skynco_lp_cart_key();
+		if ( ! $key || ! ( $chosen = (array) get_transient( $key ) ) ) {
+			return;
+		}
+		$all   = skynco_lp_addons();
+		$lines = [];
+		$total = 0;
+		foreach ( $chosen as $k ) {
+			if ( isset( $all[ $k ] ) ) {
+				$lines[] = $all[ $k ][0] . ' ($' . $all[ $k ][2] . ')';
+				$total  += $all[ $k ][2];
 			}
-			$cards .= '<button type="button" class="sk-lpbump__item" data-service-id="' . (int) $a[0] . '"><span class="sk-lpbump__name">' . esc_html( $a[1] ) . '</span><span class="sk-lpbump__meta">' . esc_html( $a[2] ) . ' · <b>$' . (int) $a[3] . '</b></span><span class="sk-lpbump__desc">' . esc_html( $a[4] ) . '</span><span class="sk-lpbump__add">+ Add</span></button>';
 		}
-		if ( $cards ) {
-			echo '<div class="sk-lpbump"><p class="sk-lpbump__eyebrow">Enhance your visit</p><p class="sk-lpbump__title">Most clients add one of these</p><div class="sk-lpbump__grid">' . $cards . '</div><p class="sk-lpbump__fine">Booked straight after your treatment. Pay at the studio.</p></div>'; // phpcs:ignore
+		if ( ! $lines ) {
+			return;
 		}
+		$text = implode( ', ', $lines ) . ' — $' . $total . ' to collect in studio';
+		if ( class_exists( 'OsMetaHelper' ) ) {
+			OsMetaHelper::save_order_meta_by_key( 'skynco_addons', $text, $order->id );
+		}
+		wp_mail( get_option( 'admin_email' ), 'Add-ons requested for booking ' . ( $order->confirmation_code ?? '#' . $order->id ), "The client added these to their visit:\n\n" . $text . "\n\nOrder: " . admin_url( 'admin.php?page=latepoint&route_name=orders__index' ) );
+		delete_transient( $key );
 	}
 );
 
@@ -556,17 +601,13 @@ add_action(
 		?>
 <script>
 (function(){
+	var ajax=<?php echo wp_json_encode( admin_url( 'admin-ajax.php' ) ); ?>;
 	document.addEventListener('click',function(e){
 		var b=e.target.closest('.sk-lpbump__item'); if(!b) return;
-		var form=b.closest('.latepoint-w')||document, trig=form.querySelector('.latepoint-add-another-item-trigger');
-		if(!trig) return; b.classList.add('is-loading');
-		var id=b.getAttribute('data-service-id'), tries=0;
-		trig.click();
-		var t=setInterval(function(){
-			var it=form.querySelector('.os-selectable-item[data-item-id="'+id+'"] .os-service-selector, .os-selectable-item[data-item-id="'+id+'"]');
-			if(it){ clearInterval(t); it.click(); }
-			if(++tries>60) clearInterval(t);
-		},150);
+		e.preventDefault();
+		var on=!b.classList.contains('is-on'); b.classList.toggle('is-on',on); b.setAttribute('aria-pressed',on?'true':'false');
+		var d=new FormData(); d.append('action','skynco_lp_addon'); d.append('addon',b.getAttribute('data-addon')); if(on) d.append('on','1');
+		fetch(ajax,{method:'POST',body:d,credentials:'same-origin'}).catch(function(){});
 	});
 })();
 </script>
@@ -590,7 +631,9 @@ add_action(
 .sk-lpbump__meta{font:500 13px Manrope,sans-serif;color:#6E5A66}.sk-lpbump__meta b{color:#D1127E}
 .sk-lpbump__desc{font:400 12.5px/1.4 Manrope,sans-serif;color:#6E5A66}
 .sk-lpbump__add{position:absolute;left:14px;bottom:12px;font:700 13px Manrope,sans-serif;color:#D1127E}
-.sk-lpbump__item.is-loading{opacity:.6;pointer-events:none}
+.sk-lpbump__item.is-on{border-color:#D1127E;background:#FFF0F7;box-shadow:0 0 0 2px #D1127E inset}
+.sk-lpbump__item .sk-on,.sk-lpbump__item.is-on .sk-off{display:none}.sk-lpbump__item.is-on .sk-on{display:inline}
+@media(max-width:480px){.sk-lpbump__grid{grid-template-columns:1fr}}
 .sk-lpbump__fine{margin:10px 0 0;font-size:12px;color:#9A8791}
 .sk-lpafter__text{margin:-6px 0 14px;font-size:14px;color:#6E5A66}
 .sk-lpafter .sk-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
