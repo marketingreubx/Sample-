@@ -7,8 +7,8 @@ if ( ! defined( 'ABSPATH' ) || function_exists( 'lux_snap' ) ) {
 	return;
 }
 
-function lux_snap( $url, $img_max = 420, $menu_open = false ) {
-	$html = wp_remote_retrieve_body( wp_remote_get( add_query_arg( 'snap', time(), $url ), [ 'timeout' => 40, 'sslverify' => false ] ) );
+function lux_snap( $url, $img_max = 420, $menu_open = false, $cookies = [] ) {
+	$html = wp_remote_retrieve_body( wp_remote_get( add_query_arg( 'snap', time(), $url ), [ 'timeout' => 40, 'sslverify' => false, 'cookies' => $cookies ] ) );
 	$site = home_url();
 	$html = preg_replace_callback(
 		'#<link[^>]+href=[\'"](' . preg_quote( $site, '#' ) . '[^\'"]+\.css)(\?[^\'"]*)?[\'"][^>]*>#',
