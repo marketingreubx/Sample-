@@ -1077,6 +1077,8 @@ add_action(
 add_action(
 	'wp_head',
 	function () {
+		// Brand fonts on every page (Elementor only loads them on pages it builds).
+		echo '<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..700;1,9..144,300..700&family=Manrope:wght@400..800&display=swap">';
 		echo '<style id="skynco-noslide">html,body{max-width:100%;overflow-x:clip}@supports not (overflow:clip){body{overflow-x:hidden}}img,video,iframe{max-width:100%}</style>';
 	},
 	1
