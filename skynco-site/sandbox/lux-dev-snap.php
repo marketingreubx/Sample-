@@ -81,9 +81,16 @@ function lux_snap_hq( $url, $max = 1800, $q = 82, $cookies = [] ) {
 	$html = preg_replace( '#\s(srcset|sizes|data-src)="[^"]*"#', '', $html );
 	$html = str_replace( [ 'loading="lazy"', 'elementor-invisible' ], [ '', '' ], $html );
 	$html = preg_replace( '/class="elementor-element /', 'class="e-lazyloaded elementor-element ', $html );
+	$html = lux_embed_uploads( $html, $max, $q );
+	return base64_encode( gzencode( $html, 9 ) );
+}
+
+/** Replace every uploads image URL in $html with an embedded data URI (max $max px). */
+function lux_embed_uploads( $html, $max = 1600, $q = 80 ) {
+	static $cache = [];
 	$up   = wp_get_upload_dir();
+	$html = str_replace( str_replace( '/', '\\/', $up['baseurl'] ), $up['baseurl'], $html );
 	preg_match_all( '#' . preg_quote( $up['baseurl'], '#' ) . '/[^"\'\)\s]+?\.(?:jpe?g|png|webp)#i', $html, $m );
-	$done = [];
 	foreach ( array_unique( $m[0] ) as $u ) {
 		$orig = preg_replace( '/-\d+x\d+(\.(jpe?g|png|webp))$/i', '$1', $u );
 		$file = $up['basedir'] . substr( $orig, strlen( $up['baseurl'] ) );
@@ -93,7 +100,8 @@ function lux_snap_hq( $url, $max = 1800, $q = 82, $cookies = [] ) {
 		if ( ! file_exists( $file ) ) {
 			continue;
 		}
-		if ( ! isset( $done[ $file ] ) ) {
+		$key = $file . '|' . $max;
+		if ( ! isset( $cache[ $key ] ) ) {
 			$im = @imagecreatefromstring( file_get_contents( $file ) );
 			if ( ! $im ) {
 				continue;
@@ -110,9 +118,9 @@ function lux_snap_hq( $url, $max = 1800, $q = 82, $cookies = [] ) {
 			imagecopyresampled( $n, $im, 0, 0, 0, 0, imagesx( $n ), imagesy( $n ), $w, $h );
 			ob_start();
 			$png ? imagepng( $n, null, 8 ) : imagejpeg( $n, null, $q );
-			$done[ $file ] = 'data:image/' . ( $png ? 'png' : 'jpeg' ) . ';base64,' . base64_encode( ob_get_clean() );
+			$cache[ $key ] = 'data:image/' . ( $png ? 'png' : 'jpeg' ) . ';base64,' . base64_encode( ob_get_clean() );
 		}
-		$html = str_replace( $u, $done[ $file ], $html );
+		$html = str_replace( $u, $cache[ $key ], $html );
 	}
-	return base64_encode( gzencode( $html, 9 ) );
+	return $html;
 }
