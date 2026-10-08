@@ -100,8 +100,8 @@ function lux_photo_hero( $title, $eyebrow, $h1, $text, array $buttons, $image, $
 	$k     = lux_inner_kit();
 	// Photo backgrounds only. $video names a hero still (poster-{name}) taken from the studio footage.
 	$media = get_option( 'skynco_media_ids', [] );
-	if ( $video && ! empty( $media[ 'poster-' . $video ] ) ) {
-		$image = 'poster-' . $video;
+	if ( $video && ! empty( $media[ 'hero-' . $video ] ) ) {
+		$image = 'hero-' . $video; // High-resolution hero photo for this page.
 	}
 	$vid   = '';
 	$extra = [];
@@ -110,7 +110,8 @@ function lux_photo_hero( $title, $eyebrow, $h1, $text, array $buttons, $image, $
 		$extra + [
 			'background_background'          => 'classic',
 			'background_image'               => $k['img']( $image ),
-			'background_position'            => 'center center',
+			'background_position'            => 'center right',
+			'background_position_mobile'     => 'center center',
 			'background_size'                => 'cover',
 			'background_overlay_background'  => 'gradient',
 			'background_overlay_color'       => 'rgba(38,16,31,0.92)',
