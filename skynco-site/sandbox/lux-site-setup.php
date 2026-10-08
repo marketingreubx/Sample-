@@ -347,5 +347,7 @@ body{background:#FFF8F6}
 html{background:#26101F}
 body{background-color:#FFF8F6}
 .site-footer{padding-bottom:env(safe-area-inset-bottom)}
+
+#ast-mobile-popup .ast-mobile-popup-content>.ast-builder-layout-element.ast-header-button-1{padding-top:32px!important}
 CSS;
 }
