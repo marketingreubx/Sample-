@@ -630,7 +630,8 @@ add_action(
 .skb-name{font:500 16px/1.2 Fraunces,serif}
 .skb-sub{display:flex;align-items:center;gap:6px;font-size:12px;color:#EBD7E1;margin-top:2px!important}
 .skb-dot{width:7px;height:7px;border-radius:50%;background:#5BE49B}
-.skb-x{margin-left:auto;width:34px;height:34px;border-radius:50%;border:0;background:rgba(255,255,255,.12);color:#fff;font-size:22px;line-height:1;cursor:pointer}
+.skb-x{margin-left:auto;width:34px!important;height:34px!important;min-width:0!important;padding:0!important;border-radius:50%!important;border:0!important;background:rgba(255,255,255,.12)!important;color:#fff!important;font:400 22px/34px Manrope,sans-serif!important;text-align:center;cursor:pointer;box-shadow:none!important}
+.skb-chips button,.skb-launch,.skb-send{box-shadow:none}
 .skb-log{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:10px}
 .skb-msg{max-width:88%;padding:11px 14px;border-radius:18px;font-size:14px;line-height:1.5}
 .skb-msg p+p{margin-top:8px!important}
