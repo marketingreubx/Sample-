@@ -259,8 +259,7 @@ body{background:#FFF8F6}
 #ast-mobile-popup .ast-mobile-popup-content{padding:8px 24px 0!important}
 #ast-mobile-popup .main-header-menu{background:transparent!important;border:0!important}
 #ast-mobile-popup .main-header-menu .menu-item{border:0!important;background:transparent!important}
-#ast-mobile-popup .main-header-menu .menu-link{display:flex!important;justify-content:space-between;align-items:center;padding:16px 0!important;border-bottom:1px solid rgba(255,214,236,.14)!important;font:400 32px/1.1 Fraunces,serif!important;color:#FFF8F6!important;background:transparent!important}
-#ast-mobile-popup .main-header-menu .menu-link::after{content:"\2192";font:400 20px Manrope,sans-serif;color:#FF8CC8;opacity:.8}
+#ast-mobile-popup .main-header-menu .menu-link{display:block!important;padding:13px 0!important;border-bottom:1px solid rgba(255,214,236,.12)!important;font:500 18px/1.3 Manrope,sans-serif!important;letter-spacing:.01em;color:#FFF8F6!important;background:transparent!important}
 #ast-mobile-popup .main-header-menu .current-menu-item>.menu-link{color:#FF8CC8!important}
 #ast-mobile-popup .ast-header-button-1{width:100%;margin-top:28px}
 #ast-mobile-popup .ast-header-button-1 .ast-builder-button-wrap{width:100%}
@@ -285,12 +284,18 @@ body{background:#FFF8F6}
 
 /* ===== v6: mobile layout ===== */
 @media (max-width:767px){
-  .lux-mscroll{display:flex!important;overflow-x:auto;scroll-snap-type:x mandatory;gap:12px!important;margin:0 -16px;padding:0 16px 6px;scrollbar-width:none}
-  .lux-mscroll::-webkit-scrollbar,.skba-grid::-webkit-scrollbar{display:none}
-  .lux-mscroll>.e-con{flex:0 0 78%!important;width:78%!important;min-height:340px!important;scroll-snap-align:start}
-  .skba-grid{display:flex!important;overflow-x:auto;scroll-snap-type:x mandatory;gap:12px;margin:0 -16px;padding:0 16px 6px;scrollbar-width:none}
-  .skba-grid .skba{flex:0 0 82%;scroll-snap-align:start}
-  .skba-n1 .skba{flex-basis:100%}
+  /* Mirror the desktop grids at a smaller scale instead of stacking everything */
+  .lux-mscroll{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:10px!important}
+  .lux-mscroll>.e-con{min-height:230px!important;border-radius:20px!important;padding:8px!important}
+  .lux-mscroll .elementor-heading-title{font-size:16px!important;line-height:1.25!important}
+  .lux-mscroll .elementor-widget-text-editor{font-size:13px!important;line-height:19px!important}
+  .lux-mscroll .elementor-widget-icon{display:none}
+  .skba-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:10px}
+  .skba-grid .skba:nth-child(3){grid-column:1/-1}
+  .skba-n1{grid-template-columns:1fr!important}
+  .skba__frame{border-radius:18px}
+  .skba__tag{top:8px;padding:4px 9px;font-size:10px}.skba__tag--b{left:8px}.skba__tag--a{right:8px}
+  .skba figcaption{font-size:13px}
   .lux-story-img img{max-width:300px!important;margin:0 auto}
   .lux-steps .elementor-heading-title{font-size:18px!important}
   .lux-steps div.elementor-heading-title,.lux-steps .elementor-widget-heading:first-child .elementor-heading-title{font-size:32px!important}
@@ -298,7 +303,6 @@ body{background:#FFF8F6}
   .site-footer .ast-footer-copyright,.site-below-footer-wrap{padding-left:16px!important;padding-right:16px!important}
   .site-footer .ast-footer-copyright p{font-size:13px;line-height:1.7}
   .elementor-widget-heading h2.elementor-heading-title{text-wrap:balance}
-  body{padding-bottom:72px}
 }
 .lux-mbar{display:none}
 @media (max-width:767px){

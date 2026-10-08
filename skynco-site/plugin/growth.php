@@ -492,7 +492,7 @@ add_action(
 .skba__frame img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;max-width:none}
 .skba__before{clip-path:inset(0 calc(100% - var(--pos)) 0 0)}
 .skba__handle{position:absolute;top:0;bottom:0;left:var(--pos);width:3px;margin-left:-1.5px;background:#fff;pointer-events:none}
-.skba__handle::after{content:"\2194";position:absolute;top:50%;left:50%;width:44px;height:44px;margin:-22px 0 0 -22px;border-radius:50%;background:#fff;color:#3B1530;display:flex;align-items:center;justify-content:center;font-size:20px;box-shadow:0 6px 18px rgba(0,0,0,.25)}
+.skba__handle::after{content:"";position:absolute;top:50%;left:50%;width:40px;height:40px;margin:-20px 0 0 -20px;border-radius:50%;background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%233B1530' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M9 6l-6 6 6 6M15 6l6 6-6 6'/%3E%3C/svg%3E") center/18px no-repeat;box-shadow:0 6px 18px rgba(0,0,0,.25)}
 .skba__range{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:ew-resize;margin:0}
 .skba__range:focus-visible + *{outline:none}
 .skba__frame:focus-within .skba__handle::after{outline:3px solid #D1127E}
@@ -508,15 +508,3 @@ add_action(
 	}
 );
 
-/* Mobile: sticky Book / Call bar (hidden where it would get in the way). */
-add_action(
-	'wp_footer',
-	function () {
-		if ( is_admin() || ( function_exists( 'is_checkout' ) && ( is_checkout() || is_cart() ) ) || is_page( [ 'book', 'my-bookings' ] ) ) {
-			return;
-		}
-		$book = is_singular( 'page' ) && 0 === strpos( (string) get_page_uri(), 'services/' ) ? home_url( '/book/?service=' . basename( get_page_uri() ) ) : home_url( '/book/' );
-		echo '<nav class="lux-mbar" aria-label="Quick actions"><a class="lux-mbar__call" href="tel:+18572284708" aria-label="Call (857) 228-4708"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.25 11.4 11.4 0 0 0 3.6.57 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.57 3.57a1 1 0 0 1-.25 1z"/></svg></a><a class="lux-mbar__book" href="' . esc_url( $book ) . '">Book Appointment</a></nav>';
-	},
-	40
-);
