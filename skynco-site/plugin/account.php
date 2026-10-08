@@ -704,6 +704,9 @@ add_action(
 .ska-form p{grid-column:1/-1;margin:0}
 .ska-note{margin:14px 0 0;padding:12px 16px;border-radius:12px;background:#FFF0F7;border:1px solid #F5C6DD;color:#3B1530;font-size:14px}
 .ska--in{padding-bottom:0}
+.ska-in>*{min-width:0}
+.ska-note,.ska-signin,.ska-hero h1,.ska-lead{overflow-wrap:anywhere}
+.ska-pw form,.ska-pw input{max-width:100%}
 .ska-hero--in{padding:80px 0 90px}
 .ska-in{display:grid;grid-template-columns:1.1fr .9fr;gap:40px;align-items:center}
 .ska-signin{color:#2A1A24}
@@ -1068,4 +1071,13 @@ add_action(
 	},
 	20,
 	2
+);
+
+/* Site-wide: nothing may push the page wider than the screen (no sideways sliding on phones). */
+add_action(
+	'wp_head',
+	function () {
+		echo '<style id="skynco-noslide">html,body{max-width:100%;overflow-x:clip}@supports not (overflow:clip){body{overflow-x:hidden}}img,video,iframe{max-width:100%}</style>';
+	},
+	1
 );
