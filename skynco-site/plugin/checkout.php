@@ -245,12 +245,12 @@ add_action(
 .woocommerce-cart .cart-empty{font:400 26px Fraunces,serif!important;color:#3B1530;background:none!important;padding:0!important}
 .woocommerce-cart .return-to-shop .button{border-radius:999px!important;background:#D1127E!important;color:#fff!important}
 /* Checkout */
-.woocommerce-checkout form.checkout{display:grid;grid-template-columns:minmax(0,1fr) 420px;gap:0 28px;align-items:start}
+.woocommerce-checkout form.checkout{display:grid;grid-template-columns:minmax(0,1fr) 420px;gap:18px 28px;align-items:start}
 .woocommerce-checkout form.checkout>.woocommerce-NoticeGroup{grid-column:1/-1}
 .woocommerce-checkout #customer_details{grid-column:1;grid-row:1;width:auto!important;float:none!important;margin:0!important;background:#fff;border:1px solid #EADDE0;border-radius:22px;padding:26px}
 .woocommerce-checkout #customer_details .col-1,.woocommerce-checkout #customer_details .col-2{width:100%!important;float:none!important;max-width:none!important;padding:0!important}
 .woocommerce-checkout #order_review_heading{display:none!important}
-.woocommerce-checkout #order_review{grid-column:2;grid-row:1;background:#fff;border:1px solid #EADDE0;border-radius:22px;padding:22px;position:sticky;top:110px;width:auto!important;float:none!important;margin:0!important}
+.woocommerce-checkout #order_review{grid-column:2;grid-row:1;background:#fff;border:1px solid #EADDE0;border-radius:22px;padding:24px!important;position:sticky;top:110px;width:auto!important;float:none!important;margin:0!important}
 .woocommerce-checkout #order_review::before{content:"Order summary";display:block;margin:0 0 8px;font:400 24px/1.2 Fraunces,serif;color:#3B1530}
 .woocommerce-checkout h3{font:400 22px/1.2 Fraunces,serif!important;color:#3B1530;margin:0 0 14px!important}
 .woocommerce-checkout #ship-to-different-address{margin-top:18px!important;font:600 15px Manrope,sans-serif!important}
@@ -265,7 +265,8 @@ add_action(
 .woocommerce-checkout .form-row .description::before{display:none}
 .woocommerce-checkout .woocommerce-form__label-for-checkbox{display:flex!important;align-items:center;gap:10px;font:600 14px Manrope,sans-serif!important}
 .woocommerce-checkout input[type=checkbox]{accent-color:#D1127E;width:18px;height:18px}
-.woocommerce-checkout table.shop_table{border:0!important;margin:0 0 16px!important}
+.woocommerce-checkout table.shop_table{border:0!important;margin:0 0 16px!important;border-collapse:collapse!important;border-spacing:0!important;width:100%}
+.woocommerce-checkout table.shop_table tfoot th{text-align:left!important}
 .woocommerce-checkout table.shop_table th,.woocommerce-checkout table.shop_table td{border:0!important;border-top:1px solid #F1E6E9!important;padding:12px 0!important;background:none!important;font:500 14px/1.45 Manrope,sans-serif;vertical-align:middle}
 .woocommerce-checkout table.shop_table thead{display:none}
 .woocommerce-checkout table.shop_table tbody tr:first-child td{border-top:0!important}
@@ -334,7 +335,7 @@ tr.woocommerce-shipping-totals td{border-top:0!important;padding-top:4px!importa
 .skc-cross ul.products{display:flex!important;overflow-x:auto;scroll-snap-type:x mandatory;gap:12px;padding-bottom:6px}
 .skc-cross ul.products li.product{flex:0 0 62%;scroll-snap-align:start}
 .woocommerce-checkout #customer_details{padding:18px;border-radius:18px}
-.woocommerce-checkout #order_review{padding:18px}
+.woocommerce-checkout #order_review{padding:18px!important}
 .woocommerce-checkout .form-row-first,.woocommerce-checkout .form-row-last{width:100%!important;float:none!important}
 }
 </style>
