@@ -48,6 +48,13 @@ add_action(
 	},
 	1
 );
+add_action(
+	'woocommerce_before_cart',
+	function () {
+		skynco_checkout_steps( 1 );
+	},
+	1
+);
 
 /* Page titles are replaced by the step bar. */
 add_filter(
@@ -141,21 +148,13 @@ add_action(
 		?>
 <script>
 jQuery(function($){
-	function steppers(){
-		$('.skc-qty .quantity').each(function(){
-			var q=$(this); if(q.find('.skc-step').length) return;
-			q.prepend('<button type="button" class="skc-step" data-d="-1" aria-label="Decrease">−</button>').append('<button type="button" class="skc-step" data-d="1" aria-label="Increase">+</button>');
-		});
-	}
 	var t;
 	function update(){ clearTimeout(t); t=setTimeout(function(){ $('[name="update_cart"]').prop('disabled',false).trigger('click'); },450); }
 	$(document.body).on('click','.skc-step',function(){
-		var i=$(this).siblings('input.qty'), v=parseInt(i.val()||0,10)+parseInt($(this).data('d'),10), mn=parseInt(i.attr('min')||0,10), mx=parseInt(i.attr('max')||999,10)||999;
-		i.val(Math.max(mn,Math.min(mx,v))).trigger('change'); update();
+		var i=$(this).closest('.skc-qty').find('input.qty'), v=parseInt(i.val()||0,10)+parseInt($(this).data('d'),10), mn=parseInt(i.attr('min')||0,10), mx=parseInt(i.attr('max'),10)||999;
+		i.val(Math.max(mn,Math.min(mx,v))).trigger('change');
 	});
 	$(document.body).on('change','.skc-qty input.qty',update);
-	$(document.body).on('updated_wc_div updated_cart_totals',steppers);
-	steppers();
 });
 </script>
 		<?php
@@ -188,6 +187,7 @@ add_action(
 .woocommerce-info a,.woocommerce-message a{color:#D1127E!important;font-weight:700}
 .sk-ship{background:#fff!important;border:1px solid #EADDE0;padding:14px 18px!important}
 /* Cart grid */
+.skc-main,.skc-side{min-width:0}
 .skc-grid{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:28px;align-items:start}
 .skc-h{margin:0 0 16px;font:400 34px/1.15 Fraunces,serif;color:#3B1530}.skc-h span{font:600 15px Manrope,sans-serif;color:#9A8791;margin-left:6px}
 .skc-items{list-style:none;margin:0;padding:0;border:0!important;display:flex;flex-direction:column;gap:12px;background:none!important}
@@ -201,12 +201,13 @@ add_action(
 .skc-tag{display:inline-block;margin:6px 0 0;padding:3px 10px;border-radius:99px;background:#FFF0F7;color:#D1127E;font:700 12px Manrope,sans-serif;align-self:flex-start}
 .skc-item dl.variation{margin:4px 0 0;font-size:13px;color:#6E5A66}
 .skc-bottom{display:flex;align-items:center;justify-content:space-between;margin-top:auto;padding-top:12px}
-.skc-qty .quantity{display:inline-flex;align-items:center;border:1px solid #E2CCD4;border-radius:999px;overflow:hidden;background:#fff}
-.skc-qty .quantity input.qty{width:40px;height:38px;border:0!important;text-align:center;font:700 15px Manrope,sans-serif;color:#2A1A24;background:transparent;padding:0;-moz-appearance:textfield;box-shadow:none!important}
-.skc-qty .quantity input::-webkit-inner-spin-button,.skc-qty .quantity input::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
-.skc-step{width:38px;height:38px;border:0;background:transparent;color:#3B1530;font:500 20px/1 Manrope,sans-serif;cursor:pointer;padding:0}
-.skc-step:hover{background:#FBEFF0}
 .skc-qty{font:700 14px Manrope,sans-serif;color:#6E5A66}
+.skc-qty.has-steps{display:inline-flex;align-items:center;border:1px solid #E2CCD4;border-radius:999px;overflow:hidden;background:#fff}
+.skc-qty .quantity{display:inline-block;margin:0!important}
+.skc-qty .quantity input.qty{width:38px!important;height:38px!important;min-height:0!important;border:0!important;border-radius:0!important;text-align:center;font:700 15px Manrope,sans-serif;color:#2A1A24;background:transparent!important;padding:0!important;-moz-appearance:textfield;box-shadow:none!important}
+.skc-qty .quantity input::-webkit-inner-spin-button,.skc-qty .quantity input::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+.skc-step{width:38px;height:38px;border:0!important;border-radius:0!important;background:transparent!important;color:#3B1530!important;font:500 20px/1 Manrope,sans-serif!important;cursor:pointer;padding:0!important;box-shadow:none!important}
+.skc-step:hover{background:#FBEFF0!important}
 .skc-remove{font:600 13px Manrope,sans-serif;color:#9A8791!important;text-decoration:underline!important}
 .skc-remove:hover{color:#D1127E!important}
 .skc-actions{display:flex;gap:10px;align-items:center;justify-content:space-between;margin-top:14px;flex-wrap:wrap}
@@ -290,6 +291,16 @@ add_action(
 .woocommerce-checkout .checkout_coupon p{margin:0!important}.woocommerce-checkout .checkout_coupon p:first-child{width:100%;font-size:13px;color:#6E5A66}
 .woocommerce-checkout .checkout_coupon .form-row-first{flex:1}
 .woocommerce-checkout .checkout_coupon input{height:46px;border-radius:999px!important;border:1px solid #E2CCD4!important;padding:0 16px!important}
+.woocommerce-cart .woocommerce-info::before,.woocommerce-checkout .woocommerce-info::before{display:none!important}
+.woocommerce-cart .woocommerce-info,.woocommerce-checkout .woocommerce-info{padding-left:18px!important}
+tr.woocommerce-shipping-totals th,tr.woocommerce-shipping-totals td{display:block;width:100%!important;text-align:left!important}
+tr.woocommerce-shipping-totals th{padding-bottom:4px!important}
+tr.woocommerce-shipping-totals td{border-top:0!important;padding-top:4px!important}
+#shipping_method li{display:flex!important;align-items:center;justify-content:flex-start!important;gap:10px;margin:0 0 8px!important;font:500 14px/1.4 Manrope,sans-serif!important;color:#2A1A24}
+#shipping_method li label{margin:0!important;display:inline!important}
+#shipping_method input[type=radio]{width:18px!important;height:18px!important;flex:0 0 18px;margin:0!important;accent-color:#D1127E}
+.woocommerce-checkout table.shop_table td.product-name{width:72%}
+.woocommerce-checkout .product-name .product-quantity{display:block;margin:2px 0 0 64px;font-size:12.5px}
 /* Order bump: keep prices on one line */
 .sk-bump{background:#FFF8F6!important;margin:0 0 16px!important}
 .sk-bump>span{display:flex;flex-direction:column;gap:4px}

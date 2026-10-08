@@ -11,7 +11,6 @@ defined( 'ABSPATH' ) || exit;
 do_action( 'woocommerce_before_cart' );
 ?>
 <div class="skc">
-	<?php skynco_checkout_steps( 1 ); ?>
 	<div class="skc-grid">
 		<div class="skc-main">
 			<form class="woocommerce-cart-form" action="<?php echo esc_url( wc_get_cart_url() ); ?>" method="post">
@@ -56,7 +55,8 @@ do_action( 'woocommerce_before_cart' );
 									<p class="skc-desc"><?php echo esc_html( wp_trim_words( wp_strip_all_tags( $_product->get_short_description() ), 14 ) ); ?></p>
 								<?php endif; ?>
 								<div class="skc-bottom">
-									<div class="skc-qty"><?php echo apply_filters( 'woocommerce_cart_item_quantity', $qty, $cart_item_key, $cart_item ); // phpcs:ignore ?></div>
+									<?php $steps = ! $_product->is_sold_individually() && empty( $cart_item['skynco_bump'] ); ?>
+									<div class="skc-qty<?php echo $steps ? ' has-steps' : ''; ?>"><?php echo $steps ? '<button type="button" class="skc-step" data-d="-1" aria-label="Decrease quantity">−</button>' : ''; ?><?php echo apply_filters( 'woocommerce_cart_item_quantity', $qty, $cart_item_key, $cart_item ); // phpcs:ignore ?><?php echo $steps ? '<button type="button" class="skc-step" data-d="1" aria-label="Increase quantity">+</button>' : ''; ?></div>
 									<?php
 									echo apply_filters( // phpcs:ignore
 										'woocommerce_cart_item_remove_link',
