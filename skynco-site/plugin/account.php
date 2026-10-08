@@ -595,7 +595,7 @@ add_action(
 .skd *{box-sizing:border-box}
 .skd p{margin:0}.skd a{text-decoration:none!important}
 .skd-i{flex:0 0 auto;display:block}
-.skd-wrap{max-width:1180px;margin:0 auto;padding:0 24px;display:grid;grid-template-columns:270px minmax(0,1fr);gap:28px;align-items:start}
+.skd .skd-wrap{max-width:1180px!important;width:100%;margin:0 auto!important;padding:0 24px;display:grid;grid-template-columns:270px minmax(0,1fr);gap:28px;align-items:start}
 /* Sidebar */
 .skd-side{position:sticky;top:110px;background:#fff;border:1px solid #EFE2E6;border-radius:26px;padding:22px;box-shadow:0 18px 40px -24px rgba(59,21,48,.25);display:flex;flex-direction:column;gap:16px}
 .skd-me{display:flex;align-items:center;gap:12px}
@@ -751,15 +751,15 @@ add_action(
 .skd-next__date{flex:none;flex-direction:row;gap:10px;justify-content:flex-start;align-self:flex-start;padding:10px 14px;border-radius:16px}
 .skd-next__date b{font-size:30px}
 .skd-next h2{font-size:26px!important}
-.skd-next__acts .skd-btn{flex:1 1 auto}
+.skd-next__acts .skd-btn{flex:1 1 0;padding:11px 8px;min-width:0}
 .skd-stats{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
 .skd-stat{padding:14px}
-.skd-quick{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;gap:10px;margin:0 -16px;padding:0 16px 4px;scrollbar-width:none}
+.skd-quick{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;gap:10px;margin:0;padding:0 0 4px;scrollbar-width:none}
 .skd-quick a{flex:0 0 42%;scroll-snap-align:start}
 .skd-sec{padding:18px;border-radius:22px;scroll-margin-top:70px}
 .skd-head h2{font-size:23px!important}
-.skd-rem{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;gap:10px;margin:0 -18px;padding:0 18px 4px;scrollbar-width:none}
-.skd-remcard{flex:0 0 84%;scroll-snap-align:start}
+.skd-rem{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;gap:10px;margin:0;padding:0 0 4px;scrollbar-width:none}
+.skd-remcard{flex:0 0 86%;scroll-snap-align:start}.skd-remcard:only-child{flex-basis:100%}
 .skd-row{flex-wrap:wrap;gap:12px}
 .skd-row__acts{width:100%;justify-content:space-between;padding-left:70px}
 .skd-order{flex-direction:column;gap:12px}
