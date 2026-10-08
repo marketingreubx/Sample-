@@ -67,6 +67,11 @@ function skynco_send_magic_link() {
 add_action(
 	'template_redirect',
 	function () {
+		if ( is_page( 'account' ) ) {
+			// Personal page with a form nonce: never serve it from the page cache.
+			nocache_headers();
+			do_action( 'litespeed_control_set_nocache', 'skynco client dashboard' );
+		}
 		if ( empty( $_GET['sk_login'] ) ) {
 			return;
 		}
