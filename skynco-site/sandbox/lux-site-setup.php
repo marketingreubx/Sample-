@@ -327,5 +327,8 @@ body{background:#FFF8F6}
 #ast-mobile-popup .ast-header-button-1,#ast-mobile-popup .ast-header-html-1{justify-content:stretch!important;padding:0!important}
 #ast-mobile-popup .ast-header-button-1 .ast-custom-button{padding:0 24px!important}
 @media (max-width:767px){#ast-scroll-top{bottom:88px!important;right:16px!important;border-radius:50%!important;width:44px;height:44px;display:flex;align-items:center;justify-content:center;background:#3B1530!important}}
+
+/* hero overlay: stronger on phones where text sits over the whole photo */
+@media (max-width:767px){.lux-photo-hero>.elementor-background-overlay,.lux-photo-hero::before{background-image:linear-gradient(180deg,rgba(38,16,31,.55) 0%,rgba(38,16,31,.86) 100%)!important}}
 CSS;
 }
