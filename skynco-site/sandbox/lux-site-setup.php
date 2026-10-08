@@ -292,6 +292,7 @@ body{background:#FFF8F6}
   .lux-mscroll .elementor-widget-icon{display:none}
   .skba-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:10px}
   .skba-grid .skba:nth-child(3){grid-column:1/-1}
+  .skba-grid .skba:nth-child(3) .skba__frame{aspect-ratio:16/10}
   .skba-n1{grid-template-columns:1fr!important}
   .skba__frame{border-radius:18px}
   .skba__tag{top:8px;padding:4px 9px;font-size:10px}.skba__tag--b{left:8px}.skba__tag--a{right:8px}
