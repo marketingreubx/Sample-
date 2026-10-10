@@ -9,25 +9,49 @@ if ( ! defined( 'ABSPATH' ) || function_exists( 'lux_shop_catalog' ) ) {
 
 /**
  * Retail catalogue: key => [name, category, regular, sale, short, description, image, badge, upsells[], cross-sells[], kit contents[], url slug].
- * Keys are internal (used by recommendations, kits and the checkout add-on); the url slug is what shows in the address bar.
- * Image: 'obf:<barcode>:pad|crop' uses the product photo from Open Beauty Facts (CC BY-SA); 'kit' composes the kit's products.
- * Real brands at approximate US retail prices; the studio sets its own prices and line-up.
+ * Keys are internal (recommendations, kits, checkout add-on); the url slug shows in the address bar.
+ * Image: 'asset:<file>' = studio packshot in skynco-site/assets/products (official brand imagery on the Skyn&Co. backdrop).
+ * Professional brands at their official US retail prices; the studio confirms its own line-up.
  */
 function lux_shop_catalog() {
 	return [
-		'gentle-cleansing-gel'         => [ 'Dermalogica Special Cleansing Gel', 'cleansers', 46, 0, 'A soap-free foaming gel that removes impurities without stripping.', 'Dermalogica’s best-selling cleanser for all skin types. Quillaja saponaria gently lifts makeup, oil and sunscreen while balm mint and lavender leave skin calm and refreshed, never tight. Massage onto damp skin morning and night, then rinse. 8.4 fl oz.', 'obf:0885204332900:pad', 'Bestseller', [ 'glow-kit' ], [ 'vitamin-c-brightening-serum', 'daily-mineral-spf-40' ], [], 'dermalogica-special-cleansing-gel' ],
-		'hydrating-hyaluronic-serum'   => [ 'La Roche-Posay Hyalu B5 Serum', 'serums', 40, 0, 'Pure hyaluronic acid and vitamin B5 for plump, smooth skin.', 'Two types of hyaluronic acid hydrate and visibly plump while vitamin B5 and madecassoside soothe and support the skin barrier. Ideal after microneedling, peels and facials. Apply 2 to 3 drops morning and night before moisturizer. 1 fl oz.', 'obf:3337875583657:pad', '', [ 'recovery-kit' ], [ 'barrier-repair-moisturizer', 'daily-mineral-spf-40' ], [], 'la-roche-posay-hyalu-b5-serum' ],
-		'vitamin-c-brightening-serum'  => [ 'Drunk Elephant C-Firma Day Serum', 'serums', 78, 0, '15% L-ascorbic acid to brighten, firm and fade dark marks.', 'A potent vitamin C day serum with 15% L-ascorbic acid, ferulic acid and vitamin E plus pumpkin ferment extract. Brightens dull skin, evens tone and defends against daily environmental stress. Use in the morning, followed by sunscreen. 1 fl oz.', 'obf:0856556004111:pad', 'Hana’s pick', [ 'glow-kit' ], [ 'daily-mineral-spf-40', 'hydrating-hyaluronic-serum' ], [], 'drunk-elephant-c-firma-day-serum' ],
-		'barrier-repair-moisturizer'   => [ 'CeraVe Moisturizing Cream', 'moisturizers-spf', 19, 0, 'Three essential ceramides and hyaluronic acid for 24-hour hydration.', 'A rich, non-greasy cream with three essential ceramides and hyaluronic acid that restores the skin barrier and locks in moisture. Fragrance-free and accepted by the National Eczema Association. Use on face and body, morning and night. 16 oz.', 'obf:0301871373324:crop', '', [ 'clear-skin-kit' ], [ 'hydrating-hyaluronic-serum', 'daily-mineral-spf-40' ], [], 'cerave-moisturizing-cream' ],
-		'daily-mineral-spf-40'         => [ 'Supergoop! Unseen Sunscreen SPF 40', 'moisturizers-spf', 38, 0, 'Weightless, invisible SPF 40 that doubles as a makeup primer.', 'The cult invisible sunscreen: a clear, oil-free gel with a velvety finish that works on every skin tone and sits beautifully under makeup. Daily SPF is the single best way to protect your facial results. Apply as the last step every morning. 1.7 fl oz.', 'obf:0816218026530:crop', 'Bestseller', [ 'glow-kit', 'recovery-kit' ], [ 'vitamin-c-brightening-serum', 'barrier-repair-moisturizer' ], [], 'supergoop-unseen-sunscreen-spf-40' ],
-		'clarifying-spot-treatment'    => [ 'Dermalogica Clearing Skin Wash', 'cleansers', 46, 0, 'A salicylic acid foaming wash that clears breakouts.', 'A breakout-clearing foam with salicylic acid to clear pores and reduce oil, plus balm mint, eucalyptus and tea tree to soothe. Leaves skin clean and calm without over-drying. Use morning and night on damp skin, then rinse. 8.4 fl oz.', 'obf:0758259323141:pad', '', [ 'clear-skin-kit' ], [ 'enzyme-exfoliating-mask', 'barrier-repair-moisturizer' ], [], 'dermalogica-clearing-skin-wash' ],
-		'enzyme-exfoliating-mask'      => [ 'The Ordinary AHA 30% + BHA 2% Peeling Solution', 'masks-treatments', 11, 0, 'A 10-minute weekly exfoliating facial for smooth, bright skin.', 'A professional-strength 10-minute peel with glycolic, lactic, tartaric, citric and salicylic acids to resurface dull, uneven texture and clear congestion. For experienced exfoliant users with non-sensitive skin. Use up to twice a week in the evening, never right after a professional peel, and wear SPF daily. 1 fl oz.', 'obf:0769915195606:pad', '', [ 'clear-skin-kit' ], [ 'hydrating-hyaluronic-serum', 'barrier-repair-moisturizer' ], [], 'the-ordinary-aha-30-bha-2-peeling-solution' ],
-		'post-treatment-recovery-balm' => [ 'Avène Cicalfate+ Restorative Protective Cream', 'masks-treatments', 30, 0, 'Soothes and repairs skin after peels, microneedling and waxing.', 'A dermatologist favourite for compromised skin. Avène thermal spring water soothes, while copper-zinc sulfate and a postbiotic help purify and repair. Ideal in the days after advanced treatments and waxing. Apply a thin layer twice a day. 1.35 fl oz.', 'obf:3282770204667:crop', '', [ 'recovery-kit' ], [ 'daily-mineral-spf-40', 'hydrating-hyaluronic-serum' ], [], 'avene-cicalfate-restorative-protective-cream' ],
-		'glow-kit'                     => [ 'The Glow Kit', 'kits', 162, 139, 'Dermalogica cleanser, Drunk Elephant vitamin C and Supergoop SPF 40.', 'Everything for bright, protected skin every day: Dermalogica Special Cleansing Gel, Drunk Elephant C-Firma Day Serum and Supergoop! Unseen Sunscreen SPF 40. Bought together, you save $23.', 'kit', 'Save $23', [], [ 'enzyme-exfoliating-mask', 'skynco-gift-card' ], [ 'gentle-cleansing-gel', 'vitamin-c-brightening-serum', 'daily-mineral-spf-40' ], 'glow-kit' ],
-		'clear-skin-kit'               => [ 'The Clear Skin Kit', 'kits', 76, 65, 'Clearing wash, weekly AHA/BHA peel and a barrier cream for breakouts.', 'A simple routine for breakout-prone skin that clears without stripping: Dermalogica Clearing Skin Wash, The Ordinary AHA 30% + BHA 2% Peeling Solution and CeraVe Moisturizing Cream. Save $11.', 'kit', 'Save $11', [], [ 'daily-mineral-spf-40', 'hydrating-hyaluronic-serum' ], [ 'clarifying-spot-treatment', 'enzyme-exfoliating-mask', 'barrier-repair-moisturizer' ], 'clear-skin-kit' ],
-		'recovery-kit'                 => [ 'The Recovery Kit', 'kits', 108, 92, 'Cicalfate+, Hyalu B5 and Unseen SPF for the week after treatments.', 'Recommended after microneedling, dermaplaning and chemical peels: Avène Cicalfate+ Restorative Protective Cream, La Roche-Posay Hyalu B5 Serum and Supergoop! Unseen Sunscreen SPF 40. Save $16.', 'kit', 'Save $16', [], [ 'barrier-repair-moisturizer', 'skynco-gift-card' ], [ 'post-treatment-recovery-balm', 'hydrating-hyaluronic-serum', 'daily-mineral-spf-40' ], 'recovery-kit' ],
+		'gentle-cleansing-gel'         => [ 'Dermalogica Special Cleansing Gel', 'cleansers', 49, 0, 'Soap-free foaming gel that deep cleans without stripping.', 'Dermalogica’s iconic everyday cleanser for all skin types. A gentle, soap-free gel with quillaja saponaria that lifts impurities and debris, while balm mint and lavender soothe and balance. Massage onto damp skin morning and night, then rinse. 8.4 fl oz / 250 mL.', 'asset:dermalogica-special-cleansing-gel.jpg', 'Bestseller', [ 'glow-kit' ], [ 'vitamin-c-brightening-serum', 'daily-mineral-spf-40' ], [], 'dermalogica-special-cleansing-gel' ],
+		'clarifying-spot-treatment'    => [ 'Image Skincare CLEAR CELL Clarifying Salicylic Gel Cleanser', 'cleansers', 41, 0, '2% salicylic acid gel cleanser for breakout-prone skin.', 'A clarifying gel cleanser formulated with 2% salicylic acid to gently exfoliate dead skin cells that can clog pores, with a soothing lather of mint, eucalyptus and tea tree oil. Leaves oily and breakout-prone skin fresh and clear. Use morning and night. 6 fl oz / 177 mL.', 'asset:image-clear-cell-salicylic-gel-cleanser.jpg', '', [ 'clear-skin-kit' ], [ 'enzyme-exfoliating-mask', 'barrier-repair-moisturizer' ], [], 'image-skincare-clear-cell-salicylic-gel-cleanser' ],
+		'vitamin-c-brightening-serum'  => [ 'Image Skincare VITAL C Hydrating Anti-Aging Serum', 'serums', 91, 0, 'Image’s #1 bestseller: brightens, hydrates and smooths.', 'A lightweight serum that pairs hyaluronic acid with a multi-vitamin C complex to brighten, tighten and smooth while locking in hydration. A cult favourite in treatment rooms for dull, dehydrated or sensitive skin. Apply in the morning before moisturizer and SPF. 1.7 fl oz / 50 mL.', 'asset:image-vital-c-hydrating-anti-aging-serum.jpg', 'Hana’s pick', [ 'glow-kit' ], [ 'daily-mineral-spf-40', 'hydrating-hyaluronic-serum' ], [], 'image-skincare-vital-c-hydrating-anti-aging-serum' ],
+		'hydrating-hyaluronic-serum'   => [ 'iS Clinical Hydra-Cool Serum', 'serums', 108, 0, 'Cooling hyaluronic serum that hydrates, calms and clarifies.', 'A refreshing, oil-free serum with hyaluronic acid and vitamin B5 plus purifying botanicals. Instantly cools and soothes, deeply hydrates and helps calm irritated or post-treatment skin. Ideal after microneedling, peels and facials. Apply morning and night before moisturizer. 1 fl oz / 30 mL.', 'asset:is-clinical-hydra-cool-serum.jpg', '', [ 'recovery-kit' ], [ 'barrier-repair-moisturizer', 'daily-mineral-spf-40' ], [], 'is-clinical-hydra-cool-serum' ],
+		'barrier-repair-moisturizer'   => [ 'Dermalogica Skin Smoothing Cream', 'moisturizers-spf', 49, 0, 'Delivers 48 hours of continuous hydration.', 'A best-selling moisturizer with Active HydraMesh Technology that infuses skin with 48 hours of continuous hydration, soothes and balances, and helps protect against environmental stress. Lightweight enough for every day, rich enough for dry skin. Use morning and night. 1.7 oz / 50 mL.', 'asset:dermalogica-skin-smoothing-cream.jpg', '', [ 'clear-skin-kit' ], [ 'hydrating-hyaluronic-serum', 'daily-mineral-spf-40' ], [], 'dermalogica-skin-smoothing-cream' ],
+		'daily-mineral-spf-40'         => [ 'EltaMD UV Clear Broad-Spectrum SPF 46', 'moisturizers-spf', 46, 0, 'The dermatologist favourite SPF for sensitive, acne-prone skin.', 'An oil-free, lightweight sunscreen with transparent zinc oxide and niacinamide that calms and protects skin prone to acne, rosacea and discoloration. Sheer, non-comedogenic and makeup-friendly. Daily SPF is the single best way to protect your facial results. Apply as the last step every morning. 1.7 oz / 48 g.', 'asset:eltamd-uv-clear-spf-46.jpg', 'Bestseller', [ 'glow-kit', 'recovery-kit' ], [ 'vitamin-c-brightening-serum', 'barrier-repair-moisturizer' ], [], 'eltamd-uv-clear-broad-spectrum-spf-46' ],
+		'enzyme-exfoliating-mask'      => [ 'Dermalogica Daily Microfoliant', 'masks-treatments', 69, 0, 'Rice-based powder exfoliant for brighter, smoother skin.', 'The cult rice-based powder that activates with water into a creamy foam, gently polishing away dead skin for a brighter, smoother complexion. Gentle enough for daily use and helps balance uneven skin tone. Work a half teaspoon with water into a paste, massage, then rinse. 2.6 oz / 74 g.', 'asset:dermalogica-daily-microfoliant.jpg', 'Cult favourite', [ 'clear-skin-kit' ], [ 'hydrating-hyaluronic-serum', 'barrier-repair-moisturizer' ], [], 'dermalogica-daily-microfoliant' ],
+		'post-treatment-recovery-balm' => [ 'Alastin Soothe + Protect Recovery Balm', 'masks-treatments', 52, 0, 'A thick, protective balm for skin after professional treatments.', 'Developed for use and application following skin-rejuvenating treatments such as microneedling, peels and lasers. This thick, moisturizing balm soothes, protects and comforts compromised skin while it recovers. Apply a generous layer as directed by your esthetician. 4 fl oz / 118 mL.', 'asset:alastin-soothe-protect-recovery-balm.jpg', '', [ 'recovery-kit' ], [ 'daily-mineral-spf-40', 'hydrating-hyaluronic-serum' ], [], 'alastin-soothe-protect-recovery-balm' ],
+		'glow-kit'                     => [ 'The Glow Kit', 'kits', 186, 159, 'Dermalogica cleanser, Image VITAL C serum and EltaMD SPF 46.', 'Everything for bright, protected skin every day: Dermalogica Special Cleansing Gel, Image Skincare VITAL C Hydrating Anti-Aging Serum and EltaMD UV Clear SPF 46. Bought together, you save $27.', 'asset:kit-glow-kit.jpg', 'Save $27', [], [ 'enzyme-exfoliating-mask', 'skynco-gift-card' ], [ 'gentle-cleansing-gel', 'vitamin-c-brightening-serum', 'daily-mineral-spf-40' ], 'glow-kit' ],
+		'clear-skin-kit'               => [ 'The Clear Skin Kit', 'kits', 159, 135, 'CLEAR CELL cleanser, Daily Microfoliant and Skin Smoothing Cream.', 'A professional routine for breakout-prone skin that clears without stripping: Image Skincare CLEAR CELL Salicylic Gel Cleanser, Dermalogica Daily Microfoliant and Dermalogica Skin Smoothing Cream. Save $24.', 'asset:kit-clear-skin-kit.jpg', 'Save $24', [], [ 'daily-mineral-spf-40', 'hydrating-hyaluronic-serum' ], [ 'clarifying-spot-treatment', 'enzyme-exfoliating-mask', 'barrier-repair-moisturizer' ], 'clear-skin-kit' ],
+		'recovery-kit'                 => [ 'The Recovery Kit', 'kits', 206, 175, 'Alastin balm, iS Clinical Hydra-Cool and EltaMD SPF 46.', 'Recommended after microneedling, dermaplaning and chemical peels: Alastin Soothe + Protect Recovery Balm, iS Clinical Hydra-Cool Serum and EltaMD UV Clear SPF 46. Save $31.', 'asset:kit-recovery-kit.jpg', 'Save $31', [], [ 'barrier-repair-moisturizer', 'skynco-gift-card' ], [ 'post-treatment-recovery-balm', 'hydrating-hyaluronic-serum', 'daily-mineral-spf-40' ], 'recovery-kit' ],
 		'skynco-gift-card'             => [ 'Skyn&Co. E-Gift Card', 'gift-cards', 100, 0, 'Use it for any treatment or product. Delivered by email.', 'The easiest gift for anyone who deserves a little time for themselves. Redeemable for any Skyn&Co. treatment or product, delivered by email and never expires.', 8101512, 'Gift idea', [], [ 'glow-kit' ], [], 'skynco-gift-card' ],
 	];
+}
+
+/** Studio packshot from the repo (skynco-site/assets/products), sideloaded once and cached by file name. */
+function lux_shop_asset_image( $file, $title ) {
+	$cache = get_option( 'skynco_asset_media', [] );
+	if ( ! empty( $cache[ $file ] ) && get_post( $cache[ $file ] ) ) {
+		return (int) $cache[ $file ];
+	}
+	require_once ABSPATH . 'wp-admin/includes/media.php';
+	require_once ABSPATH . 'wp-admin/includes/file.php';
+	require_once ABSPATH . 'wp-admin/includes/image.php';
+	$tmp = download_url( 'https://raw.githubusercontent.com/marketingreubx/Sample-/' . ( defined( 'SKYNCO_ASSET_REF' ) ? SKYNCO_ASSET_REF : 'claude/wizardly-noether-iac7ie' ) . '/skynco-site/assets/products/' . rawurlencode( $file ), 60 );
+	if ( is_wp_error( $tmp ) ) {
+		return 0;
+	}
+	$id = media_handle_sideload( [ 'name' => 'skynco-' . $file, 'tmp_name' => $tmp ], 0, $title );
+	if ( is_wp_error( $id ) ) {
+		@unlink( $tmp );
+		return 0;
+	}
+	update_post_meta( $id, '_wp_attachment_image_alt', $title );
+	$cache[ $file ] = (int) $id;
+	update_option( 'skynco_asset_media', $cache, false );
+	return (int) $id;
 }
 
 /** Product photo from Open Beauty Facts, squared on white (pad) or cropped to a square (crop). Cached by barcode. */
@@ -243,7 +267,9 @@ function lux_shop_setup() {
 		$product->set_virtual( 'gift-cards' === $p[1] );
 		$product->set_sold_individually( false );
 		$product->set_reviews_allowed( true );
-		if ( 'kit' === $p[6] ) {
+		if ( is_string( $p[6] ) && 0 === strpos( $p[6], 'asset:' ) ) {
+			$img = lux_shop_asset_image( substr( $p[6], 6 ), $p[0] );
+		} elseif ( 'kit' === $p[6] ) {
 			$parts = array_filter( array_map( fn( $k ) => isset( $ids[ $k ] ) ? (int) get_post_thumbnail_id( $ids[ $k ] ) : 0, $p[10] ) );
 			$img   = $parts ? lux_shop_kit_image( $slug, $parts, $p[0], $p[7] ) : 0;
 		} elseif ( is_string( $p[6] ) && 0 === strpos( $p[6], 'obf:' ) ) {
@@ -368,7 +394,7 @@ function lux_shop_elements() {
 		[ 'flex_gap' => lux_gap( 36 ), '_element_id' => 'kits' ],
 		[
 			lux_head_row(
-				[ lux_eyebrow( 'Best value' ), lux_heading( 'Kits that do the thinking <em>for you.</em>', 'h2', 'h2' ), lux_text( '<p>Three-step routines built around your skin goal. Buy the set and save up to $23.</p>', 'body', 'muted' ) ],
+				[ lux_eyebrow( 'Best value' ), lux_heading( 'Kits that do the thinking <em>for you.</em>', 'h2', 'h2' ), lux_text( '<p>Three-step routines built around your skin goal. Buy the set and save up to $31.</p>', 'body', 'muted' ) ],
 				null,
 				680
 			),
@@ -423,7 +449,7 @@ function lux_shop_elements() {
 				680
 			),
 			lux_w( 'shortcode', [ 'shortcode' => '[skynco_products slugs="gentle-cleansing-gel,vitamin-c-brightening-serum,hydrating-hyaluronic-serum,barrier-repair-moisturizer,daily-mineral-spf-40,enzyme-exfoliating-mask,clarifying-spot-treatment,post-treatment-recovery-balm" columns="4"]' ], 'All products' ),
-			lux_text( '<p>Product photos: <a href="https://world.openbeautyfacts.org" target="_blank" rel="noopener">Open Beauty Facts</a> contributors, CC BY-SA. Brand names belong to their owners.</p>', [ 'f' => 'Manrope', 's' => 12, 'w' => '500', 'lh' => 1.5 ], 'muted', [ 'align' => 'center' ] ),
+			lux_text( '<p>Product names, packaging and imagery belong to their respective brands.</p>', [ 'f' => 'Manrope', 's' => 12, 'w' => '500', 'lh' => 1.5 ], 'muted', [ 'align' => 'center' ] ),
 		]
 	);
 
