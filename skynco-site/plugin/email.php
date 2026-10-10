@@ -32,8 +32,16 @@ function skynco_smtp_on() {
 	return '1' === $s['enabled'] && $s['host'] && $s['user'] && $s['pass'];
 }
 
-/** Sender used while SMTP is not connected: the site's own domain, never a Gmail address it can't send for. */
+/**
+ * Sender used while SMTP is not connected. A temporary host name (e.g. *.hostingersite.com)
+ * is silently dropped by Gmail, so a real domain on the same hosting can be set in
+ * Studio → Email delivery (option skynco_mail_sender). Never a Gmail address.
+ */
 function skynco_site_sender() {
+	$set = (string) get_option( 'skynco_mail_sender', '' );
+	if ( is_email( $set ) ) {
+		return $set;
+	}
 	return 'noreply@' . preg_replace( '/^www\./', '', (string) wp_parse_url( home_url(), PHP_URL_HOST ) );
 }
 
@@ -150,6 +158,8 @@ add_action(
 			$new['from_email'] = $new['user'];
 		}
 		update_option( 'skynco_smtp', $new, false );
+		$sender = sanitize_email( wp_unslash( $_POST['site_sender'] ?? '' ) );
+		update_option( 'skynco_mail_sender', is_email( $sender ) ? $sender : '', false );
 		$note = 'saved';
 		if ( ! empty( $_POST['test_to'] ) ) {
 			delete_option( 'skynco_mail_last_error' );
@@ -193,6 +203,7 @@ function skynco_page_email() {
 	echo '<tr><th>From email</th><td><input class="regular-text" name="smtp[from_email]" value="' . $f( 'from_email' ) . '"> <span class="description">Must be the same mailbox (or an alias of it). Leave blank to use the username.</span></td></tr>';
 	echo '<tr><th>From name</th><td><input class="regular-text" name="smtp[from_name]" value="' . $f( 'from_name' ) . '"></td></tr>';
 	echo '<tr><th>Reply-to</th><td><input class="regular-text" name="smtp[reply_to]" value="' . $f( 'reply_to' ) . '"> <span class="description">Optional. Where client replies should go.</span></td></tr>';
+	echo '<tr><th>Sender without SMTP</th><td><input class="regular-text" name="site_sender" value="' . esc_attr( get_option( 'skynco_mail_sender', '' ) ) . '" placeholder="' . esc_attr( 'noreply@' . wp_parse_url( home_url(), PHP_URL_HOST ) ) . '"> <span class="description">Used until SMTP is connected. Must be an address on a real domain hosted on this server.</span></td></tr>';
 	echo '<tr><th>Send a test to</th><td><input class="regular-text" name="test_to" placeholder="you@example.com"></td></tr>';
 	echo '</table><p><button class="button button-primary">Save</button></p></form></div>';
 	echo '<script>document.querySelectorAll(".sk-preset").forEach(function(b){b.addEventListener("click",function(){document.getElementById("sk-host").value=b.dataset.host;document.getElementById("sk-port").value=b.dataset.port;document.getElementById("sk-secure").value=b.dataset.secure;document.getElementById("sk-preset-help").textContent=b.dataset.help;});});</script></div>';

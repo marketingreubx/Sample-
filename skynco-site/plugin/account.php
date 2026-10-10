@@ -1014,6 +1014,27 @@ add_action(
 	5
 );
 
+/* WooCommerce's "My account" page (linked from order emails, checkout and the
+   password screens) opens the client dashboard instead. Password reset and log
+   out still use WooCommerce; staff keep the default page. */
+add_action(
+	'template_redirect',
+	function () {
+		if ( ! function_exists( 'is_account_page' ) || ! is_account_page() || is_page( 'account' ) ) {
+			return;
+		}
+		if ( is_wc_endpoint_url( 'lost-password' ) || is_wc_endpoint_url( 'customer-logout' ) || isset( $_GET['key'] ) || isset( $_GET['action'] ) ) { // phpcs:ignore
+			return;
+		}
+		if ( current_user_can( 'edit_posts' ) ) {
+			return;
+		}
+		$tab = ( is_wc_endpoint_url( 'orders' ) || is_wc_endpoint_url( 'view-order' ) ) ? 'orders' : ( is_wc_endpoint_url( 'edit-account' ) || is_wc_endpoint_url( 'edit-address' ) ? 'profile' : '' );
+		wp_safe_redirect( skynco_account_url( $tab ) );
+		exit;
+	}
+);
+
 /* LatePoint's own "My bookings" area is replaced by the client dashboard. */
 add_action(
 	'template_redirect',

@@ -73,7 +73,7 @@ add_shortcode(
 				. '<div class="skh-card__buy"><span class="skh-card__price">' . $p->get_price_html() . '</span><a class="skh-card__add" href="' . esc_url( $add ) . '" rel="nofollow" aria-label="' . esc_attr( 'Add ' . $p->get_name() . ' to bag' ) . '">Add to bag</a></div></div></div>';
 			$slides .= '<div class="skh-slide' . ( 0 === $i ? ' is-on' : '' ) . '" aria-roledescription="slide" aria-label="' . esc_attr( ( $i + 1 ) . ' of ' . count( $all ) ) . '"' . ( $i ? ' aria-hidden="true"' : '' ) . '>'
 				. '<img class="skh-bg" src="' . esc_url( skynco_shop_hero_bg( $file ) ) . '" alt="" style="object-position:' . esc_attr( $pos ) . '"' . ( $i ? ' loading="lazy"' : ' fetchpriority="high"' ) . '>'
-				. '<div class="skh-wrap"><div class="skh-copy"><p class="skh-eyebrow">' . esc_html( $eyebrow ) . '</p><' . $tag . ' class="skh-title">' . wp_kses( $title, [ 'em' => [] ] ) . '</' . $tag . '><p class="skh-lead">' . esc_html( $text ) . '</p>'
+				. '<div class="skh-wrap"><div class="skh-copy"><' . $tag . ' class="skh-title">' . wp_kses( $title, [ 'em' => [] ] ) . '</' . $tag . '><p class="skh-lead">' . esc_html( $text ) . '</p>'
 				. '<div class="skh-cta">' . $cta . '</div>' . $card . '</div></div></div>';
 			$i++;
 		}
@@ -117,9 +117,7 @@ add_action(
 .skh-slide.is-on .skh-copy>*{opacity:1;transform:none}
 .skh-slide.is-on .skh-copy>*:nth-child(2){transition-delay:.12s}.skh-slide.is-on .skh-copy>*:nth-child(3){transition-delay:.22s}.skh-slide.is-on .skh-copy>*:nth-child(4){transition-delay:.32s}
 .skh-slide.is-on .skh-copy>*:nth-child(5){transition-delay:.44s}
-.skh-eyebrow{display:inline-flex;align-items:center;gap:8px;font:700 12px/1 Manrope,sans-serif;letter-spacing:.18em;text-transform:uppercase;color:#FFB3D9}
-.skh-eyebrow::before{content:"";width:28px;height:1px;background:#FFB3D9}
-.skh .skh-title{margin:18px 0 22px!important;font:500 clamp(42px,5.2vw,68px)/1.06 Fraunces,serif!important;color:#FBF6F4!important;letter-spacing:-.01em}
+.skh .skh-title{margin:0 0 22px!important;font:500 clamp(42px,5.2vw,68px)/1.06 Fraunces,serif!important;color:#FBF6F4!important;letter-spacing:-.01em}
 .skh-title em{font-style:italic;color:#FF8FCB}
 .skh-lead{max-width:540px;font-size:18px;line-height:1.7;color:#EBD7E1}
 .skh-cta{display:flex;gap:12px;flex-wrap:wrap;margin-top:32px}
@@ -146,7 +144,7 @@ add_action(
 .skh-slide{align-items:flex-end}
 .skh-slide::before{background:linear-gradient(180deg,rgba(38,16,31,.35) 0%,rgba(38,16,31,.7) 38%,rgba(38,16,31,.95) 70%)}
 .skh-wrap{padding:150px 16px 96px;gap:24px}
-.skh .skh-title{font-size:40px!important;margin:14px 0 14px!important}
+.skh .skh-title{font-size:40px!important;margin:0 0 14px!important}
 .skh-lead{font-size:16px}
 .skh-cta{margin-top:24px}.skh-cta .skh-btn{flex:1;justify-content:center;padding:14px 16px;font-size:15px}
 .skh-card{width:100%;padding:12px;margin-top:22px}.skh-card__img{flex-basis:76px;height:76px}
