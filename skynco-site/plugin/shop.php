@@ -68,6 +68,7 @@ function skynco_product_card( WC_Product $p, $feature = false ) {
 		. '<a class="sk-card__img" href="' . esc_url( $link ) . '">' . $img . ( $badge ? '<span class="sk-badge">' . esc_html( $badge ) . '</span>' : '' ) . '</a>'
 		. '<div class="sk-card__body">'
 		. '<h3 class="sk-card__title"><a href="' . esc_url( $link ) . '">' . esc_html( $p->get_name() ) . '</a></h3>'
+		. ( $p->get_review_count() && function_exists( 'skynco_stars_html' ) ? '<a class="sk-card__rating" href="' . esc_url( $link . '#reviews' ) . '">' . skynco_stars_html( $p->get_average_rating(), $p->get_review_count() ) . '</a>' : '' )
 		. '<p class="sk-card__short">' . esc_html( wp_strip_all_tags( $p->get_short_description() ) ) . '</p>'
 		. $extra
 		. '<div class="sk-card__foot"><span class="sk-price">' . $p->get_price_html() . '</span>'
@@ -275,6 +276,16 @@ add_action(
 .sk-card__title{margin:0;font:400 20px/1.25 Fraunces,serif}
 .sk-card__title a{color:#3B1530;text-decoration:none}
 .sk-card__short{margin:0;color:#6E5A66;font:400 14px/21px Manrope,sans-serif}
+.sk-card__rating{display:inline-flex;align-items:center;margin:-2px 0 2px;text-decoration:none!important}.sk-card__rating .sk-stars{font-size:13px}.sk-card__rating .sk-stars__n{font-size:12px}
+.skrb-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}
+.skrb-card{margin:0;background:#fff;border:1px solid #EADDE0;border-radius:24px;padding:26px;display:flex;flex-direction:column;gap:10px}
+.skrb-card h3{margin:4px 0 0!important;font:600 17px/1.35 Manrope,sans-serif!important;color:#2A1A24!important}
+.skrb-card blockquote{margin:0;padding:0;border:0;font:400 15px/1.65 Manrope,sans-serif;color:#4A3843;quotes:none}
+.skrb-card figcaption{font:500 13px Manrope,sans-serif;color:#6E5A66}.skrb-card figcaption b{color:#2A1A24}
+.skrb-prod{margin-top:auto;display:flex;align-items:center;gap:12px;padding-top:14px;border-top:1px solid #F2E6EA;text-decoration:none!important;font:700 13px/1.35 Manrope,sans-serif;color:#3B1530!important}
+.skrb-prod img{width:48px;height:48px;border-radius:12px;object-fit:cover;flex:none}
+.skrb-foot{margin:18px 0 0;text-align:center;font:500 12.5px Manrope,sans-serif;color:#9A8791}
+@media(max-width:900px){.skrb-grid{grid-template-columns:1fr}}
 .sk-card__kit{margin:4px 0 0;padding:0;list-style:none;font:500 14px/1.5 Manrope,sans-serif;color:#2A1A24}
 .sk-card__kit li::before{content:"✓ ";color:#D1127E}
 .sk-card__foot{margin-top:auto;padding-top:10px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}

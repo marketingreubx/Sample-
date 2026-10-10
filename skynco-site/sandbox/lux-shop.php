@@ -374,14 +374,10 @@ function lux_shop_elements() {
 	$col = [ 'flex_direction' => 'column' ];
 	$els = [];
 
-	$els[] = lux_photo_hero(
+	$els[] = lux_section(
 		'01 Hero',
-		'Shop home care',
-		'Studio results, <em>at home.</em>',
-		'The cleansers, serums and SPF Hana uses and recommends, chosen to extend every facial. Free shipping over $75, or free pickup at the studio.',
-		[ lux_button( 'Shop the kits', '#kits', 'lime' ), lux_button( 'Find your routine', '#routine', 'outline-light' ) ],
-		'skynco-shop-hero',
-		'shop'
+		[ 'content_width' => 'full', 'padding' => lux_box( 0, 0, 0, 0 ), 'padding_mobile' => lux_box( 0, 0, 0, 0 ) ],
+		[ lux_w( 'shortcode', [ 'shortcode' => '[skynco_shop_hero]' ], 'Shop hero slideshow' ) ]
 	);
 
 	// Offer bar.
@@ -450,6 +446,20 @@ function lux_shop_elements() {
 			),
 			lux_w( 'shortcode', [ 'shortcode' => '[skynco_products slugs="gentle-cleansing-gel,vitamin-c-brightening-serum,hydrating-hyaluronic-serum,barrier-repair-moisturizer,daily-mineral-spf-40,enzyme-exfoliating-mask,clarifying-spot-treatment,post-treatment-recovery-balm" columns="4"]' ], 'All products' ),
 			lux_text( '<p>Product names, packaging and imagery belong to their respective brands.</p>', [ 'f' => 'Manrope', 's' => 12, 'w' => '500', 'lh' => 1.5 ], 'muted', [ 'align' => 'center' ] ),
+		]
+	);
+
+	// Reviews band.
+	$els[] = lux_section(
+		'05b Reviews',
+		[ 'flex_gap' => lux_gap( 32 ), 'padding' => lux_box( 0, 24, 96, 24 ), 'padding_mobile' => lux_box( 0, 16, 64, 16 ), '_element_id' => 'reviews' ],
+		[
+			lux_head_row(
+				[ lux_eyebrow( 'Reviews' ), lux_heading( 'Loved by clients, <em>in their words.</em>', 'h2', 'h2' ) ],
+				null,
+				680
+			),
+			lux_w( 'shortcode', [ 'shortcode' => '[skynco_review_band limit="3"]' ], 'Review band' ),
 		]
 	);
 
