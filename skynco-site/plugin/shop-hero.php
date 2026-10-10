@@ -127,7 +127,7 @@ add_action(
 .skh-trust{list-style:none;margin:28px 0 0;padding:0;display:flex;flex-wrap:wrap;gap:8px 18px}
 .skh-trust li{position:relative;padding-left:18px;font-size:13px;color:#EBD7E1}
 .skh-trust li::before{content:"";position:absolute;left:0;top:5px;width:9px;height:5px;border-left:2px solid #FFB3D9;border-bottom:2px solid #FFB3D9;transform:rotate(-45deg)}
-.skh-show{position:relative;outline:0}
+.skh-show{position:relative;outline:0;min-width:0}.skh-copy,.skh-wrap>*{min-width:0}.skh-thumbs{min-width:0}
 .skh-slides{position:relative;aspect-ratio:1.18/1;min-height:420px}
 .skh-slide{position:absolute;inset:0;display:grid;grid-template-columns:1.05fr .95fr;align-items:center;gap:0;background:#fff;border-radius:30px;overflow:hidden;box-shadow:0 40px 80px -40px rgba(0,0,0,.6);opacity:0;visibility:hidden;transform:translateY(14px) scale(.985);transition:opacity .7s ease,transform .7s ease,visibility 0s .7s}
 .skh-slide.is-on{opacity:1;visibility:visible;transform:none;transition:opacity .7s ease,transform .7s ease}
@@ -160,13 +160,13 @@ add_action(
 .sk-stars{position:relative;display:inline-block;font-size:15px;line-height:1;letter-spacing:2px;vertical-align:middle}
 .sk-stars__bg{color:#E9D3DB}.sk-stars__fg{position:absolute;left:0;top:0;overflow:hidden;white-space:nowrap;color:#D1127E}
 .sk-stars__n{margin-left:6px;font:700 13px Manrope,sans-serif;color:#2A1A24;vertical-align:middle}.sk-stars__n span{color:#9A8791;font-weight:600}
-@media(max-width:960px){.skh-wrap{grid-template-columns:1fr;gap:36px;padding:56px 20px 48px}.skh-slides{aspect-ratio:auto;min-height:0;height:520px}}
+@media(max-width:960px){.skh-wrap{grid-template-columns:minmax(0,1fr);gap:36px;padding:56px 20px 48px}.skh-slides{aspect-ratio:auto;min-height:0;height:520px}}
 @media(max-width:600px){
 .skh-wrap{padding:44px 16px 40px}
 .skh-lead{font-size:15.5px}
 .skh-trust{display:none}
 .skh-slides{height:auto;aspect-ratio:auto;min-height:0;display:grid}
-.skh-slide{position:relative;inset:auto;grid-area:1/1;grid-template-columns:1fr;border-radius:24px}
+.skh-slide{position:relative;inset:auto;grid-area:1/1;grid-template-columns:minmax(0,1fr);min-width:0;border-radius:24px}
 .skh-stage{height:auto;aspect-ratio:1/0.8}
 .skh-info{padding:20px}
 .skh-name{font-size:24px!important}
