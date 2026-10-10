@@ -130,8 +130,8 @@ add_action(
 		}
 		$price = (float) $p->get_regular_price();
 		echo '<label class="sk-bump"><input type="checkbox" id="sk-bump" ' . checked( (bool) $key, true, false ) . '> '
-			. '<span><b>Yes, add the Post-Treatment Recovery Balm for ' . wp_kses_post( wc_price( $price * ( 1 - SKYNCO_BUMP_OFF ) ) ) . '</b> <s>' . wp_kses_post( wc_price( $price ) ) . '</s>'
-			. '<em>Calms and protects skin after peels, microneedling and waxing. Checkout-only price.</em></span></label>';
+			. '<span><b>Yes, add ' . esc_html( $p->get_name() ) . ' for ' . wp_kses_post( wc_price( $price * ( 1 - SKYNCO_BUMP_OFF ) ) ) . '</b> <s>' . wp_kses_post( wc_price( $price ) ) . '</s>'
+			. '<em>' . esc_html( wp_strip_all_tags( $p->get_short_description() ) ) . ' Checkout-only price.</em></span></label>';
 	}
 );
 

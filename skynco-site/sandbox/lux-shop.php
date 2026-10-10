@@ -8,24 +8,98 @@ if ( ! defined( 'ABSPATH' ) || function_exists( 'lux_shop_catalog' ) ) {
 }
 
 /**
- * Retail catalogue: slug => [name, category, regular, sale, short, description, pexels photo id, badge, upsells[], cross-sells[], kit contents[]].
- * Product names and prices are placeholders until the owner confirms the real product line.
+ * Retail catalogue: key => [name, category, regular, sale, short, description, image, badge, upsells[], cross-sells[], kit contents[], url slug].
+ * Keys are internal (used by recommendations, kits and the checkout add-on); the url slug is what shows in the address bar.
+ * Image: 'obf:<barcode>:pad|crop' uses the product photo from Open Beauty Facts (CC BY-SA); 'kit' composes the kit's products.
+ * Real brands at approximate US retail prices; the studio sets its own prices and line-up.
  */
 function lux_shop_catalog() {
 	return [
-		'gentle-cleansing-gel'          => [ 'Gentle Cleansing Gel', 'cleansers', 34, 0, 'A low-foam gel that lifts makeup, SPF and oil without stripping.', 'Our everyday cleanser for every skin type. It removes makeup, sunscreen and excess oil while keeping the skin barrier calm and comfortable. Use morning and night on damp skin, then rinse.', 16378446, 'Bestseller', [ 'glow-kit', 'clear-skin-kit' ], [ 'vitamin-c-brightening-serum', 'daily-mineral-spf-40' ] ],
-		'hydrating-hyaluronic-serum'    => [ 'Hydrating Hyaluronic Serum', 'serums', 48, 0, 'Multi-weight hyaluronic acid for plump, bouncy skin.', 'Draws water into the skin and holds it there, so skin looks smoother and feels comfortable all day. Ideal after microneedling, peels and oxygen facials. Apply 2 to 3 drops to damp skin before moisturizer.', 8101534, '', [ 'recovery-kit' ], [ 'barrier-repair-moisturizer', 'daily-mineral-spf-40' ] ],
-		'vitamin-c-brightening-serum'   => [ 'Vitamin C Brightening Serum', 'serums', 58, 0, 'Stable vitamin C to fade dark marks and boost glow.', 'An antioxidant serum that brightens dull skin, softens the look of dark marks and helps protect against daily environmental stress. Use in the morning, followed by SPF.', 16378443, 'Hana’s pick', [ 'glow-kit' ], [ 'daily-mineral-spf-40', 'hydrating-hyaluronic-serum' ] ],
-		'barrier-repair-moisturizer'    => [ 'Barrier Repair Moisturizer', 'moisturizers-spf', 46, 0, 'Ceramide cream that calms, softens and restores.', 'A rich but breathable moisturizer with ceramides and niacinamide to strengthen the skin barrier, calm redness and lock in hydration. Use morning and night.', 8100691, '', [ 'clear-skin-kit' ], [ 'hydrating-hyaluronic-serum', 'daily-mineral-spf-40' ] ],
-		'daily-mineral-spf-40'          => [ 'Daily Mineral SPF 40', 'moisturizers-spf', 42, 0, 'Sheer zinc sunscreen with no white cast.', 'Lightweight mineral protection that wears well under makeup. Daily SPF is the single best way to protect your facial results, especially after peels and microneedling. Apply as the last step every morning.', 6476115, 'Bestseller', [ 'glow-kit', 'recovery-kit' ], [ 'vitamin-c-brightening-serum', 'barrier-repair-moisturizer' ] ],
-		'clarifying-spot-treatment'     => [ 'Clarifying Spot Treatment', 'masks-treatments', 26, 0, 'Targets breakouts overnight without over-drying.', 'Salicylic acid and tea tree work on active breakouts while soothing the skin around them. Dab a thin layer onto blemishes at night.', 8709569, '', [ 'clear-skin-kit' ], [ 'gentle-cleansing-gel', 'enzyme-exfoliating-mask' ] ],
-		'enzyme-exfoliating-mask'       => [ 'Enzyme Exfoliating Mask', 'masks-treatments', 44, 0, 'A weekly fruit-enzyme polish for smooth, bright skin.', 'Gently dissolves dead skin cells for a smoother, brighter complexion between facials. Leave on for 10 minutes once or twice a week, then rinse.', 8101673, '', [ 'glow-kit' ], [ 'hydrating-hyaluronic-serum', 'barrier-repair-moisturizer' ] ],
-		'post-treatment-recovery-balm'  => [ 'Post-Treatment Recovery Balm', 'masks-treatments', 32, 0, 'Soothes and protects skin after peels and microneedling.', 'A calming balm that comforts tight, sensitive skin after advanced treatments and supports healing. Apply a thin layer as often as needed during the first week.', 8100775, '', [ 'recovery-kit' ], [ 'daily-mineral-spf-40', 'hydrating-hyaluronic-serum' ] ],
-		'glow-kit'                      => [ 'The Glow Kit', 'kits', 134, 115, 'Cleanser, Vitamin C serum and SPF 40. Your daily glow routine.', 'Everything you need for bright, protected skin every day: Gentle Cleansing Gel, Vitamin C Brightening Serum and Daily Mineral SPF 40. Bought together, you save $19.', 8076229, 'Save $19', [], [ 'enzyme-exfoliating-mask', 'skynco-gift-card' ], [ 'gentle-cleansing-gel', 'vitamin-c-brightening-serum', 'daily-mineral-spf-40' ] ],
-		'clear-skin-kit'                => [ 'The Clear Skin Kit', 'kits', 106, 90, 'Cleanser, spot treatment and barrier moisturizer for breakout-prone skin.', 'A simple routine for acne-prone skin that clears breakouts without stripping: Gentle Cleansing Gel, Clarifying Spot Treatment and Barrier Repair Moisturizer. Save $16.', 8102021, 'Save $16', [], [ 'enzyme-exfoliating-mask', 'daily-mineral-spf-40' ], [ 'gentle-cleansing-gel', 'clarifying-spot-treatment', 'barrier-repair-moisturizer' ] ],
-		'recovery-kit'                  => [ 'The Recovery Kit', 'kits', 122, 104, 'Balm, hyaluronic serum and SPF for the week after advanced treatments.', 'Recommended after microneedling, dermaplaning and chemical peels: Post-Treatment Recovery Balm, Hydrating Hyaluronic Serum and Daily Mineral SPF 40. Save $18.', 7795755, 'Save $18', [], [ 'barrier-repair-moisturizer', 'skynco-gift-card' ], [ 'post-treatment-recovery-balm', 'hydrating-hyaluronic-serum', 'daily-mineral-spf-40' ] ],
-		'skynco-gift-card'              => [ 'Skyn&Co. E-Gift Card', 'gift-cards', 100, 0, 'Use it for any treatment or product. Delivered by email.', 'The easiest gift for anyone who deserves a little time for themselves. Redeemable for any Skyn&Co. treatment or product, delivered by email and never expires.', 8101512, 'Gift idea', [], [ 'glow-kit' ] ],
+		'gentle-cleansing-gel'         => [ 'Dermalogica Special Cleansing Gel', 'cleansers', 46, 0, 'A soap-free foaming gel that removes impurities without stripping.', 'Dermalogica’s best-selling cleanser for all skin types. Quillaja saponaria gently lifts makeup, oil and sunscreen while balm mint and lavender leave skin calm and refreshed, never tight. Massage onto damp skin morning and night, then rinse. 8.4 fl oz.', 'obf:0885204332900:pad', 'Bestseller', [ 'glow-kit' ], [ 'vitamin-c-brightening-serum', 'daily-mineral-spf-40' ], [], 'dermalogica-special-cleansing-gel' ],
+		'hydrating-hyaluronic-serum'   => [ 'La Roche-Posay Hyalu B5 Serum', 'serums', 40, 0, 'Pure hyaluronic acid and vitamin B5 for plump, smooth skin.', 'Two types of hyaluronic acid hydrate and visibly plump while vitamin B5 and madecassoside soothe and support the skin barrier. Ideal after microneedling, peels and facials. Apply 2 to 3 drops morning and night before moisturizer. 1 fl oz.', 'obf:3337875583657:pad', '', [ 'recovery-kit' ], [ 'barrier-repair-moisturizer', 'daily-mineral-spf-40' ], [], 'la-roche-posay-hyalu-b5-serum' ],
+		'vitamin-c-brightening-serum'  => [ 'Drunk Elephant C-Firma Day Serum', 'serums', 78, 0, '15% L-ascorbic acid to brighten, firm and fade dark marks.', 'A potent vitamin C day serum with 15% L-ascorbic acid, ferulic acid and vitamin E plus pumpkin ferment extract. Brightens dull skin, evens tone and defends against daily environmental stress. Use in the morning, followed by sunscreen. 1 fl oz.', 'obf:0856556004111:pad', 'Hana’s pick', [ 'glow-kit' ], [ 'daily-mineral-spf-40', 'hydrating-hyaluronic-serum' ], [], 'drunk-elephant-c-firma-day-serum' ],
+		'barrier-repair-moisturizer'   => [ 'CeraVe Moisturizing Cream', 'moisturizers-spf', 19, 0, 'Three essential ceramides and hyaluronic acid for 24-hour hydration.', 'A rich, non-greasy cream with three essential ceramides and hyaluronic acid that restores the skin barrier and locks in moisture. Fragrance-free and accepted by the National Eczema Association. Use on face and body, morning and night. 16 oz.', 'obf:0301871373324:crop', '', [ 'clear-skin-kit' ], [ 'hydrating-hyaluronic-serum', 'daily-mineral-spf-40' ], [], 'cerave-moisturizing-cream' ],
+		'daily-mineral-spf-40'         => [ 'Supergoop! Unseen Sunscreen SPF 40', 'moisturizers-spf', 38, 0, 'Weightless, invisible SPF 40 that doubles as a makeup primer.', 'The cult invisible sunscreen: a clear, oil-free gel with a velvety finish that works on every skin tone and sits beautifully under makeup. Daily SPF is the single best way to protect your facial results. Apply as the last step every morning. 1.7 fl oz.', 'obf:0816218026530:crop', 'Bestseller', [ 'glow-kit', 'recovery-kit' ], [ 'vitamin-c-brightening-serum', 'barrier-repair-moisturizer' ], [], 'supergoop-unseen-sunscreen-spf-40' ],
+		'clarifying-spot-treatment'    => [ 'Dermalogica Clearing Skin Wash', 'cleansers', 46, 0, 'A salicylic acid foaming wash that clears breakouts.', 'A breakout-clearing foam with salicylic acid to clear pores and reduce oil, plus balm mint, eucalyptus and tea tree to soothe. Leaves skin clean and calm without over-drying. Use morning and night on damp skin, then rinse. 8.4 fl oz.', 'obf:0758259323141:pad', '', [ 'clear-skin-kit' ], [ 'enzyme-exfoliating-mask', 'barrier-repair-moisturizer' ], [], 'dermalogica-clearing-skin-wash' ],
+		'enzyme-exfoliating-mask'      => [ 'The Ordinary AHA 30% + BHA 2% Peeling Solution', 'masks-treatments', 11, 0, 'A 10-minute weekly exfoliating facial for smooth, bright skin.', 'A professional-strength 10-minute peel with glycolic, lactic, tartaric, citric and salicylic acids to resurface dull, uneven texture and clear congestion. For experienced exfoliant users with non-sensitive skin. Use up to twice a week in the evening, never right after a professional peel, and wear SPF daily. 1 fl oz.', 'obf:0769915195606:pad', '', [ 'clear-skin-kit' ], [ 'hydrating-hyaluronic-serum', 'barrier-repair-moisturizer' ], [], 'the-ordinary-aha-30-bha-2-peeling-solution' ],
+		'post-treatment-recovery-balm' => [ 'Avène Cicalfate+ Restorative Protective Cream', 'masks-treatments', 30, 0, 'Soothes and repairs skin after peels, microneedling and waxing.', 'A dermatologist favourite for compromised skin. Avène thermal spring water soothes, while copper-zinc sulfate and a postbiotic help purify and repair. Ideal in the days after advanced treatments and waxing. Apply a thin layer twice a day. 1.35 fl oz.', 'obf:3282770204667:crop', '', [ 'recovery-kit' ], [ 'daily-mineral-spf-40', 'hydrating-hyaluronic-serum' ], [], 'avene-cicalfate-restorative-protective-cream' ],
+		'glow-kit'                     => [ 'The Glow Kit', 'kits', 162, 139, 'Dermalogica cleanser, Drunk Elephant vitamin C and Supergoop SPF 40.', 'Everything for bright, protected skin every day: Dermalogica Special Cleansing Gel, Drunk Elephant C-Firma Day Serum and Supergoop! Unseen Sunscreen SPF 40. Bought together, you save $23.', 'kit', 'Save $23', [], [ 'enzyme-exfoliating-mask', 'skynco-gift-card' ], [ 'gentle-cleansing-gel', 'vitamin-c-brightening-serum', 'daily-mineral-spf-40' ], 'glow-kit' ],
+		'clear-skin-kit'               => [ 'The Clear Skin Kit', 'kits', 76, 65, 'Clearing wash, weekly AHA/BHA peel and a barrier cream for breakouts.', 'A simple routine for breakout-prone skin that clears without stripping: Dermalogica Clearing Skin Wash, The Ordinary AHA 30% + BHA 2% Peeling Solution and CeraVe Moisturizing Cream. Save $11.', 'kit', 'Save $11', [], [ 'daily-mineral-spf-40', 'hydrating-hyaluronic-serum' ], [ 'clarifying-spot-treatment', 'enzyme-exfoliating-mask', 'barrier-repair-moisturizer' ], 'clear-skin-kit' ],
+		'recovery-kit'                 => [ 'The Recovery Kit', 'kits', 108, 92, 'Cicalfate+, Hyalu B5 and Unseen SPF for the week after treatments.', 'Recommended after microneedling, dermaplaning and chemical peels: Avène Cicalfate+ Restorative Protective Cream, La Roche-Posay Hyalu B5 Serum and Supergoop! Unseen Sunscreen SPF 40. Save $16.', 'kit', 'Save $16', [], [ 'barrier-repair-moisturizer', 'skynco-gift-card' ], [ 'post-treatment-recovery-balm', 'hydrating-hyaluronic-serum', 'daily-mineral-spf-40' ], 'recovery-kit' ],
+		'skynco-gift-card'             => [ 'Skyn&Co. E-Gift Card', 'gift-cards', 100, 0, 'Use it for any treatment or product. Delivered by email.', 'The easiest gift for anyone who deserves a little time for themselves. Redeemable for any Skyn&Co. treatment or product, delivered by email and never expires.', 8101512, 'Gift idea', [], [ 'glow-kit' ], [], 'skynco-gift-card' ],
 	];
+}
+
+/** Product photo from Open Beauty Facts, squared on white (pad) or cropped to a square (crop). Cached by barcode. */
+function lux_shop_obf_image( $code, $mode, $title ) {
+	$cache = get_option( 'skynco_obf_media', [] );
+	if ( ! empty( $cache[ $code ] ) && get_post( $cache[ $code ] ) ) {
+		return (int) $cache[ $code ];
+	}
+	$api = json_decode( wp_remote_retrieve_body( wp_remote_get( 'https://world.openbeautyfacts.org/api/v2/product/' . rawurlencode( $code ) . '.json?fields=image_front_url', [ 'timeout' => 30, 'user-agent' => 'SkyncoStudio/1.0' ] ) ), true );
+	$url = $api['product']['image_front_url'] ?? '';
+	if ( ! $url ) {
+		return 0;
+	}
+	$im = @imagecreatefromstring( wp_remote_retrieve_body( wp_remote_get( str_replace( '.400.jpg', '.full.jpg', $url ), [ 'timeout' => 60 ] ) ) );
+	if ( ! $im ) {
+		return 0;
+	}
+	$w = imagesx( $im );
+	$h = imagesy( $im );
+	$S = 1200;
+	$c = imagecreatetruecolor( $S, $S );
+	imagefill( $c, 0, 0, imagecolorallocate( $c, 255, 255, 255 ) );
+	if ( 'crop' === $mode ) {
+		$side = min( $w, $h );
+		imagecopyresampled( $c, $im, 0, 0, (int) ( ( $w - $side ) / 2 ), (int) ( ( $h - $side ) / 2 ), $S, $S, $side, $side );
+	} else {
+		$sc = min( $S * 0.86 / $w, $S * 0.86 / $h );
+		$nw = (int) ( $w * $sc );
+		$nh = (int) ( $h * $sc );
+		imagecopyresampled( $c, $im, (int) ( ( $S - $nw ) / 2 ), (int) ( ( $S - $nh ) / 2 ), 0, 0, $nw, $nh, $w, $h );
+	}
+	$id = lux_shop_save_image( $c, $title );
+	if ( $id ) {
+		$cache[ $code ] = $id;
+		update_option( 'skynco_obf_media', $cache, false );
+	}
+	return $id;
+}
+
+/** Kit image: the kit's three product photos side by side on white. */
+function lux_shop_kit_image( $key, array $image_ids, $title ) {
+	$S = 1200;
+	$c = imagecreatetruecolor( $S, $S );
+	imagefill( $c, 0, 0, imagecolorallocate( $c, 255, 255, 255 ) );
+	$n = count( $image_ids );
+	foreach ( array_values( $image_ids ) as $i => $aid ) {
+		$im = @imagecreatefromstring( (string) @file_get_contents( get_attached_file( $aid ) ) );
+		if ( ! $im ) {
+			continue;
+		}
+		$cell = (int) ( $S / max( 1, $n ) );
+		$size = (int) ( $cell * 1.08 );
+		$x    = (int) ( $i * $cell - ( $size - $cell ) / 2 );
+		$y    = (int) ( ( $S - $size ) / 2 + ( 1 === $i ? -40 : 40 ) );
+		imagecopyresampled( $c, $im, $x, $y, 0, 0, $size, $size, imagesx( $im ), imagesy( $im ) );
+	}
+	return lux_shop_save_image( $c, $title, 'kit-' . $key . '-' . substr( md5( implode( ',', $image_ids ) ), 0, 6 ) );
+}
+
+function lux_shop_save_image( $gd, $title, $name = '' ) {
+	require_once ABSPATH . 'wp-admin/includes/media.php';
+	require_once ABSPATH . 'wp-admin/includes/file.php';
+	require_once ABSPATH . 'wp-admin/includes/image.php';
+	$tmp = wp_tempnam( 'skynco-product' );
+	imagejpeg( $gd, $tmp, 88 );
+	$id = media_handle_sideload( [ 'name' => 'skynco-product-' . sanitize_title( $name ?: $title ) . '.jpg', 'tmp_name' => $tmp ], 0, $title );
+	if ( is_wp_error( $id ) ) {
+		@unlink( $tmp );
+		return 0;
+	}
+	update_post_meta( $id, '_wp_attachment_image_alt', $title );
+	return (int) $id;
 }
 
 /** Which products to recommend after each treatment. */
@@ -93,7 +167,7 @@ function lux_shop_setup() {
 		$pid     = wc_get_product_id_by_sku( 'SKY-R-' . strtoupper( $slug ) );
 		$product = $pid ? wc_get_product( $pid ) : new WC_Product_Simple();
 		$product->set_name( $p[0] );
-		$product->set_slug( $slug );
+		$product->set_slug( $p[11] ?? $slug );
 		$product->set_status( 'publish' );
 		$product->set_catalog_visibility( 'visible' );
 		$product->set_sku( 'SKY-R-' . strtoupper( $slug ) );
@@ -106,7 +180,15 @@ function lux_shop_setup() {
 		$product->set_virtual( 'gift-cards' === $p[1] );
 		$product->set_sold_individually( false );
 		$product->set_reviews_allowed( true );
-		$img = lux_shop_image( $p[6], $p[0] );
+		if ( 'kit' === $p[6] ) {
+			$parts = array_filter( array_map( fn( $k ) => isset( $ids[ $k ] ) ? (int) get_post_thumbnail_id( $ids[ $k ] ) : 0, $p[10] ) );
+			$img   = $parts ? lux_shop_kit_image( $slug, $parts, $p[0] ) : 0;
+		} elseif ( is_string( $p[6] ) && 0 === strpos( $p[6], 'obf:' ) ) {
+			[ , $code, $mode ] = array_pad( explode( ':', $p[6] ), 3, 'pad' );
+			$img = lux_shop_obf_image( $code, $mode, $p[0] );
+		} else {
+			$img = lux_shop_image( $p[6], $p[0] );
+		}
 		if ( $img ) {
 			$product->set_image_id( $img );
 		}
@@ -278,6 +360,7 @@ function lux_shop_elements() {
 				680
 			),
 			lux_w( 'shortcode', [ 'shortcode' => '[skynco_products slugs="gentle-cleansing-gel,vitamin-c-brightening-serum,hydrating-hyaluronic-serum,barrier-repair-moisturizer,daily-mineral-spf-40,enzyme-exfoliating-mask,clarifying-spot-treatment,post-treatment-recovery-balm" columns="4"]' ], 'All products' ),
+			lux_text( '<p>Product photos: <a href="https://world.openbeautyfacts.org" target="_blank" rel="noopener">Open Beauty Facts</a> contributors, CC BY-SA. Brand names belong to their owners.</p>', [ 'f' => 'Manrope', 's' => 12, 'w' => '500', 'lh' => 1.5 ], 'muted', [ 'align' => 'center' ] ),
 		]
 	);
 
