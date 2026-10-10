@@ -245,6 +245,8 @@ function skynco_kit_offers() {
 		}
 		if ( count( $have ) >= 2 && $miss ) {
 			$offers[] = [ $kit, $have, $miss, $worth - (float) $kit->get_price() ];
+		} elseif ( ! $miss && count( $have ) === count( $parts ) ) {
+			$offers[] = [ $kit, $have, [], round( $worth * ( 1 - 0.15 ) - (float) $kit->get_price(), 2 ) ];
 		}
 	}
 	usort( $offers, fn( $a, $b ) => count( $b[1] ) <=> count( $a[1] ) );
@@ -257,7 +259,14 @@ add_action(
 		foreach ( skynco_kit_offers() as [ $kit, $have, $miss, $save ] ) {
 			$url = wp_nonce_url( add_query_arg( 'skynco_kit_upgrade', $kit->get_id(), wc_get_cart_url() ), 'skynco_kit_upgrade' );
 			$img = wp_get_attachment_image_url( $kit->get_image_id(), 'woocommerce_thumbnail' );
-			echo '<div class="sk-kitup"><img src="' . esc_url( $img ) . '" alt=""><div><p class="sk-kitup__eyebrow">You’re one step from a kit</p><p class="sk-kitup__title">Add ' . esc_html( implode( ' and ', array_map( fn( $p ) => $p->get_name(), $miss ) ) ) . ' and get <b>' . esc_html( $kit->get_name() ) . '</b> for ' . wp_kses_post( wc_price( $kit->get_price() ) ) . '.</p><p class="sk-kitup__save">You save ' . wp_kses_post( wc_price( $save ) ) . ' on the full routine.</p></div><a class="sk-kitup__btn" href="' . esc_url( $url ) . '">Upgrade to the kit</a></div>';
+			if ( $save <= 0 ) {
+				continue;
+			}
+			$title = $miss
+				? 'Add ' . esc_html( implode( ' and ', array_map( fn( $p ) => $p->get_name(), $miss ) ) ) . ' and get <b>' . esc_html( $kit->get_name() ) . '</b> for ' . wp_kses_post( wc_price( $kit->get_price() ) ) . '.'
+				: 'These three make <b>' . esc_html( $kit->get_name() ) . '</b>. Switch and pay ' . wp_kses_post( wc_price( $kit->get_price() ) ) . ' for the set.';
+			$save_txt = $miss ? 'You save ' . wc_price( $save ) . ' on the full routine.' : 'That’s ' . wc_price( $save ) . ' less than buying them separately.';
+			echo '<div class="sk-kitup"><img src="' . esc_url( $img ) . '" alt=""><div><p class="sk-kitup__eyebrow">' . ( $miss ? 'You’re one step from a kit' : 'Better price available' ) . '</p><p class="sk-kitup__title">' . $title . '</p><p class="sk-kitup__save">' . wp_kses_post( $save_txt ) . '</p></div><a class="sk-kitup__btn" href="' . esc_url( $url ) . '">' . ( $miss ? 'Upgrade to the kit' : 'Switch to the kit' ) . '</a></div>'; // phpcs:ignore
 		}
 	}
 );
@@ -331,10 +340,19 @@ add_action(
 			$sum  += $price;
 			$html .= ( $i ? '<span class="sk-fbt__plus">+</span>' : '' ) . '<label class="sk-fbt__item"><input type="checkbox" name="skynco_fbt[]" value="' . (int) $p->get_id() . '" data-price="' . esc_attr( $price ) . '" checked' . ( 0 === $i ? ' disabled' : '' ) . '><img src="' . esc_url( wp_get_attachment_image_url( $p->get_image_id(), 'woocommerce_thumbnail' ) ) . '" alt=""><span class="sk-fbt__name">' . ( 0 === $i ? '<em>This item</em>' : '' ) . esc_html( $p->get_name() ) . '</span><span class="sk-fbt__price">' . wp_kses_post( wc_price( $price ) ) . '</span></label>';
 		}
-		$cur = get_woocommerce_currency_symbol();
+		$cur   = get_woocommerce_currency_symbol();
+		$ids   = array_map( fn( $p ) => $p->get_id(), $items );
+		$match = null;
+		foreach ( [ 'glow-kit', 'clear-skin-kit', 'recovery-kit' ] as $ks ) {
+			$parts = array_map( 'skynco_shop_id', (array) get_post_meta( skynco_shop_id( $ks ), '_skynco_kit', true ) );
+			if ( $parts && ! array_diff( $parts, $ids ) && ! array_diff( $ids, $parts ) ) {
+				$match = wc_get_product( skynco_shop_id( $ks ) );
+			}
+		}
+		$kit_line = $match ? '<p class="sk-fbt__kit">Best price: get all three as <a href="' . esc_url( get_permalink( $match->get_id() ) ) . '">' . esc_html( $match->get_name() ) . '</a> for <b>' . wp_kses_post( wc_price( $match->get_price() ) ) . '</b> (20% off). <a class="sk-fbt__kitbtn" href="' . esc_url( add_query_arg( 'add-to-cart', $match->get_id(), wc_get_cart_url() ) ) . '" rel="nofollow">Add the kit</a></p>' : '';
 		echo '<section class="sk-fbt"><h2>Complete the routine</h2><p class="sk-fbt__sub">Clients who buy this usually pair it with these. Buy 2 and save 10%, buy 3 and save 15%.</p>'
 			. '<form method="post" action="' . esc_url( wc_get_cart_url() ) . '"><input type="hidden" name="skynco_fbt[]" value="' . (int) $product->get_id() . '">' . wp_nonce_field( 'skynco_fbt', '_skfbt', false, false )
-			. '<div class="sk-fbt__row">' . $html . '</div><div class="sk-fbt__foot"><div><span class="sk-fbt__was"><s data-was>' . esc_html( $cur . number_format( $sum, 2 ) ) . '</s></span> <b class="sk-fbt__now" data-now>' . esc_html( $cur . number_format( $sum * 0.85, 2 ) ) . '</b> <span class="sk-fbt__off" data-off>15% off</span></div><button type="submit" class="sk-fbt__btn" data-btn>Add all 3 to bag</button></div></form></section>';
+			. '<div class="sk-fbt__row">' . $html . '</div><div class="sk-fbt__foot"><div><span class="sk-fbt__was"><s data-was>' . esc_html( $cur . number_format( $sum, 2 ) ) . '</s></span> <b class="sk-fbt__now" data-now>' . esc_html( $cur . number_format( $sum * 0.85, 2 ) ) . '</b> <span class="sk-fbt__off" data-off>15% off</span></div><button type="submit" class="sk-fbt__btn" data-btn>Add all 3 to bag</button></div></form>' . $kit_line . '</section>'; // phpcs:ignore
 		echo '<script>(function(){var f=document.querySelector(".sk-fbt form");if(!f)return;var c="' . esc_js( $cur ) . '";function u(){var b=f.querySelectorAll("input[type=checkbox]"),n=0,s=0;b.forEach(function(x){if(x.checked){n++;s+=+x.dataset.price;}});var r=n>=3?.15:n>=2?.10:0;f.querySelector("[data-was]").style.display=r?"":"none";f.querySelector("[data-was]").textContent=c+s.toFixed(2);f.querySelector("[data-now]").textContent=c+(s*(1-r)).toFixed(2);f.querySelector("[data-off]").textContent=r?Math.round(r*100)+"% off":"";f.querySelector("[data-btn]").textContent=n>1?"Add all "+n+" to bag":"Add to bag";}f.addEventListener("change",u);})();</script>';
 	},
 	12
@@ -535,6 +553,7 @@ add_action(
 .sk-fbt__foot{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-top:18px;flex-wrap:wrap}
 .sk-fbt__was{color:#9A8791;font-size:15px}.sk-fbt__now{font:700 24px Manrope,sans-serif;color:#2A1A24}.sk-fbt__off{margin-left:6px;padding:4px 10px;border-radius:99px;background:#E9F5EE;color:#24704A;font:700 12.5px Manrope,sans-serif}
 .sk-fbt__btn{padding:14px 26px;border-radius:999px;border:0;background:#D1127E;color:#fff;font:700 15px Manrope,sans-serif;cursor:pointer}
+.sk-fbt__kit{margin:16px 0 0!important;padding:14px 16px;border-radius:16px;background:#fff;border:1.5px solid #D1127E;font:500 14.5px/1.5 Manrope,sans-serif;color:#2A1A24;display:flex;align-items:center;gap:12px;flex-wrap:wrap}.sk-fbt__kit a{color:#D1127E;font-weight:700}.sk-fbt__kit .sk-fbt__kitbtn{margin-left:auto;padding:10px 18px;border-radius:999px;background:#3B1530;color:#fff!important;text-decoration:none}
 .sk-mix{margin:12px 0 0;padding:10px 14px;border-radius:12px;background:#E9F5EE;color:#24704A;font:500 13.5px/1.45 Manrope,sans-serif}
 .sk-pp{display:flex;align-items:center;gap:18px;margin:0 0 24px;padding:20px;border-radius:22px;background:#fff;border:2px dashed #D1127E;font-family:Manrope,sans-serif}
 .sk-pp img{width:96px;height:96px;border-radius:16px;object-fit:cover;flex:none}
@@ -543,6 +562,7 @@ add_action(
 .sk-pp__text{font-size:13.5px;color:#6E5A66}
 .sk-pp__btn{margin-left:auto;flex:none;padding:14px 22px;border-radius:999px;background:#D1127E;color:#fff!important;font:700 14.5px Manrope,sans-serif;text-decoration:none!important}
 .sk-pp--done{display:block;border-style:solid;border-color:#24704A;color:#24704A}
+@media(max-width:560px){.sk-rw__marks{display:none}}
 @media(max-width:700px){.sk-kitup,.sk-pp{flex-wrap:wrap}.sk-kitup__btn,.sk-pp__btn{margin-left:0;width:100%;text-align:center}.sk-fbt{padding:20px}.sk-fbt__row{flex-direction:column}.sk-fbt__item{flex-direction:row;align-items:center}.sk-fbt__item img{width:64px;flex:none}.sk-fbt__item input{position:static}.sk-fbt__plus{display:none}.sk-fbt__price{margin:0 0 0 auto}}
 </style>
 		<?php
