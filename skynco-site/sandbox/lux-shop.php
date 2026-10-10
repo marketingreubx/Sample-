@@ -23,9 +23,9 @@ function lux_shop_catalog() {
 		'daily-mineral-spf-40'         => [ 'EltaMD UV Clear Broad-Spectrum SPF 46', 'moisturizers-spf', 46, 0, 'The dermatologist favourite SPF for sensitive, acne-prone skin.', 'An oil-free, lightweight sunscreen with transparent zinc oxide and niacinamide that calms and protects skin prone to acne, rosacea and discoloration. Sheer, non-comedogenic and makeup-friendly. Daily SPF is the single best way to protect your facial results. Apply as the last step every morning. 1.7 oz / 48 g.', 'asset:eltamd-uv-clear-spf-46-v2.jpg', 'Bestseller', [ 'glow-kit', 'recovery-kit' ], [ 'vitamin-c-brightening-serum', 'barrier-repair-moisturizer' ], [], 'eltamd-uv-clear-broad-spectrum-spf-46' ],
 		'enzyme-exfoliating-mask'      => [ 'Dermalogica Daily Microfoliant', 'masks-treatments', 69, 0, 'Rice-based powder exfoliant for brighter, smoother skin.', 'The cult rice-based powder that activates with water into a creamy foam, gently polishing away dead skin for a brighter, smoother complexion. Gentle enough for daily use and helps balance uneven skin tone. Work a half teaspoon with water into a paste, massage, then rinse. 2.6 oz / 74 g.', 'asset:dermalogica-daily-microfoliant-v2.jpg', 'Cult favourite', [ 'clear-skin-kit' ], [ 'hydrating-hyaluronic-serum', 'barrier-repair-moisturizer' ], [], 'dermalogica-daily-microfoliant' ],
 		'post-treatment-recovery-balm' => [ 'Alastin Soothe + Protect Recovery Balm', 'masks-treatments', 52, 0, 'A thick, protective balm for skin after professional treatments.', 'Developed for use and application following skin-rejuvenating treatments such as microneedling, peels and lasers. This thick, moisturizing balm soothes, protects and comforts compromised skin while it recovers. Apply a generous layer as directed by your esthetician. 4 fl oz / 118 mL.', 'asset:alastin-soothe-protect-recovery-balm-v2.jpg', '', [ 'recovery-kit' ], [ 'daily-mineral-spf-40', 'hydrating-hyaluronic-serum' ], [], 'alastin-soothe-protect-recovery-balm' ],
-		'glow-kit'                     => [ 'The Glow Kit', 'kits', 186, 159, 'Dermalogica cleanser, Image VITAL C serum and EltaMD SPF 46.', 'Everything for bright, protected skin every day: Dermalogica Special Cleansing Gel, Image Skincare VITAL C Hydrating Anti-Aging Serum and EltaMD UV Clear SPF 46. Bought together, you save $27.', 'asset:kit-glow-kit.jpg', 'Save $27', [], [ 'enzyme-exfoliating-mask', 'skynco-gift-card' ], [ 'gentle-cleansing-gel', 'vitamin-c-brightening-serum', 'daily-mineral-spf-40' ], 'glow-kit' ],
-		'clear-skin-kit'               => [ 'The Clear Skin Kit', 'kits', 159, 135, 'CLEAR CELL cleanser, Daily Microfoliant and Skin Smoothing Cream.', 'A professional routine for breakout-prone skin that clears without stripping: Image Skincare CLEAR CELL Salicylic Gel Cleanser, Dermalogica Daily Microfoliant and Dermalogica Skin Smoothing Cream. Save $24.', 'asset:kit-clear-skin-kit.jpg', 'Save $24', [], [ 'daily-mineral-spf-40', 'hydrating-hyaluronic-serum' ], [ 'clarifying-spot-treatment', 'enzyme-exfoliating-mask', 'barrier-repair-moisturizer' ], 'clear-skin-kit' ],
-		'recovery-kit'                 => [ 'The Recovery Kit', 'kits', 206, 175, 'Alastin balm, iS Clinical Hydra-Cool and EltaMD SPF 46.', 'Recommended after microneedling, dermaplaning and chemical peels: Alastin Soothe + Protect Recovery Balm, iS Clinical Hydra-Cool Serum and EltaMD UV Clear SPF 46. Save $31.', 'asset:kit-recovery-kit.jpg', 'Save $31', [], [ 'barrier-repair-moisturizer', 'skynco-gift-card' ], [ 'post-treatment-recovery-balm', 'hydrating-hyaluronic-serum', 'daily-mineral-spf-40' ], 'recovery-kit' ],
+		'glow-kit'                     => [ 'The Glow Kit', 'kits', 186, 149, 'Dermalogica cleanser, Image VITAL C serum and EltaMD SPF 46.', 'Everything for bright, protected skin every day: Dermalogica Special Cleansing Gel, Image Skincare VITAL C Hydrating Anti-Aging Serum and EltaMD UV Clear SPF 46. Bought together, you save $37 (20%).', 'asset:kit-glow-kit.jpg', 'Save $37', [], [ 'enzyme-exfoliating-mask', 'skynco-gift-card' ], [ 'gentle-cleansing-gel', 'vitamin-c-brightening-serum', 'daily-mineral-spf-40' ], 'glow-kit' ],
+		'clear-skin-kit'               => [ 'The Clear Skin Kit', 'kits', 159, 127, 'CLEAR CELL cleanser, Daily Microfoliant and Skin Smoothing Cream.', 'A professional routine for breakout-prone skin that clears without stripping: Image Skincare CLEAR CELL Salicylic Gel Cleanser, Dermalogica Daily Microfoliant and Dermalogica Skin Smoothing Cream. Save $32 (20%).', 'asset:kit-clear-skin-kit.jpg', 'Save $32', [], [ 'daily-mineral-spf-40', 'hydrating-hyaluronic-serum' ], [ 'clarifying-spot-treatment', 'enzyme-exfoliating-mask', 'barrier-repair-moisturizer' ], 'clear-skin-kit' ],
+		'recovery-kit'                 => [ 'The Recovery Kit', 'kits', 206, 165, 'Alastin balm, iS Clinical Hydra-Cool and EltaMD SPF 46.', 'Recommended after microneedling, dermaplaning and chemical peels: Alastin Soothe + Protect Recovery Balm, iS Clinical Hydra-Cool Serum and EltaMD UV Clear SPF 46. Save $41 (20%).', 'asset:kit-recovery-kit.jpg', 'Save $41', [], [ 'barrier-repair-moisturizer', 'skynco-gift-card' ], [ 'post-treatment-recovery-balm', 'hydrating-hyaluronic-serum', 'daily-mineral-spf-40' ], 'recovery-kit' ],
 		'skynco-gift-card'             => [ 'Skyn&Co. E-Gift Card', 'gift-cards', 100, 0, 'Use it for any treatment or product. Delivered by email.', 'The easiest gift for anyone who deserves a little time for themselves. Redeemable for any Skyn&Co. treatment or product, delivered by email and never expires.', 8101512, 'Gift idea', [], [ 'glow-kit' ], [], 'skynco-gift-card' ],
 	];
 }
@@ -292,12 +292,6 @@ function lux_shop_setup() {
 		$product->save();
 	}
 	update_option( 'skynco_shop_product_ids', $ids, false );
-	$hero = lux_shop_image( 8166777, 'Skincare bottles with palm leaves' );
-	if ( $hero ) {
-		$media = get_option( 'skynco_media_ids', [] );
-		$media['skynco-shop-hero'] = $hero;
-		update_option( 'skynco_media_ids', $media );
-	}
 	$out['products'] = $ids;
 
 	// Treatment pages → products recommended after them (used on the product page too).
@@ -318,9 +312,23 @@ function lux_shop_setup() {
 	$coupon->set_individual_use( true );
 	$coupon->set_usage_limit_per_user( 1 );
 	$coupon->set_excluded_product_categories( array_filter( [ (int) get_term_by( 'slug', 'treatments', 'product_cat' )->term_id, $cat_ids['gift-cards'] ] ) );
+	$coupon->set_exclude_sale_items( true ); // Kits are already 20% off.
 	$coupon->set_description( 'First online order: 10% off home care.' );
 	$coupon->save();
 	$out['coupon'] = $coupon->get_id();
+
+	// Refill reminder offer: 10% off a reorder (sent 45 days after an order).
+	$rid    = wc_get_coupon_id_by_code( 'REFILL10' );
+	$refill = new WC_Coupon( $rid ?: 0 );
+	$refill->set_code( 'REFILL10' );
+	$refill->set_discount_type( 'percent' );
+	$refill->set_amount( 10 );
+	$refill->set_individual_use( true );
+	$refill->set_exclude_sale_items( true );
+	$refill->set_excluded_product_categories( array_filter( [ (int) get_term_by( 'slug', 'treatments', 'product_cat' )->term_id, $cat_ids['gift-cards'] ] ) );
+	$refill->set_description( 'Refill reminder: 10% off a reorder.' );
+	$refill->save();
+	$out['refill'] = $refill->get_id();
 
 	// Shipping: free over $75, flat $8 otherwise, free studio pickup.
 	if ( ! WC_Shipping_Zones::get_zones() ) {
@@ -381,7 +389,7 @@ function lux_shop_elements() {
 	);
 
 	// Offer bar.
-	$offer = '<div class="sk-offers"><div><b>10% off your first order</b><span>Use code <code>GLOW10</code> at checkout</span></div><div><b>Free shipping over $75</b><span>Or free pickup in Watertown</span></div><div><b>Chosen by your esthetician</b><span>Only products Hana uses in the studio</span></div></div>';
+	$offer = '<div class="sk-offers"><div><b>10% off your first order</b><span>Use code <code>GLOW10</code> at checkout</span></div><div><b>Free shipping over $75</b><span>Spend $120 for a free LED add-on at your next facial</span></div><div><b>Mix &amp; match and save</b><span>2 products 10% off · 3 or more 15% off</span></div></div>';
 	$els[] = lux_section( '02 Offers', [ 'padding' => lux_box( 0, 24, 0, 24 ), 'padding_mobile' => lux_box( 0, 16, 0, 16 ), 'margin' => lux_box( -40, 0, 0, 0 ), 'z_index' => 2 ], [ lux_w( 'html', [ 'html' => $offer ], 'Offers' ) ] );
 
 	// Kits (bundle savings).
@@ -390,7 +398,7 @@ function lux_shop_elements() {
 		[ 'flex_gap' => lux_gap( 36 ), '_element_id' => 'kits' ],
 		[
 			lux_head_row(
-				[ lux_eyebrow( 'Best value' ), lux_heading( 'Kits that do the thinking <em>for you.</em>', 'h2', 'h2' ), lux_text( '<p>Three-step routines built around your skin goal. Buy the set and save up to $31.</p>', 'body', 'muted' ) ],
+				[ lux_eyebrow( 'Best value' ), lux_heading( 'Kits that do the thinking <em>for you.</em>', 'h2', 'h2' ), lux_text( '<p>Three-step routines built around your skin goal. Buy the set and save 20%, our best price.</p>', 'body', 'muted' ) ],
 				null,
 				680
 			),
