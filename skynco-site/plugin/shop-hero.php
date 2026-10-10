@@ -71,7 +71,7 @@ add_shortcode(
 			$thumb  = wp_get_attachment_image_url( $p->get_image_id(), 'woocommerce_thumbnail' );
 			$cta    = 0 === $i
 				? '<a class="skh-btn" href="#kits">Shop the kits</a><a class="skh-btn skh-btn--ghost" href="#routine">Find your routine</a>'
-				: '<a class="skh-btn" href="' . esc_url( $link ) . '">Shop now</a><a class="skh-btn skh-btn--ghost" href="#all">Browse all products</a>';
+				: '<a class="skh-btn" href="' . esc_url( $link ) . '">Shop now</a><a class="skh-btn skh-btn--ghost" href="#all">Shop all</a>';
 			$card   = '<div class="skh-cards"><div class="skh-glass"><span class="skh-dotp"></span><b>' . ( 0 === $i ? 'Free shipping over $75' : 'Hana’s pick' ) . '</b><span>' . ( 0 === $i ? 'Or free pickup at the studio in Watertown' : 'Used in the treatment room and chosen for home care' ) . '</span></div>'
 				. '<div class="skh-card"><a class="skh-card__img" href="' . esc_url( $link ) . '"><img src="' . esc_url( $thumb ) . '" alt="" loading="lazy"></a><div class="skh-card__body"><p class="skh-card__brand">' . esc_html( $brand ) . '</p><a class="skh-card__name" href="' . esc_url( $link ) . '">' . esc_html( $short ) . '</a>'
 				. ( $rating ? '<div class="skh-card__rate">' . $rating . '</div>' : '' )
