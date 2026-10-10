@@ -38,7 +38,16 @@ add_action( 'woocommerce_before_quantity_input_field', fn() => is_product() ? pr
 add_action( 'woocommerce_after_quantity_input_field', fn() => is_product() ? print( '<button type="button" class="skp-step" data-d="1" aria-label="Increase quantity">+</button>' ) : null );
 
 /* No SKU / category line, no tabs: the details get their own section. */
-remove_action( 'woocommerce_single_product_summary', 'woocommerce_template_single_meta', 40 );
+add_action(
+	'wp',
+	function () {
+		// WooCommerce registers these after plugins load, so remove them here.
+		remove_action( 'woocommerce_single_product_summary', 'woocommerce_template_single_meta', 40 );
+		remove_action( 'woocommerce_after_single_product_summary', 'woocommerce_upsell_display', 15 );
+		remove_action( 'woocommerce_after_single_product_summary', 'woocommerce_output_related_products', 20 );
+		remove_action( 'woocommerce_single_product_summary', 'woocommerce_template_single_rating', 10 );
+	}
+);
 add_filter( 'woocommerce_product_tabs', '__return_empty_array', 99 );
 
 add_action(
@@ -67,8 +76,6 @@ add_action(
 );
 
 /* Kits and related products as the same cards the shop uses. */
-remove_action( 'woocommerce_after_single_product_summary', 'woocommerce_upsell_display', 15 );
-remove_action( 'woocommerce_after_single_product_summary', 'woocommerce_output_related_products', 20 );
 add_action(
 	'woocommerce_after_single_product_summary',
 	function () {
@@ -174,8 +181,10 @@ add_action(
 .skp-bar__t b{font:600 13px/1.3 Manrope,sans-serif;color:#2A1A24;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .skp-bar__t span{font:700 14px Manrope,sans-serif;color:#2A1A24}.skp-bar__t del{font-weight:500;color:#9A8791;margin-right:4px}.skp-bar__t ins{text-decoration:none;color:#D1127E}
 .skp-bar__btn{flex:none;height:46px;padding:0 20px!important;border:0!important;border-radius:999px!important;background:#D1127E!important;color:#fff!important;font:700 15px Manrope,sans-serif!important}
-body.skp-bar-on .skb{bottom:84px;transition:bottom .3s ease}
-body.skp-bar-on #ast-scroll-top{bottom:84px!important}
+#ast-scroll-top{display:none!important}
+.single-product .skb{right:12px;bottom:12px;transition:bottom .3s ease}
+.single-product .skb-launch{padding:6px!important}.single-product .skb-launch__t{display:none}
+body.skp-bar-on .skb{bottom:84px}
 }
 @media(max-width:560px){.single-product .summary .product_title{font-size:30px!important}.single-product form.cart .single_add_to_cart_button{font-size:15px!important;padding:0 14px!important}}
 </style>
