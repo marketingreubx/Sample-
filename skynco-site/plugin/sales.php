@@ -349,7 +349,7 @@ add_action(
 				$match = wc_get_product( skynco_shop_id( $ks ) );
 			}
 		}
-		$kit_line = $match ? '<p class="sk-fbt__kit">Best price: get all three as <a href="' . esc_url( get_permalink( $match->get_id() ) ) . '">' . esc_html( $match->get_name() ) . '</a> for <b>' . wp_kses_post( wc_price( $match->get_price() ) ) . '</b> (20% off). <a class="sk-fbt__kitbtn" href="' . esc_url( add_query_arg( 'add-to-cart', $match->get_id(), wc_get_cart_url() ) ) . '" rel="nofollow">Add the kit</a></p>' : '';
+		$kit_line = $match ? '<p class="sk-fbt__kit"><span>Best price: get all three as <a href="' . esc_url( get_permalink( $match->get_id() ) ) . '">' . esc_html( $match->get_name() ) . '</a> for <b>' . wp_kses_post( wc_price( $match->get_price() ) ) . '</b> (20% off).</span><a class="sk-fbt__kitbtn" href="' . esc_url( add_query_arg( 'add-to-cart', $match->get_id(), wc_get_cart_url() ) ) . '" rel="nofollow">Add the kit</a></p>' : '';
 		echo '<section class="sk-fbt"><h2>Complete the routine</h2><p class="sk-fbt__sub">Clients who buy this usually pair it with these. Buy 2 and save 10%, buy 3 and save 15%.</p>'
 			. '<form method="post" action="' . esc_url( wc_get_cart_url() ) . '"><input type="hidden" name="skynco_fbt[]" value="' . (int) $product->get_id() . '">' . wp_nonce_field( 'skynco_fbt', '_skfbt', false, false )
 			. '<div class="sk-fbt__row">' . $html . '</div><div class="sk-fbt__foot"><div class="sk-fbt__total"><span class="sk-fbt__label" data-label>Total for 3 products</span><span class="sk-fbt__prices"><s class="sk-fbt__was" data-was>' . esc_html( $cur . number_format( $sum, 2 ) ) . '</s><b class="sk-fbt__now" data-now>' . esc_html( $cur . number_format( $sum * 0.85, 2 ) ) . '</b></span><span class="sk-fbt__off" data-off>You save ' . esc_html( $cur . number_format( $sum * 0.15, 2 ) ) . ' (15%)</span></div><button type="submit" class="sk-fbt__btn" data-btn>Add all 3 to bag</button></div></form>' . $kit_line . '</section>'; // phpcs:ignore
@@ -559,7 +559,7 @@ add_action(
 .sk-fbt__off{justify-self:start;margin-top:4px;padding:4px 10px;border-radius:99px;background:#E9F5EE;color:#24704A;font:700 12.5px/1.4 Manrope,sans-serif;white-space:nowrap}
 .sk-fbt__off.is-hint{background:#FBEFF0;color:#D1127E}
 .sk-fbt__btn{flex:none;padding:14px 26px;border-radius:999px;border:0;background:#D1127E;color:#fff;font:700 15px Manrope,sans-serif;cursor:pointer}
-.sk-fbt__kit{margin:16px 0 0!important;padding:14px 16px;border-radius:16px;background:#fff;border:1.5px solid #D1127E;font:500 14.5px/1.5 Manrope,sans-serif;color:#2A1A24;display:flex;align-items:center;gap:12px;flex-wrap:wrap}.sk-fbt__kit a{color:#D1127E;font-weight:700}.sk-fbt__kit .sk-fbt__kitbtn{margin-left:auto;padding:10px 18px;border-radius:999px;background:#3B1530;color:#fff!important;text-decoration:none}
+.sk-fbt__kit{margin:16px 0 0!important;padding:14px 16px;border-radius:16px;background:#fff;border:1.5px solid #D1127E;font:500 14.5px/1.5 Manrope,sans-serif;color:#2A1A24;display:flex;align-items:center;gap:12px;flex-wrap:wrap}.sk-fbt__kit a{color:#D1127E;font-weight:700}.sk-fbt__kit>span{flex:1 1 220px;min-width:0}.sk-fbt__kit .sk-fbt__kitbtn{flex:none;margin-left:auto;padding:10px 18px;border-radius:999px;background:#3B1530;color:#fff!important;text-decoration:none}
 .sk-mix{margin:12px 0 0;padding:10px 14px;border-radius:12px;background:#E9F5EE;color:#24704A;font:500 13.5px/1.45 Manrope,sans-serif}
 .sk-pp{display:flex;align-items:center;gap:18px;margin:0 0 24px;padding:20px;border-radius:22px;background:#fff;border:2px dashed #D1127E;font-family:Manrope,sans-serif}
 .sk-pp img{width:96px;height:96px;border-radius:16px;object-fit:cover;flex:none}
@@ -569,7 +569,7 @@ add_action(
 .sk-pp__btn{margin-left:auto;flex:none;padding:14px 22px;border-radius:999px;background:#D1127E;color:#fff!important;font:700 14.5px Manrope,sans-serif;text-decoration:none!important}
 .sk-pp--done{display:block;border-style:solid;border-color:#24704A;color:#24704A}
 @media(max-width:560px){.sk-rw__marks{display:none}}
-@media(max-width:700px){.sk-kitup,.sk-pp{flex-wrap:wrap}.sk-kitup__btn,.sk-pp__btn{margin-left:0;width:100%;text-align:center}.sk-fbt{padding:20px}.sk-fbt__row{flex-direction:column}.sk-fbt__item{flex-direction:row;align-items:center}.sk-fbt__item img{width:64px;flex:none}.sk-fbt__item input{position:static}.sk-fbt__plus{display:none}.sk-fbt__price{margin:0 0 0 auto}.sk-fbt__foot{flex-direction:column;align-items:stretch}.sk-fbt__btn{width:100%}}
+@media(max-width:700px){.sk-kitup,.sk-pp{flex-wrap:wrap}.sk-kitup__btn,.sk-pp__btn{margin-left:0;width:100%;text-align:center}.sk-fbt{padding:20px}.sk-fbt__row{flex-direction:column}.sk-fbt__item{flex-direction:row;align-items:center}.sk-fbt__item img{width:64px;flex:none}.sk-fbt__item input{position:static}.sk-fbt__plus{display:none}.sk-fbt__price{margin:0 0 0 auto}.sk-fbt__foot{flex-direction:column;align-items:stretch}.sk-fbt__btn{width:100%}.sk-fbt__kit .sk-fbt__kitbtn{width:100%;margin:0;text-align:center}}
 </style>
 		<?php
 	}
