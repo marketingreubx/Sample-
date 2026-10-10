@@ -93,18 +93,15 @@ function skynco_reviews_section() {
 	echo '<button type="submit" class="skr-submit">Submit review</button><p class="skr-small">Reviews are checked before they appear.</p></form></div></section>';
 }
 
-/* Ratings under the price on single product pages. */
-add_action(
-	'woocommerce_single_product_summary',
-	function () {
-		global $product;
-		if ( $product && $product->get_review_count() ) {
-			echo '<a class="skr-inline" href="#reviews">' . skynco_stars_html( $product->get_average_rating(), $product->get_review_count() ) . '</a>'; // phpcs:ignore
-		}
+/* Brand stars wherever WooCommerce prints a rating (product page, loops, widgets). */
+add_filter(
+	'woocommerce_product_get_rating_html',
+	function ( $html, $rating, $count ) {
+		return $rating > 0 && function_exists( 'skynco_stars_html' ) ? skynco_stars_html( $rating ) : $html;
 	},
-	6
+	20,
+	3
 );
-remove_action( 'woocommerce_single_product_summary', 'woocommerce_template_single_rating', 10 );
 
 /* Review request email five days after an order is completed. */
 add_action(
@@ -234,7 +231,7 @@ add_action(
 .skr-rate input:checked~label,.skr-rate label:hover,.skr-rate label:hover~label{color:#D1127E!important}
 .skr-submit{align-self:flex-start;padding:13px 24px;border-radius:999px;border:0;background:#D1127E;color:#fff;font:700 14.5px Manrope,sans-serif;cursor:pointer}
 .skr-small{font-size:12px;color:#9A8791}
-.skr-inline{display:inline-flex;align-items:center;margin:4px 0 10px;text-decoration:none!important}
+.single-product .summary .woocommerce-product-rating{display:flex;align-items:center;gap:10px;margin:6px 0 12px}.single-product .summary .woocommerce-product-rating .sk-stars{font-size:18px}.single-product .summary .woocommerce-review-link{font:600 13.5px Manrope,sans-serif;color:#6E5A66!important}
 @media(max-width:900px){.skr-grid{grid-template-columns:1fr}.skr-sum{position:static}.skr-list{grid-template-columns:1fr}}
 @media(max-width:600px){.skr{margin-top:36px}.skr h2{font-size:28px!important}.skr-row{grid-template-columns:1fr}.skr-head{flex-direction:column;align-items:flex-start}}
 </style>
