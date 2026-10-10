@@ -32,7 +32,7 @@ function lux_shop_catalog() {
 
 /** Product photo from Open Beauty Facts, squared on white (pad) or cropped to a square (crop). Cached by barcode. */
 function lux_shop_obf_image( $code, $mode, $title ) {
-	$cache = get_option( 'skynco_obf_media', [] );
+	$cache = get_option( 'skynco_obf_media_v2', [] );
 	if ( ! empty( $cache[ $code ] ) && get_post( $cache[ $code ] ) ) {
 		return (int) $cache[ $code ];
 	}
@@ -54,7 +54,8 @@ function lux_shop_obf_image( $code, $mode, $title ) {
 		$side = min( $w, $h );
 		imagecopyresampled( $c, $im, 0, 0, (int) ( ( $w - $side ) / 2 ), (int) ( ( $h - $side ) / 2 ), $S, $S, $side, $side );
 	} else {
-		$sc = min( $S * 0.86 / $w, $S * 0.86 / $h );
+		[ $im, $w, $h ] = lux_shop_trim( $im );
+		$sc = min( $S * 0.9 / $w, $S * 0.9 / $h );
 		$nw = (int) ( $w * $sc );
 		$nh = (int) ( $h * $sc );
 		imagecopyresampled( $c, $im, (int) ( ( $S - $nw ) / 2 ), (int) ( ( $S - $nh ) / 2 ), 0, 0, $nw, $nh, $w, $h );
@@ -62,29 +63,91 @@ function lux_shop_obf_image( $code, $mode, $title ) {
 	$id = lux_shop_save_image( $c, $title );
 	if ( $id ) {
 		$cache[ $code ] = $id;
-		update_option( 'skynco_obf_media', $cache, false );
+		update_option( 'skynco_obf_media_v2', $cache, false );
 	}
 	return $id;
 }
 
-/** Kit image: the kit's three product photos side by side on white. */
-function lux_shop_kit_image( $key, array $image_ids, $title ) {
-	$S = 1200;
-	$c = imagecreatetruecolor( $S, $S );
-	imagefill( $c, 0, 0, imagecolorallocate( $c, 255, 255, 255 ) );
-	$n = count( $image_ids );
-	foreach ( array_values( $image_ids ) as $i => $aid ) {
-		$im = @imagecreatefromstring( (string) @file_get_contents( get_attached_file( $aid ) ) );
-		if ( ! $im ) {
-			continue;
+/** Crop away a plain border (white or the photo's corner colour) around the product. */
+function lux_shop_trim( $im ) {
+	$w  = imagesx( $im );
+	$h  = imagesy( $im );
+	$bg = imagecolorsforindex( $im, imagecolorat( $im, 2, 2 ) );
+	$st = max( 1, (int) ( min( $w, $h ) / 300 ) );
+	$x0 = $w;
+	$y0 = $h;
+	$x1 = 0;
+	$y1 = 0;
+	for ( $y = 0; $y < $h; $y += $st ) {
+		for ( $x = 0; $x < $w; $x += $st ) {
+			$c = imagecolorsforindex( $im, imagecolorat( $im, $x, $y ) );
+			if ( abs( $c['red'] - $bg['red'] ) + abs( $c['green'] - $bg['green'] ) + abs( $c['blue'] - $bg['blue'] ) > 42 ) {
+				$x0 = min( $x0, $x );
+				$y0 = min( $y0, $y );
+				$x1 = max( $x1, $x );
+				$y1 = max( $y1, $y );
+			}
 		}
-		$cell = (int) ( $S / max( 1, $n ) );
-		$size = (int) ( $cell * 1.08 );
-		$x    = (int) ( $i * $cell - ( $size - $cell ) / 2 );
-		$y    = (int) ( ( $S - $size ) / 2 + ( 1 === $i ? -40 : 40 ) );
-		imagecopyresampled( $c, $im, $x, $y, 0, 0, $size, $size, imagesx( $im ), imagesy( $im ) );
 	}
-	return lux_shop_save_image( $c, $title, 'kit-' . $key . '-' . substr( md5( implode( ',', $image_ids ) ), 0, 6 ) );
+	if ( $x1 <= $x0 || $y1 <= $y0 || ( $x1 - $x0 ) < $w * 0.2 ) {
+		return [ $im, $w, $h ];
+	}
+	$cw = $x1 - $x0 + 1;
+	$ch = $y1 - $y0 + 1;
+	$c  = imagecreatetruecolor( $cw, $ch );
+	imagecopy( $c, $im, 0, 0, $x0, $y0, $cw, $ch );
+	return [ $c, $cw, $ch ];
+}
+
+/** A brand font file, downloaded once into uploads. */
+function lux_shop_font( $family ) {
+	$dir  = wp_get_upload_dir()['basedir'] . '/skynco-fonts';
+	$file = $dir . '/' . sanitize_file_name( $family ) . '.ttf';
+	if ( file_exists( $file ) ) {
+		return $file;
+	}
+	wp_mkdir_p( $dir );
+	$css = wp_remote_retrieve_body( wp_remote_get( 'https://fonts.googleapis.com/css2?family=' . rawurlencode( $family ), [ 'timeout' => 20, 'user-agent' => 'Mozilla/4.0' ] ) );
+	if ( preg_match( '#https://fonts\.gstatic\.com[^)]+#', $css, $m ) ) {
+		file_put_contents( $file, wp_remote_retrieve_body( wp_remote_get( $m[0], [ 'timeout' => 30 ] ) ) );
+	}
+	return file_exists( $file ) ? $file : '';
+}
+
+/** Kit image: a 2x2 grid of the kit's three product photos plus a plum tile with the kit name and saving. */
+function lux_shop_kit_image( $key, array $image_ids, $title, $badge = '' ) {
+	$S   = 1200;
+	$g   = 36;
+	$t   = (int) ( ( $S - 3 * $g ) / 2 );
+	$c   = imagecreatetruecolor( $S, $S );
+	imagefill( $c, 0, 0, imagecolorallocate( $c, 251, 239, 240 ) );
+	$pos = [ [ $g, $g ], [ 2 * $g + $t, $g ], [ $g, 2 * $g + $t ] ];
+	foreach ( array_slice( array_values( $image_ids ), 0, 3 ) as $i => $aid ) {
+		$im = @imagecreatefromstring( (string) @file_get_contents( get_attached_file( $aid ) ) );
+		if ( $im ) {
+			imagecopyresampled( $c, $im, $pos[ $i ][0], $pos[ $i ][1], 0, 0, $t, $t, imagesx( $im ), imagesy( $im ) );
+		}
+	}
+	$x = 2 * $g + $t;
+	$y = 2 * $g + $t;
+	imagefilledrectangle( $c, $x, $y, $x + $t, $y + $t, imagecolorallocate( $c, 59, 21, 48 ) );
+	$serif = lux_shop_font( 'Fraunces:ital,wght@1,500' );
+	$sans  = lux_shop_font( 'Manrope:wght@700' );
+	$white = imagecolorallocate( $c, 255, 255, 255 );
+	$pink  = imagecolorallocate( $c, 255, 179, 217 );
+	if ( $serif && $sans ) {
+		imagettftext( $c, 22, 0, $x + 46, $y + 90, $pink, $sans, 'SKYN&CO. KIT' );
+		$words = preg_split( '/\s+/', trim( preg_replace( '/^The\s+/i', '', $title ) ) );
+		$lines = count( $words ) > 2 ? [ implode( ' ', array_slice( $words, 0, 2 ) ), implode( ' ', array_slice( $words, 2 ) ) ] : [ implode( ' ', $words ) ];
+		foreach ( $lines as $n => $ln ) {
+			imagettftext( $c, 62, 0, $x + 44, $y + 210 + $n * 84, $white, $serif, $ln );
+		}
+		imagettftext( $c, 24, 0, $x + 46, $y + $t - 110, $white, $sans, '3-step routine' );
+		if ( $badge ) {
+			imagettftext( $c, 24, 0, $x + 46, $y + $t - 60, $pink, $sans, $badge );
+		}
+	}
+	return lux_shop_save_image( $c, $title, 'kit-' . $key . '-' . substr( md5( implode( ',', $image_ids ) . $badge ), 0, 6 ) );
 }
 
 function lux_shop_save_image( $gd, $title, $name = '' ) {
@@ -182,7 +245,7 @@ function lux_shop_setup() {
 		$product->set_reviews_allowed( true );
 		if ( 'kit' === $p[6] ) {
 			$parts = array_filter( array_map( fn( $k ) => isset( $ids[ $k ] ) ? (int) get_post_thumbnail_id( $ids[ $k ] ) : 0, $p[10] ) );
-			$img   = $parts ? lux_shop_kit_image( $slug, $parts, $p[0] ) : 0;
+			$img   = $parts ? lux_shop_kit_image( $slug, $parts, $p[0], $p[7] ) : 0;
 		} elseif ( is_string( $p[6] ) && 0 === strpos( $p[6], 'obf:' ) ) {
 			[ , $code, $mode ] = array_pad( explode( ':', $p[6] ), 3, 'pad' );
 			$img = lux_shop_obf_image( $code, $mode, $p[0] );
@@ -305,7 +368,7 @@ function lux_shop_elements() {
 		[ 'flex_gap' => lux_gap( 36 ), '_element_id' => 'kits' ],
 		[
 			lux_head_row(
-				[ lux_eyebrow( 'Best value' ), lux_heading( 'Kits that do the thinking <em>for you.</em>', 'h2', 'h2' ), lux_text( '<p>Three-step routines built around your skin goal. Buy the set and save up to $19.</p>', 'body', 'muted' ) ],
+				[ lux_eyebrow( 'Best value' ), lux_heading( 'Kits that do the thinking <em>for you.</em>', 'h2', 'h2' ), lux_text( '<p>Three-step routines built around your skin goal. Buy the set and save up to $23.</p>', 'body', 'muted' ) ],
 				null,
 				680
 			),
