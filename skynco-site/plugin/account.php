@@ -130,8 +130,13 @@ add_action(
 			exit;
 		}
 		if ( $me->ID && user_can( $me, 'edit_posts' ) ) {
-			wp_safe_redirect( admin_url() );
-			exit;
+			// Studio staff testing in the same browser: offer to switch to the client view.
+			if ( empty( $_GET['sk_switch'] ) || ! wp_verify_nonce( sanitize_key( $_GET['_wpnonce'] ?? '' ), 'skynco_switch' ) ) {
+				wp_safe_redirect( add_query_arg( [ 'sk' => 'staff', 'sk_to' => rawurlencode( sanitize_text_field( wp_unslash( $_GET['sk_login'] ) ) ) ], skynco_account_url() ) );
+				exit;
+			}
+			wp_logout();
+			wp_set_current_user( 0 );
 		}
 		$user = get_user_by( 'email', $email );
 		if ( ! $user ) {
@@ -376,6 +381,10 @@ function skynco_account_shortcode() {
 	$h .= '<main class="skd-main">';
 	if ( 'saved' === $msg ) {
 		$h .= '<p class="skd-note">Your details are saved.</p>';
+	}
+	if ( 'staff' === $msg && ! empty( $_GET['sk_to'] ) && current_user_can( 'edit_posts' ) ) {
+		$switch = wp_nonce_url( add_query_arg( [ 'sk_login' => rawurlencode( sanitize_text_field( wp_unslash( $_GET['sk_to'] ) ) ), 'sk_switch' => 1 ], skynco_account_url() ), 'skynco_switch' );
+		$h     .= '<p class="skd-note">You’re signed in as the studio admin, so this link didn’t open the client’s dashboard. <a href="' . esc_url( $switch ) . '"><b>Switch to the client view</b></a> (this signs you out of the admin), or open the link in a private window.</p>';
 	}
 	if ( '' === $tab ) {
 		$hour  = (int) wp_date( 'G' );
@@ -645,8 +654,14 @@ add_action(
 /* Thank-you pages link to the dashboard. */
 add_action(
 	'woocommerce_thankyou',
-	function () {
-		echo '<p class="sk-thanks-acct">Track this order, your visits and rewards in <a href="' . esc_url( skynco_account_url() ) . '">your client dashboard</a>.</p>';
+	function ( $order_id ) {
+		$o    = wc_get_order( $order_id );
+		$me   = wp_get_current_user();
+		$link = skynco_account_url( 'orders' );
+		if ( $o && ! ( $me->ID && strtolower( $me->user_email ) === strtolower( $o->get_billing_email() ) ) ) {
+			$link = skynco_confirmation_dashboard_link( $o->get_billing_email(), 'orders' ) ?: $link;
+		}
+		echo '<div class="sk-thanks-acct" style="margin:24px 0;padding:20px 22px;border-radius:20px;background:#FBEFF0;font-family:Manrope,sans-serif"><p style="margin:0 0 12px;color:#2A1A24"><b>Your client dashboard is ready.</b> Track this order, see your visits and collect rewards.</p><a class="button" style="display:inline-block;padding:13px 24px;border-radius:999px;background:#D1127E;color:#fff;font-weight:700;text-decoration:none" href="' . esc_url( $link ) . '">Open my dashboard</a></div>';
 	},
 	30
 );
@@ -968,11 +983,35 @@ function skynco_ensure_client_account( $email, $first = '', $last = '', $phone =
 	return [ $uid, true ];
 }
 
-function skynco_sign_in_new_client( $uid ) {
-	if ( $uid && ! is_user_logged_in() && ! headers_sent() ) {
-		wp_set_current_user( $uid );
-		wp_set_auth_cookie( $uid, true );
+/**
+ * Signs the client in on this device right after they book or order, so the
+ * dashboard opens straight away without waiting for an email. New and returning
+ * clients alike; staff accounts never sign in this way, and a staff member who is
+ * already signed in on this browser stays signed in.
+ */
+function skynco_sign_in_client( $uid ) {
+	$u = $uid ? get_user_by( 'id', $uid ) : null;
+	if ( ! $u || user_can( $u, 'edit_posts' ) || headers_sent() ) {
+		return;
 	}
+	$me = wp_get_current_user();
+	if ( (int) $me->ID === (int) $uid || ( $me->ID && user_can( $me, 'edit_posts' ) ) ) {
+		return;
+	}
+	wp_set_current_user( $uid );
+	wp_set_auth_cookie( $uid, true );
+}
+function skynco_sign_in_new_client( $uid ) {
+	skynco_sign_in_client( $uid );
+}
+
+/** Dashboard link for a confirmation page: signed, valid 2 hours; '' for staff emails. */
+function skynco_confirmation_dashboard_link( $email, $tab = '' ) {
+	$u = get_user_by( 'email', $email );
+	if ( ! is_email( $email ) || ( $u && user_can( $u, 'edit_posts' ) ) ) {
+		return '';
+	}
+	return skynco_magic_link_url( $email, 2 * HOUR_IN_SECONDS, $tab );
 }
 
 /* LatePoint bookings. */
@@ -986,10 +1025,8 @@ add_action(
 		if ( empty( $c->email ) ) {
 			return;
 		}
-		[ $uid, $new ] = skynco_ensure_client_account( $c->email, $c->first_name, $c->last_name, $c->phone );
-		if ( $new ) {
-			skynco_sign_in_new_client( $uid );
-		}
+		[ $uid ] = skynco_ensure_client_account( $c->email, $c->first_name, $c->last_name, $c->phone );
+		skynco_sign_in_client( $uid );
 	},
 	20
 );
@@ -1007,9 +1044,7 @@ add_action(
 			$o->set_customer_id( $uid );
 			$o->save();
 		}
-		if ( $new ) {
-			skynco_sign_in_new_client( $uid );
-		}
+		skynco_sign_in_client( $uid );
 	},
 	5
 );

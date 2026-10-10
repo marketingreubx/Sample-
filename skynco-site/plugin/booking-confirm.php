@@ -72,7 +72,12 @@ add_action(
 		if ( $me->ID && $email && strtolower( $me->user_email ) === strtolower( $email ) ) {
 			$h .= '<a class="skbc-cta" href="' . esc_url( skynco_account_url( 'visits' ) ) . '">Open my client dashboard</a>';
 		} else {
-			$h .= '<a class="skbc-cta" href="' . esc_url( add_query_arg( 'e', rawurlencode( $email ), skynco_account_url() ) ) . '">Open my client dashboard</a><p class="skbc-s" style="text-align:center;margin-top:8px">Your personal dashboard link is also in your confirmation email.</p>';
+			$link = function_exists( 'skynco_confirmation_dashboard_link' ) ? skynco_confirmation_dashboard_link( $email, 'visits' ) : '';
+			if ( $link ) {
+				$h .= '<a class="skbc-cta" href="' . esc_url( $link ) . '">Open my client dashboard</a>';
+			} else {
+				$h .= '<a class="skbc-cta" href="' . esc_url( wp_login_url( skynco_account_url( 'visits' ) ) ) . '">Sign in to view your dashboard</a><p class="skbc-s" style="text-align:center;margin-top:8px">This email belongs to a studio staff account, which signs in with its password.</p>';
+			}
 		}
 		$h .= '</div>';
 		echo $h; // phpcs:ignore
