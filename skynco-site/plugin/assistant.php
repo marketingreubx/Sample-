@@ -208,7 +208,7 @@ function skynco_ai_service_card( $service_id ) {
 	if ( ! $svc ) {
 		return null;
 	}
-	return [ 'type' => 'service', 'id' => $svc['id'], 'name' => $svc['name'], 'meta' => $svc['duration'] . ' min · ' . ( $svc['price'] > 0 ? '$' . rtrim( rtrim( number_format( $svc['price'], 2 ), '0' ), '.' ) : 'Free video call' ), 'book' => skynco_ai_book_url( $svc['id'] ), 'info' => $svc['url'] ];
+	return [ 'type' => 'service', 'id' => $svc['id'], 'name' => $svc['name'], 'meta' => $svc['duration'] . ' min · ' . ( $svc['price'] > 0 ? '$' . rtrim( rtrim( number_format( $svc['price'], 2 ), '0' ), '.' ) : 'Free video call' ), 'book' => skynco_ai_book_url( $svc['id'] ), 'info' => $svc['url'], 'label' => $svc['price'] > 0 ? 'Recommended treatment' : 'Free consultation with Hana' ];
 }
 
 function skynco_ai_product_card( array $slugs ) {
@@ -562,7 +562,7 @@ add_action(
 	function typing(){return bubble('bot','<span class="skb-typing"><i></i><i></i><i></i></span>');}
 	function card(c){
 		if(!c) return '';
-		if(c.type==='service'){return '<div class="skb-card"><p class="skb-card__k">Recommended treatment</p><p class="skb-card__t">'+esc(c.name)+'</p><p class="skb-card__m">'+esc(c.meta)+'</p><div class="skb-card__a"><a class="skb-btn" href="'+esc(c.book)+'">Book this</a><a class="skb-btn skb-btn--ghost" href="'+esc(c.info)+'">Details</a>'+(C.ai?'':'<button type="button" class="skb-btn skb-btn--ghost" data-times="'+c.id+'">See open times</button>')+'</div></div>';}
+		if(c.type==='service'){return '<div class="skb-card"><p class="skb-card__k">'+esc(c.label||'Recommended treatment')+'</p><p class="skb-card__t">'+esc(c.name)+'</p><p class="skb-card__m">'+esc(c.meta)+'</p><div class="skb-card__a"><a class="skb-btn" href="'+esc(c.book)+'">Book this</a><a class="skb-btn skb-btn--ghost" href="'+esc(c.info)+'">Details</a>'+(C.ai?'':'<button type="button" class="skb-btn skb-btn--ghost" data-times="'+c.id+'">See open times</button>')+'</div></div>';}
 		if(c.type==='products'){return '<div class="skb-prods">'+c.items.map(function(p){return '<div class="skb-prod">'+(p.img?'<img src="'+esc(p.img)+'" alt="">':'')+'<p class="skb-prod__t">'+esc(p.name)+'</p><p class="skb-prod__p">'+esc(p.price)+'</p><a class="skb-mini" href="'+esc(p.add)+'">Add to bag</a></div>';}).join('')+'</div>';}
 		if(c.type==='plan'){return c.html;}
 		if(c.type==='slots'){if(!c.days.length) return '<div class="skb-card"><p class="skb-card__t">No open times in the next two weeks</p><p class="skb-card__m">Text Hana at (857) 228-4708 and she will fit you in.</p></div>';return '<div class="skb-card"><p class="skb-card__k">Open times · '+esc(c.service)+'</p>'+c.days.map(function(d){return '<p class="skb-day">'+esc(d.label)+'</p><div class="skb-times">'+d.times.map(function(t){return '<a href="'+esc(t.url)+'">'+esc(t.label)+'</a>';}).join('')+'</div>';}).join('')+'<p class="skb-card__m">Tap a time to finish booking. You only add your details.</p><a class="skb-link" href="'+esc(c.more)+'">See all dates</a></div>';}
@@ -607,9 +607,9 @@ add_action(
 		ask();
 	}
 	function ask(){
-		var qs=visible(),i=0;while(i<qs.length&&st.a[qs[i].id]!==undefined)i++;
+		var qs=visible(),i=0,seen;while(i<qs.length&&st.a[qs[i].id]!==undefined)i++;
 		if(i>=qs.length){finish();return;}
-		var q=qs[i],n=i+1,N=qs.length+Q.filter(function(x){return x.if&&st.a[x.if[0]]===undefined;}).length;st.q=q;st.sel=[];
+		var q=qs[i],n=i+1,seen={};qs.forEach(function(x){seen[x.id]=1;});N=qs.length+Q.filter(function(x){if(!x.if||st.a[x.if[0]]!==undefined||seen[x.id])return false;seen[x.id]=1;return true;}).length;st.q=q;st.sel=[];
 		var html='<p class="skb-step">Step '+n+' of '+N+'<i><b style="width:'+Math.round(n/N*100)+'%"></b></i></p>'+fmt(q.q);
 		hist.push({role:'assistant',content:q.q});save();bubble('bot',html);
 		drawChips();
