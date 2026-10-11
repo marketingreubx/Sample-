@@ -114,21 +114,19 @@ add_action(
 	function () {
 		?>
 <style id="skynco-shop-hero">
-.skh{position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center;min-height:min(62vh,560px);background:#1E0C18;color:#fff;font-family:Manrope,sans-serif;text-align:center}
+.skh{position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center;min-height:min(72vh,640px);background:#1E0C18;color:#fff;font-family:Manrope,sans-serif;text-align:center}
 .skh *{box-sizing:border-box}.skh p{margin:0}
-.skh--tall{min-height:min(86vh,760px)}
 .skh .skh-bg{position:absolute;inset:0;width:100%!important;height:100%!important;max-width:none!important;object-fit:cover}
-.skh--page .skh-inner{padding:96px 24px 88px}
 .skh::before{content:"";position:absolute;inset:0;z-index:1;background:linear-gradient(180deg,rgba(26,10,22,.55) 0%,rgba(26,10,22,.5) 45%,rgba(26,10,22,.72) 100%)}
-.skh-inner{position:relative;z-index:2;width:100%;max-width:820px;padding:110px 24px 90px;display:flex;flex-direction:column;align-items:center}
+.skh-inner{position:relative;z-index:2;width:100%;max-width:820px;padding:88px 24px 80px;display:flex;flex-direction:column;align-items:center}
 .skh-proof{display:inline-flex;align-items:center;gap:8px;padding:8px 16px;border-radius:999px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.22);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);font:500 13.5px Manrope,sans-serif;color:#F7EAF0}
 .skh-proof__stars{letter-spacing:2px;color:#FF8FCB;font-size:13px}.skh-proof b{color:#fff}
-.skh .skh-title{margin:22px 0 16px!important;font:500 clamp(40px,5.6vw,72px)/1.05 Fraunces,serif!important;color:#fff!important;letter-spacing:-.015em}
+.skh .skh-title{margin:22px 0 16px!important;font:500 clamp(40px,5vw,64px)/1.06 Fraunces,serif!important;color:#fff!important;letter-spacing:-.015em}
 .skh-title em{font-style:italic;color:#FF8FCB}
 .skh-lead{max-width:560px;font-size:18px;line-height:1.65;color:#F1DFE8}
 .skh-btn{margin-top:30px;display:inline-flex;align-items:center;justify-content:center;padding:16px 34px;border-radius:999px;background:#D1127E;color:#fff!important;font:700 16px Manrope,sans-serif;text-decoration:none!important;box-shadow:0 14px 30px -12px rgba(209,18,126,.8);transition:transform .2s,background .2s}
 .skh-btn:hover{background:#B00F6A;transform:translateY(-2px)}
-.skh-brands{margin-top:56px;width:100%;max-width:760px}
+.skh-brands{margin-top:44px;width:100%;max-width:760px}
 .skh-brands p{font:600 12.5px Manrope,sans-serif;letter-spacing:.06em;color:rgba(255,255,255,.75)}
 .skh-marquee{margin-top:18px;overflow:hidden;width:100%;-webkit-mask-image:linear-gradient(90deg,transparent,#000 12%,#000 88%,transparent);mask-image:linear-gradient(90deg,transparent,#000 12%,#000 88%,transparent)}
 .skh-track{list-style:none;margin:0;padding:0;display:flex;align-items:center;width:max-content;color:#fff;opacity:.92;animation:skhmarq 22s linear infinite}
@@ -145,14 +143,14 @@ add_action(
 .sk-stars__bg{color:#E9D3DB}.sk-stars__fg{position:absolute;left:0;top:0;overflow:hidden;white-space:nowrap;color:#D1127E}
 .sk-stars__n{margin-left:6px;font:700 13px Manrope,sans-serif;color:#2A1A24;vertical-align:middle}.sk-stars__n span{color:#9A8791;font-weight:600}
 @media(max-width:767px){
-.skh{min-height:500px}.skh--tall{min-height:640px}
-.skh--page .skh-inner{padding:64px 18px 56px}
+.skh{min-height:440px}
 .skh::before{background:linear-gradient(180deg,rgba(26,10,22,.45) 0%,rgba(26,10,22,.6) 50%,rgba(26,10,22,.82) 100%)}
-.skh-inner{padding:72px 18px 56px}
-.skh .skh-title{font-size:40px!important;margin:18px 0 12px!important}
-.skh-lead{font-size:15.5px}
-.skh-btn{margin-top:24px;width:100%;max-width:320px;padding:15px 20px}
-.skh-brands{margin-top:40px}
+.skh-inner{padding:44px 20px 40px}
+.skh-proof{padding:6px 12px;font-size:12px}.skh-proof__stars{font-size:11px;letter-spacing:1px}
+.skh .skh-title{font-size:31px!important;line-height:1.1!important;margin:14px 0 10px!important}
+.skh-lead{font-size:14.5px;line-height:1.55;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.skh-btn{margin-top:18px;width:auto;max-width:none;padding:13px 26px;font-size:15px}
+.skh-brands{margin-top:26px}.skh-brands p{font-size:11px}.skh-marquee{margin-top:12px}
 .skh-track li{padding:0 18px}.skh-track{animation-duration:16s}
 .skh-b--derm,.skh-b--elta{font-size:18px}.skh-b--image{font-size:15px}.skh-b--is{font-size:13px}.skh-b--alastin{font-size:14px}
 }

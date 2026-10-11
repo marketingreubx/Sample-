@@ -61,6 +61,16 @@ add_action(
   .skrb-grid::-webkit-scrollbar{display:none}
   .skrb-card{flex:0 0 84%;scroll-snap-align:center;padding:20px!important}
   .e-con.e-parent:has(.sk-offers){--margin-top:16px;margin-top:16px!important}
+
+  /* Site-wide phone type scale: smaller headings and body copy below the hero */
+  body .elementor-widget-heading h2.elementor-heading-title{font-size:28px!important;line-height:1.18!important}
+  body .elementor-widget-heading h3.elementor-heading-title{font-size:20px!important;line-height:1.25!important}
+  body .elementor-widget-text-editor,body .elementor-widget-text-editor p{font-size:15px!important;line-height:1.6!important}
+  body .elementor-widget-icon-list .elementor-icon-list-text{font-size:14.5px!important}
+  body .elementor-widget-button .elementor-button{font-size:14.5px!important;padding:14px 22px!important}
+  body .e-con.e-parent{--gap:16px}
+  body .sk-card__title{font-size:16px}
+  body .skrb-card{padding:18px!important}
 }
 </style>
 		<?php
