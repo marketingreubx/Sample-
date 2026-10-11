@@ -99,15 +99,16 @@ Studio: 150 Arsenal St, Suite 210, Watertown, MA 02472. Call or text (857) 228-4
 Hours: Mon 11am-6pm, Tue closed, Wed-Thu 2pm-8pm, Fri closed, Sat 10am-4pm, Sun 12pm-7pm.
 Policies: a \$25 to \$50 deposit holds most facials when booking online; waxing is paid at the studio; free changes up to 24 hours before; late cancellations may lose the deposit. New clients should usually start with the New Client Facial & Consultation (id 1).
 
-How to consult:
-- Be warm, expert and concise: 2 to 4 short sentences, or a few short "- " bullets. No emojis. No markdown headings or bold.
-- Ask one or two questions at a time. Cover: main concern and goal, skin type, sensitivity or allergies, current actives (retinoids, acids, acne medication), recent sun or tanning, pregnancy or breastfeeding when relevant (avoid recommending peels or microneedling then), first visit or returning.
-- Then recommend ONE best treatment (plus one alternative if useful), saying in a sentence why it fits, and 2 to 3 home-care products. Use only treatments and products from the lists below, with their exact prices.
-- When you recommend a treatment, call suggest_booking. When you recommend products, call recommend_products. When the client wants a day or time, or says yes to booking, call check_availability (use YYYY-MM-DD; for "this weekend" or "next week" pick the nearest open day from the hours above). Show times, then tell them to tap a time to finish booking (it opens the booking form with everything filled in; they only add their details).
-- You cannot take payments or create bookings yourself; the buttons do that.
-- You are not a doctor. Do not diagnose. For painful cysts, sudden rashes, infections, changing moles, severe or scarring acne, or anything that worries them, suggest seeing a dermatologist or doctor, and offer a gentle in-studio consultation.
-- If asked something you do not know (for example a product not listed), say so and suggest texting Hana.
-- Stay on skincare, the studio, treatments, products and booking.
+How to consult (you are a thorough, expert skin therapist, not a menu):
+- Be warm, expert and concise: 2 to 4 short sentences, or a few short "- " bullets. No emojis, no markdown headings or bold.
+- Run a real consultation, one or two questions at a time, adapting to what they say. Build up: main concerns and goals (up to 3), how skin feels by midday (oily all over, oily T-zone, comfortable, tight or flaky, changes), how it reacts to products (rarely, sometimes, often stings or flares), for breakouts the pattern (occasional small spots, hormonal chin and jaw, painful deep or cystic, mostly blackheads), current actives (retinol/tretinoin/adapalene, Accutane now or in the last 6 months, AHA/BHA acids, benzoyl peroxide, prescription), sunscreen habits and any recent tan or sunburn, pregnancy or breastfeeding, age range, how simple the home routine should be, and whether it is their first visit.
+- Reason like a professional: link symptoms to likely causes (oily but tight usually means dehydration; chin and jaw breakouts that follow the cycle are usually hormonal; patchy brown cheeks and upper lip suggest melasma; stinging with everything suggests a damaged barrier). Ask a follow-up when an answer changes the plan.
+- As soon as you have enough (usually 5 to 8 answers), call build_skin_plan with what you learned. It returns the studio's personalised plan (skin type, likely causes, treatment and cadence, AM/PM routine from our shop, safety notes) and shows it to the client. Then add 2 or 3 sentences in your own words: the key insight about their skin, why the first treatment fits, and the one habit that will make the biggest difference. Offer to check open times.
+- Safety always wins: Accutane in the last 6 months means no peels, microneedling, dermaplaning or facial waxing; retinoids stop 5 to 7 days before those; pregnancy means no peels, microneedling or retinoids; a recent tan or sunburn means waiting about 2 weeks. Painful cystic acne, bleeding, spreading rashes, infection or a changing mole need a dermatologist or doctor: say so clearly and kindly.
+- For quick questions (prices, hours, what a facial includes, aftercare) answer directly from the knowledge below without a full consultation.
+- When the client wants a day or time, or says yes to booking, call check_availability (YYYY-MM-DD; for "this weekend" or "next week" pick the nearest open day from the hours above). Use suggest_booking and recommend_products only for quick one-off recommendations; after build_skin_plan they are already shown.
+- You cannot take payments or create bookings yourself; the buttons do that. You are not a doctor and do not diagnose medical conditions; you give expert skincare guidance and Hana confirms everything in person.
+- If asked something you do not know, say so and suggest texting Hana. Stay on skincare, the studio, treatments, products and booking.
 
 KNOWLEDGE
 {$GLOBALS['skynco_ai_kb_tmp']}
@@ -251,6 +252,27 @@ function skynco_ai_tools() {
 			],
 		],
 		[
+			'name'         => 'build_skin_plan',
+			'description'  => 'Build and show the client a personalised skin plan from the consultation: skin type, likely causes, treatment plan with cadence, morning and evening routine from the shop, safety notes and an add-the-routine button. Call once you know their concerns and the key safety facts.',
+			'input_schema' => [
+				'type'       => 'object',
+				'properties' => [
+					'concerns' => [ 'type' => 'array', 'items' => [ 'type' => 'string', 'enum' => [ 'breakouts', 'congestion', 'spots', 'melasma', 'redness', 'sensitive', 'dry', 'oily', 'lines', 'scars', 'dull', 'bumps', 'wax' ] ], 'description' => 'Up to 3, most important first' ],
+					'feel'     => [ 'type' => 'string', 'enum' => [ 'oily_all', 'oily_t', 'comfortable', 'tight', 'varies' ] ],
+					'react'    => [ 'type' => 'string', 'enum' => [ 'never', 'sometimes', 'often' ] ],
+					'breakout' => [ 'type' => 'string', 'enum' => [ 'small', 'hormonal', 'deep', 'congested' ] ],
+					'actives'  => [ 'type' => 'array', 'items' => [ 'type' => 'string', 'enum' => [ 'none', 'retinoid', 'accutane', 'acids', 'bpo', 'rx' ] ] ],
+					'sun'      => [ 'type' => 'string', 'enum' => [ 'daily', 'sometimes', 'rarely', 'tan' ] ],
+					'preg'     => [ 'type' => 'string', 'enum' => [ 'no', 'yes', 'skip' ] ],
+					'age'      => [ 'type' => 'string', 'enum' => [ 'teen', '18', '30', '45', '60' ] ],
+					'budget'   => [ 'type' => 'string', 'enum' => [ 'essentials', 'full', 'best' ] ],
+					'visit'    => [ 'type' => 'string', 'enum' => [ 'new', 'back' ] ],
+					'redflag'  => [ 'type' => 'boolean', 'description' => 'True for bleeding, spreading rash, infection, swelling or a changing mole' ],
+				],
+				'required'   => [ 'concerns' ],
+			],
+		],
+		[
 			'name'         => 'recommend_products',
 			'description'  => 'Show 1 to 3 home-care product cards with Add to bag buttons.',
 			'input_schema' => [
@@ -311,7 +333,7 @@ function skynco_ai_chat() {
 			[
 				'timeout' => 45,
 				'headers' => [ 'x-api-key' => $s['key'], 'anthropic-version' => '2023-06-01', 'content-type' => 'application/json' ],
-				'body'    => wp_json_encode( [ 'model' => $s['model'], 'max_tokens' => 700, 'system' => $system, 'tools' => skynco_ai_tools(), 'messages' => $msgs ] ),
+				'body'    => wp_json_encode( [ 'model' => $s['model'], 'max_tokens' => 1000, 'system' => $system, 'tools' => skynco_ai_tools(), 'messages' => $msgs ] ),
 			]
 		);
 		$body = json_decode( wp_remote_retrieve_body( $res ), true );
@@ -344,6 +366,15 @@ function skynco_ai_chat() {
 					} else {
 						$out = 'Unknown service id';
 					}
+				} elseif ( 'build_skin_plan' === $block['name'] && function_exists( 'skynco_skin_plan_payload' ) ) {
+					$ans = [];
+					foreach ( $in as $k => $v ) {
+						$ans[ sanitize_key( $k ) ] = is_array( $v ) ? array_map( 'sanitize_key', $v ) : ( is_bool( $v ) ? $v : sanitize_key( (string) $v ) );
+					}
+					$plan    = skynco_skin_plan_payload( $ans );
+					$cards   = array_merge( $cards, $plan['cards'] );
+					$notes[] = '[Showed skin plan] ' . $plan['summary'];
+					$out     = $plan['summary'] . ' The full plan, a booking card and an add-routine button are now shown to the client.';
 				} elseif ( 'recommend_products' === $block['name'] ) {
 					$c = skynco_ai_product_card( (array) ( $in['slugs'] ?? [] ) );
 					if ( $c ) {
@@ -501,6 +532,7 @@ add_action(
 			'ai'     => skynco_ai_live(),
 			'today'  => wp_date( 'Y-m-d' ),
 			'guided' => skynco_ai_live() ? null : skynco_ai_guided_config(),
+			'qs'     => function_exists( 'skynco_skin_questions' ) ? skynco_skin_questions() : [],
 		];
 		?>
 <div id="skc-bot" class="skb" data-open="0">
@@ -518,7 +550,7 @@ add_action(
 (function(){
 	var C=window.SKB, root=document.getElementById('skc-bot'); if(!root) return;
 	var panel=root.querySelector('.skb-panel'), log=root.querySelector('.skb-log'), chips=root.querySelector('.skb-chips'), form=root.querySelector('.skb-form'), input=root.querySelector('.skb-in'), launch=root.querySelector('.skb-launch');
-	var KEY='skb_hist_v1', hist=[], started=false, st={};
+	var KEY='skb_hist_v2', hist=[], started=false, st={};
 	try{hist=JSON.parse(sessionStorage.getItem(KEY)||'[]');}catch(e){hist=[];}
 	function save(){try{sessionStorage.setItem(KEY,JSON.stringify(hist.slice(-30)));}catch(e){}}
 	function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
@@ -530,18 +562,19 @@ add_action(
 		if(!c) return '';
 		if(c.type==='service'){return '<div class="skb-card"><p class="skb-card__k">Recommended treatment</p><p class="skb-card__t">'+esc(c.name)+'</p><p class="skb-card__m">'+esc(c.meta)+'</p><div class="skb-card__a"><a class="skb-btn" href="'+esc(c.book)+'">Book this</a><a class="skb-btn skb-btn--ghost" href="'+esc(c.info)+'">Details</a>'+(C.ai?'':'<button type="button" class="skb-btn skb-btn--ghost" data-times="'+c.id+'">See open times</button>')+'</div></div>';}
 		if(c.type==='products'){return '<div class="skb-prods">'+c.items.map(function(p){return '<div class="skb-prod">'+(p.img?'<img src="'+esc(p.img)+'" alt="">':'')+'<p class="skb-prod__t">'+esc(p.name)+'</p><p class="skb-prod__p">'+esc(p.price)+'</p><a class="skb-mini" href="'+esc(p.add)+'">Add to bag</a></div>';}).join('')+'</div>';}
+		if(c.type==='plan'){return c.html;}
 		if(c.type==='slots'){if(!c.days.length) return '<div class="skb-card"><p class="skb-card__t">No open times in the next two weeks</p><p class="skb-card__m">Text Hana at (857) 228-4708 and she will fit you in.</p></div>';return '<div class="skb-card"><p class="skb-card__k">Open times · '+esc(c.service)+'</p>'+c.days.map(function(d){return '<p class="skb-day">'+esc(d.label)+'</p><div class="skb-times">'+d.times.map(function(t){return '<a href="'+esc(t.url)+'">'+esc(t.label)+'</a>';}).join('')+'</div>';}).join('')+'<p class="skb-card__m">Tap a time to finish booking. You only add your details.</p><a class="skb-link" href="'+esc(c.more)+'">See all dates</a></div>';}
 		return '';
 	}
 	function setChips(list){chips.innerHTML=list.map(function(c){return '<button type="button" data-v="'+esc(c[0])+'">'+esc(c[1])+'</button>';}).join('');}
 	function render(){log.innerHTML='';hist.forEach(function(m){if(m.role==='user'){bubble('me',fmt(m.content));}else{bubble('bot',fmt(m.content)+(m.cards||[]).map(card).join(''));}});}
 	function greet(){
-		var g='Hi, I’m the Skyn&Co. skin specialist. I can do a quick virtual consultation, recommend the right treatment and products, and help you book with Hana.';
+		var g='Hi, I’m the Skyn&Co. skin specialist. I’ll analyse your skin with a few quick questions, then give you a full plan: what is going on, the right treatment and how often, and a morning and evening routine, with safety checks for things like Accutane, retinoids and pregnancy.';
 		hist.push({role:'assistant',content:g});save();bubble('bot',fmt(g));
 		if(C.ai){setChips([['ai:Hi! I’d like a skin consultation.','Start my skin consultation'],['ai:Which facial is right for me?','Which facial is right for me?'],['ai:I want to book an appointment.','Book an appointment'],['ai:Can you recommend products for my skin?','Recommend products']]);}
 		else{guidedStart();}
 	}
-	function open(){root.dataset.open='1';panel.hidden=false;launch.setAttribute('aria-expanded','true');if(!started){started=true;if(hist.length){render();if(!C.ai&&!st.step)guidedStart(true);}else{greet();}}setTimeout(function(){input.focus();},50);}
+	function open(){root.dataset.open='1';panel.hidden=false;launch.setAttribute('aria-expanded','true');if(!started){started=true;if(hist.length){render();if(!C.ai)setChips([['restart','Start a new consultation']]);}else{greet();}}setTimeout(function(){input.focus();},50);}
 	function close(){root.dataset.open='0';panel.hidden=true;launch.setAttribute('aria-expanded','false');}
 	launch.addEventListener('click',function(){root.dataset.open==='1'?close():open();});
 	root.querySelector('.skb-x').addEventListener('click',close);
@@ -560,43 +593,56 @@ add_action(
 		}).catch(function(){t.remove();bubble('bot',fmt('I lost the connection. Please try again.'));});
 	}
 
-	/* ---- Guided mode ---- */
-	var G=C.guided;
+	/* ---- Guided consultation (skin analysis engine) ---- */
+	var G=C.guided, Q=C.qs||[];
 	function botSay(text,cards){hist.push({role:'assistant',content:text,cards:cards||[]});save();bubble('bot',fmt(text)+(cards||[]).map(card).join(''));}
-	function guidedStart(resume){st={step:'concern'};if(!resume)botSay('What would you most like help with today?');setChips(Object.keys(G.concerns).map(function(k){return ['c:'+k,G.concerns[k].label];}).concat([['c:unsure','Not sure yet']]));}
-	function guided(v,label){
-		if(label){hist.push({role:'user',content:label});save();bubble('me',fmt(label));}
-		chips.innerHTML='';
-		if(v.indexOf('c:')===0){st.concern=v.slice(2);if(st.concern==='unsure'){st.concern='glow';}st.step='type';setTimeout(function(){botSay('Got it. How would you describe your skin?');setChips([['t:oily','Oily'],['t:dry','Dry'],['t:combo','Combination'],['t:normal','Normal'],['t:sensitive','Sensitive'],['t:unsure','Not sure']]);},350);return;}
-		if(v.indexOf('t:')===0){st.type=v.slice(2);st.step='visit';setTimeout(function(){botSay('Have you visited Skyn&Co. before?');setChips([['v:new','This is my first visit'],['v:back','I’ve been before']]);},350);return;}
-		if(v.indexOf('v:')===0){st.visit=v.slice(2);st.step='done';setTimeout(recommend,400);return;}
-		if(v==='restart'){guidedStart();return;}
+	function meSay(t){hist.push({role:'user',content:t});save();bubble('me',fmt(t));}
+	function visible(){var qs=Q.filter(function(q){if(!q.if)return true;var v=st.a[q.if[0]]||[];return q.if[1].some(function(x){return v.indexOf(x)>-1;});});var c=st.a.concerns||[];if(c.length===1&&c[0]==='wax'){qs=qs.filter(function(q){return q.id==='concerns'||q.id==='actives';});}return qs;}
+	function guidedStart(resume,pre){
+		st={a:{},sel:[],redflag:false,q:null};
+		if(pre&&pre.concerns&&pre.concerns.length){st.a.concerns=pre.concerns;st.redflag=!!pre.redflag;}
+		if(!resume){botSay(pre&&pre.concerns&&pre.concerns.length?'Thanks, that helps. I noted: '+pre.labels.join(', ')+'. A few quick questions so I can build your plan.':'Let’s do your skin consultation. It takes about a minute, and you get a full plan: your skin type, what is going on, the right treatment and a morning and evening routine.');}
+		ask();
 	}
-	function recommend(){
-		var c=G.concerns[st.concern]||G.concerns.glow, cards=[], txt=c.why;
-		if(st.type==='sensitive'&&st.concern!=='red'){txt+=' Since your skin is sensitive, Hana will keep products gentle, and you can add LED Light Therapy to calm it.';}
-		if(st.visit==='new'&&st.concern!=='wax'&&G.newClient){txt='Here’s what I recommend. As a first-time client, start with the New Client Facial & Consultation: a full facial plus a skin analysis and a plan made for you. '+c.why;cards.push(G.newClient);cards.push(c.main);}
-		else{cards.push(c.main);}
-		botSay(txt,cards);
-		if(c.products&&c.products.length){setTimeout(function(){botSay('To protect your results at home, these are a great match:',[{type:'products',items:c.products}]);setChips([['restart','Start over'],['times','See open times']]);},500);}
-		st.svc=(cards[0]||{}).id;
+	function ask(){
+		var qs=visible(),i=0;while(i<qs.length&&st.a[qs[i].id]!==undefined)i++;
+		if(i>=qs.length){finish();return;}
+		var q=qs[i],n=i+1,N=qs.length;st.q=q;st.sel=[];
+		var html='<p class="skb-step">Step '+n+' of '+N+'<i><b style="width:'+Math.round(n/N*100)+'%"></b></i></p>'+fmt(q.q);
+		hist.push({role:'assistant',content:q.q});save();bubble('bot',html);
+		drawChips();
 	}
+	function drawChips(){var q=st.q;chips.innerHTML=q.opts.map(function(o){return '<button type="button" data-q="'+esc(o[0])+'" class="'+(st.sel.indexOf(o[0])>-1?'is-sel':'')+'">'+esc(o[1])+'</button>';}).join('')+(q.multi?'<button type="button" class="skb-go" data-go="1">Continue'+(st.sel.length?' ('+st.sel.length+')':'')+'</button>':'');}
+	function pick(v,label){var q=st.q;if(!q)return;
+		if(q.multi){if(v==='none'){st.sel=['none'];}else{st.sel=st.sel.filter(function(x){return x!=='none';});var k=st.sel.indexOf(v);if(k>-1){st.sel.splice(k,1);}else if(st.sel.length<q.multi){st.sel.push(v);}}drawChips();return;}
+		st.a[q.id]=v;meSay(label);chips.innerHTML='';st.q=null;setTimeout(ask,250);}
+	function next(){var q=st.q;if(!q||!st.sel.length)return;st.a[q.id]=st.sel.slice();meSay(q.opts.filter(function(o){return st.sel.indexOf(o[0])>-1;}).map(function(o){return o[1];}).join(', '));chips.innerHTML='';st.q=null;setTimeout(ask,250);}
+	function finish(){chips.innerHTML='';var t=typing(),fd=new FormData(),ans=Object.assign({},st.a,{redflag:st.redflag?1:0});
+		fd.append('action','skynco_skin_plan');fd.append('nonce',C.nonce);fd.append('answers',JSON.stringify(ans));
+		fetch(C.ajax,{method:'POST',body:fd,credentials:'same-origin'}).then(function(r){return r.json();}).then(function(r){t.remove();var d=(r&&r.data)||{};botSay(d.text||'Here is your plan.',d.cards||[]);var sc=(d.cards||[]).filter(function(c){return c.type==='service';})[0];st.svc=sc&&sc.id;setChips(st.svc?[['times','See open times'],['restart','Start a new consultation']]:[['restart','Start a new consultation']]);}).catch(function(){t.remove();botSay('I could not build your plan just now. Please try again, or text Hana at (857) 228-4708.');});}
 	function times(sid){
 		var t=typing(),fd=new FormData();fd.append('action','skynco_chat_slots');fd.append('nonce',C.nonce);fd.append('service',sid);fd.append('date',C.today);
 		fetch(C.ajax,{method:'POST',body:fd,credentials:'same-origin'}).then(function(r){return r.json();}).then(function(r){t.remove();var c=r&&r.data&&r.data.card;botSay(c?'Here are the next open times:':'I could not load times just now.',c?[c]:[]);}).catch(function(){t.remove();});
 	}
 	function guidedText(text){
-		hist.push({role:'user',content:text});save();bubble('me',fmt(text));
-		var s=text.toLowerCase(), k=null;
-		if(/acne|breakout|pimple|spot|blemish|oily/.test(s))k='acne';else if(/dark|pigment|dull|uneven|melasma/.test(s))k='bright';else if(/dry|dehydrat|flaky|tight/.test(s))k='dry';else if(/line|wrinkle|scar|texture|aging|ageing|pores/.test(s))k='lines';else if(/red|sensitiv|rosacea|irritat/.test(s))k='red';else if(/men|beard|shav|ingrown/.test(s))k='men';else if(/wax|hair/.test(s))k='wax';else if(/book|appointment|time|available|slot/.test(s)){setTimeout(function(){botSay('Happy to help you book. Which treatment would you like? If you are not sure, tell me your main skin concern.');guidedStart(true);},300);return;}
-		if(k){st.concern=k;st.step='type';setTimeout(function(){botSay('Thanks, that helps. How would you describe your skin?');setChips([['t:oily','Oily'],['t:dry','Dry'],['t:combo','Combination'],['t:normal','Normal'],['t:sensitive','Sensitive'],['t:unsure','Not sure']]);},350);}
-		else{setTimeout(function(){botSay('I can help with breakouts, dark spots, dryness, fine lines, redness, men’s skin and waxing. Pick the closest one below, or text Hana at (857) 228-4708 for anything else.');guidedStart(true);},300);}
+		meSay(text);
+		if(st.q&&!st.q.multi){var low=text.toLowerCase(),m=st.q.opts.filter(function(o){return o[1].toLowerCase().indexOf(low)>-1||low.indexOf(o[1].toLowerCase())>-1;})[0];if(m){st.a[st.q.id]=m[0];chips.innerHTML='';st.q=null;setTimeout(ask,250);return;}}
+		if(/\b(book|appointment|available|availability|slot|open times?)\b/i.test(text)&&st.svc){times(st.svc);return;}
+		var t=typing(),fd=new FormData();fd.append('action','skynco_skin_parse');fd.append('nonce',C.nonce);fd.append('text',text);
+		fetch(C.ajax,{method:'POST',body:fd,credentials:'same-origin'}).then(function(r){return r.json();}).then(function(r){t.remove();var d=(r&&r.data)||{};
+			if(d.redflag){botSay('Some of what you describe (bleeding, spreading, infection, swelling or a changing mole) needs a doctor or dermatologist first. Please see them, and Hana is happy to care for your skin once you are cleared.');}
+			if(d.concerns&&d.concerns.length){var labels=d.concerns.map(function(k){var o=((Q[0]||{}).opts||[]).filter(function(x){return x[0]===k;})[0];return o?o[1].toLowerCase():k;});guidedStart(false,{concerns:d.concerns,labels:labels,redflag:d.redflag});}
+			else if(!d.redflag){botSay('Tell me a little about your skin, for example “breakouts on my chin and an oily T-zone”, or tap your concerns below.');guidedStart(true);}
+		}).catch(function(){t.remove();});
 	}
 
-	chips.addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;var v=b.dataset.v;
+	chips.addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;
+		if(b.dataset.go){next();return;}
+		if(b.dataset.q!==undefined){pick(b.dataset.q,b.textContent);return;}
+		var v=b.dataset.v||'';
 		if(v.indexOf('ai:')===0){sendAI(v.slice(3));return;}
 		if(v==='times'){chips.innerHTML='';if(st.svc)times(st.svc);return;}
-		guided(v,b.textContent);});
+		if(v==='restart'){chips.innerHTML='';guidedStart();return;}});
 	log.addEventListener('click',function(e){var b=e.target.closest('[data-times]');if(b){e.preventDefault();times(b.dataset.times);}});
 	form.addEventListener('submit',function(e){e.preventDefault();var t=input.value.trim();if(!t)return;input.value='';C.ai?sendAI(t):guidedText(t);});
 	if(/[?&]consult=1/.test(location.search)) open();
