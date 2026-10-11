@@ -56,17 +56,21 @@ add_action(
   body .sk-grid.sk-grid:not(.sk-grid--feature) .sk-price{font-size:15px}
   body .sk-grid.sk-grid:not(.sk-grid--feature) .sk-add{width:100%!important;justify-content:center;padding:10px 8px!important;font-size:13px!important}
 
-  /* Kits: compact horizontal cards stacked */
-  body .sk-grid.sk-grid.sk-grid--feature{display:flex!important;flex-direction:column;gap:12px!important;overflow:visible!important;margin:0!important;padding:0!important}
-  body .sk-grid.sk-grid--feature>.sk-card{flex:none!important;width:auto!important;display:grid!important;grid-template-columns:118px minmax(0,1fr);border-radius:20px}
-  .sk-grid--feature .sk-card__img{aspect-ratio:auto;height:100%;min-height:150px}
-  .sk-grid--feature .sk-badge{top:8px;left:8px;padding:5px 8px;font-size:10px}
-  .sk-grid--feature .sk-card__body{padding:12px 14px!important;gap:5px!important}
-  .sk-grid--feature .sk-card__title{font-size:18px!important}
-  .sk-grid--feature .sk-card__short{font-size:13px!important;line-height:1.45!important}
+  /* Kits: swipeable carousel, equal cards, next one peeking */
+  body .sk-grid.sk-grid.sk-grid--feature{display:flex!important;flex-direction:row!important;overflow-x:auto!important;scroll-snap-type:x mandatory;gap:12px!important;margin:0 -16px!important;padding:2px 16px 8px!important;scroll-padding:0 16px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+  body .sk-grid.sk-grid--feature::-webkit-scrollbar{display:none}
+  body .sk-grid.sk-grid--feature>.sk-card{flex:0 0 82%!important;width:82%!important;display:flex!important;flex-direction:column;scroll-snap-align:start;border-radius:22px}
+  .sk-grid--feature .sk-card__img{aspect-ratio:4/3!important;height:auto!important;min-height:0!important}
+  .sk-grid--feature .sk-badge{top:10px;left:10px;padding:6px 10px;font-size:11px}
+  .sk-grid--feature .sk-card__body{padding:14px 16px 16px!important;gap:6px!important}
+  .sk-grid--feature .sk-card__title{font-size:21px!important}
+  .sk-grid--feature .sk-card__short{font-size:13.5px!important;line-height:1.45!important;display:-webkit-box!important;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
   .sk-grid--feature .sk-card__kit{display:none!important}
-  .sk-grid--feature .sk-card__foot{padding-top:4px;gap:8px}
-  .sk-grid--feature .sk-add{padding:10px 14px!important;font-size:13px!important}
+  .sk-grid--feature .sk-card__foot{padding-top:6px;gap:8px;flex-wrap:nowrap}
+  .sk-grid--feature .sk-add{padding:11px 16px!important;font-size:14px!important;white-space:nowrap}
+  .sk-cdots{display:flex;justify-content:center;gap:6px;margin-top:12px}
+  .sk-cdots i{width:7px;height:7px;border-radius:99px;background:#E6C9D2;transition:width .25s,background .25s}
+  .sk-cdots i.is-on{width:22px;background:#D1127E}
 
   /* Reviews band: swipe through */
   body .skrb-grid.skrb-grid{display:flex!important;overflow-x:auto;scroll-snap-type:x mandatory;gap:12px!important;margin:0 -16px;padding:0 16px 6px;scrollbar-width:none}
@@ -79,3 +83,27 @@ add_action(
 	},
 	100
 );
+
+/* Dots under the kit carousel on phones. */
+add_action(
+	'wp_footer',
+	function () {
+		?>
+<script>
+(function(){
+	if(!window.matchMedia('(max-width:767px)').matches)return;
+	document.querySelectorAll('.sk-grid--feature').forEach(function(g){
+		var cards=g.querySelectorAll('.sk-card');if(cards.length<2)return;
+		var d=document.createElement('div');d.className='sk-cdots';d.setAttribute('aria-hidden','true');
+		cards.forEach(function(){d.appendChild(document.createElement('i'));});
+		g.parentNode.insertBefore(d,g.nextSibling);
+		function upd(){var w=cards[0].offsetWidth+12,k=Math.round(g.scrollLeft/w);d.querySelectorAll('i').forEach(function(x,j){x.classList.toggle('is-on',j===Math.min(k,cards.length-1));});}
+		g.addEventListener('scroll',function(){window.requestAnimationFrame(upd);},{passive:true});upd();
+	});
+})();
+</script>
+		<?php
+	},
+	99
+);
+
