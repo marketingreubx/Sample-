@@ -100,8 +100,6 @@ add_shortcode(
 				'title'  => 'Studio results, <em>at home.</em>',
 				'lead'   => 'The professional skincare Hana uses in the treatment room, chosen for your skin and delivered to your door.',
 				'btn'    => [ 'Shop the kits', '#kits' ],
-				'brands' => true,
-				'size'   => 'tall',
 				'pos'    => '50% 28%',
 				'label'  => 'Shop home care',
 			]

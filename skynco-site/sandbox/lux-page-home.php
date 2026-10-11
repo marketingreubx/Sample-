@@ -75,7 +75,7 @@ function lux_home_elements() {
 		'Customized facials and advanced skin treatments with licensed esthetician Hana Rahim at our private studio in Watertown, MA.',
 		[ 'Book Appointment', $svcs ],
 		'skynco-hero-facial.jpg',
-		[ 'size' => 'tall', 'brands' => true, 'pos' => '60% 40%' ]
+		[ 'chip' => '', 'pos' => '60% 40%' ]
 	);
 
 	/* ---------------- 04 TREATMENTS BAND ---------------- */
