@@ -690,6 +690,18 @@ add_action(
 .skb-chips:empty{display:none}
 .skb-chips button{padding:8px 13px;border-radius:999px;border:1px solid #E2CCD4;background:#fff;color:#3B1530;font:600 13px Manrope,sans-serif;cursor:pointer}
 .skb-chips button:hover{border-color:#D1127E;color:#D1127E}
+/* Keep every message at its full height (iOS Safari squeezes flex items in a scroll box, so lines overlapped) */
+.skb-log>*{flex-shrink:0!important}
+.skb-log{min-height:0;-webkit-overflow-scrolling:touch}
+.skb-msg{min-width:0;overflow-wrap:anywhere;word-break:normal}
+.skb-msg,.skb-msg p,.skb-msg li,.skb-msg span,.skb-msg b,.skb-msg a{line-height:1.5!important}
+.skb-msg p{margin:0 0 8px!important}.skb-msg p:last-child{margin-bottom:0!important}
+.skb-msg h1,.skb-msg h2,.skb-msg h3,.skb-msg h4{line-height:1.3!important;margin:12px 0 6px!important}
+.skb-msg ul,.skb-msg ol{margin:4px 0 8px!important;padding-left:20px!important}
+.skb-msg li{margin:0 0 6px!important}
+.skb-chips{flex-shrink:0}
+.skb-chips button{height:auto!important;min-height:0!important;line-height:1.3!important;white-space:normal!important;text-align:left;max-width:100%}
+.skb-head,.skb-form{flex-shrink:0}
 .skb-form{display:flex;gap:8px;padding:10px 12px;background:#fff;border-top:1px solid #EFE2E6}
 .skb-in{flex:1;min-width:0;height:44px;padding:0 14px;border:1px solid #E2CCD4!important;border-radius:999px!important;font:500 14px Manrope,sans-serif!important;background:#FBF6F4!important;color:#2A1A24}
 .skb-in:focus{outline:0;border-color:#D1127E!important}
@@ -718,7 +730,7 @@ add_action(
 .skb-launch{padding:8px 14px 8px 8px;font-size:13px}
 .skb-launch__i{width:32px;height:32px}
 .skb[data-open="1"]{left:0;right:0;bottom:0;top:0}
-.skb-panel{position:fixed;inset:0;width:100%;max-width:none;height:100%;border-radius:0;border:0}
+.skb-panel{position:fixed;inset:0;width:100%;max-width:none;height:100%;height:100dvh;border-radius:0;border:0}
 #ast-scroll-top{bottom:76px!important}
 }
 </style>
