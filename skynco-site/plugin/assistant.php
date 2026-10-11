@@ -607,7 +607,7 @@ add_action(
 	function ask(){
 		var qs=visible(),i=0;while(i<qs.length&&st.a[qs[i].id]!==undefined)i++;
 		if(i>=qs.length){finish();return;}
-		var q=qs[i],n=i+1,N=qs.length;st.q=q;st.sel=[];
+		var q=qs[i],n=i+1,N=qs.length+Q.filter(function(x){return x.if&&st.a[x.if[0]]===undefined;}).length;st.q=q;st.sel=[];
 		var html='<p class="skb-step">Step '+n+' of '+N+'<i><b style="width:'+Math.round(n/N*100)+'%"></b></i></p>'+fmt(q.q);
 		hist.push({role:'assistant',content:q.q});save();bubble('bot',html);
 		drawChips();

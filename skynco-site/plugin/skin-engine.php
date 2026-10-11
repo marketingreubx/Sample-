@@ -527,6 +527,7 @@ add_action(
 .skp-plan__fine{margin-top:12px!important;font-size:11.5px;color:#9A8791}
 .skb-step{display:flex;align-items:center;gap:8px;margin:0 0 6px;font:700 10.5px Manrope,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#9A8791}
 .skb-step i{flex:1;height:4px;border-radius:99px;background:#F3E3E9;overflow:hidden}.skb-step i b{display:block;height:100%;background:#D1127E;border-radius:99px}
+.skb-chips{max-height:min(34vh,260px);overflow-y:auto;overscroll-behavior:contain}
 .skb-chips button.is-sel{background:#3B1530!important;color:#fff!important;border-color:#3B1530!important}
 .skb-chips button.skb-go{background:#D1127E!important;color:#fff!important;border-color:#D1127E!important}
 </style>
