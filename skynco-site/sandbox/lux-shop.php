@@ -388,10 +388,6 @@ function lux_shop_elements() {
 		[ lux_w( 'shortcode', [ 'shortcode' => '[skynco_shop_hero]' ], 'Shop hero slideshow' ) ]
 	);
 
-	// Offer bar.
-	$offer = '<div class="sk-offers"><div><b>10% off your first order</b><span>Use code <code>GLOW10</code> at checkout</span></div><div><b>Free shipping over $75</b><span>Spend $120 for a free LED add-on at your next facial</span></div><div><b>Mix &amp; match and save</b><span>2 products 10% off · 3 or more 15% off</span></div></div>';
-	$els[] = lux_section( '02 Offers', [ 'padding' => lux_box( 0, 24, 0, 24 ), 'padding_mobile' => lux_box( 0, 16, 0, 16 ), 'margin' => lux_box( -40, 0, 0, 0 ), 'z_index' => 2 ], [ lux_w( 'html', [ 'html' => $offer ], 'Offers' ) ] );
-
 	// Kits (bundle savings).
 	$els[] = lux_section(
 		'03 Kits',
