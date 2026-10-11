@@ -20,22 +20,6 @@ add_action(
   .skb{right:12px!important;bottom:12px!important}
   .skb-launch{padding:6px!important}.skb-launch__t{display:none!important}
 
-  /* Shop hero: photo fills the background under a plum overlay (like the homepage) */
-  .skh-slides{min-height:0!important}
-  .skh-slide{display:flex!important;flex-direction:column;justify-content:flex-end;min-height:min(78vh,600px);background:#26101F}
-  .skh-bg{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;object-fit:cover;object-position:84% 30%!important}
-  .skh-slide::before{inset:0!important;height:auto!important;background:linear-gradient(180deg,rgba(38,16,31,.35) 0%,rgba(38,16,31,.55) 40%,rgba(38,16,31,.88) 72%,rgba(38,16,31,.96) 100%)!important}
-  .skh-wrap{padding:120px 16px 32px!important;margin:0!important}
-  .skh .skh-title{font-size:34px!important;line-height:1.08!important;margin:0 0 12px!important}
-  .skh-lead{font-size:15.5px!important;line-height:1.6!important;max-width:none!important;color:#F3E3EA!important}
-  .skh-cta{margin-top:20px!important;gap:10px!important;flex-direction:column}
-  .skh-cta .skh-btn{width:100%;justify-content:center;padding:15px 12px!important;font-size:15px!important}
-  .skh-card{display:none!important}
-  /* One still image on phones: no rotating slides, no jumping */
-  .skh-slide:not(:first-child){display:none!important}
-  .skh-slide:first-child{opacity:1!important;visibility:visible!important;transition:none!important}
-  .skh-slide:first-child .skh-copy>*{opacity:1!important;transform:none!important}
-
   /* Offers: one swipeable strip instead of a tall stacked box */
   .elementor-widget-html .sk-offers{display:flex!important;overflow-x:auto;scroll-snap-type:x mandatory;gap:10px;margin:0 -16px;padding:2px 16px 6px;background:none!important;border:0!important;box-shadow:none!important;border-radius:0!important;scrollbar-width:none}
   .sk-offers::-webkit-scrollbar{display:none}
