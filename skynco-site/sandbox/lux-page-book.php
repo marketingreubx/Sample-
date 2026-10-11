@@ -21,10 +21,10 @@ function lux_book_elements() {
 		'Booking notes'
 	);
 	$els   = [];
-	$els[] = lux_page_hero( '01 Hero', 'Online booking', 'Book your <em>visit.</em>', 'Choose your treatment, pick a time that suits you and check out in a few steps. Not sure what to book? Start with the New Client Facial &amp; Consultation.', [ lux_button( 'Browse treatments', home_url( '/services/' ), 'outline' ), lux_button( 'Call ' . $k['phone'], $k['tel'], 'outline' ) ], $notes );
+	$els[] = lux_hero( '01 Hero', 'Book your <em>visit.</em>', 'Choose your treatment, pick a time that suits you and check out in a few steps. A small deposit holds most facials, and changes are free up to 24 hours before.', [ 'Browse treatments', home_url( '/services/' ) ], 'book' );
 	$els[] = lux_section(
 		'02 Booking form',
-		[ 'padding' => lux_box( 0, 24, 96, 24 ), 'padding_mobile' => lux_box( 0, 12, 64, 12 ), 'margin' => lux_box( -48, 0, 0, 0 ) ],
+		[ 'padding' => lux_box( 56, 24, 96, 24 ), 'padding_mobile' => lux_box( 32, 12, 64, 12 ) ],
 		[
 			lux_con(
 				$col + $k['card']( 'white', $k['border']() ) + [ 'padding' => lux_box( 12 ), 'border_radius' => lux_box( 28 ), 'css_classes' => 'lux-book-shell' ],

@@ -181,16 +181,11 @@ function lux_services_elements() {
 	$row = [ 'flex_direction' => 'row' ];
 	$els = [];
 
-	$els[] = lux_photo_hero(
+	$els[] = lux_hero(
 		'01 Hero',
-		'Services and prices',
 		'Treatments for every <em>skin goal.</em>',
 		'Customized facials, advanced skin treatments and waxing at our Watertown studio. Every price is listed below, and a deposit holds your appointment when you book online.',
-		[
-			lux_button( 'Book Appointment', '#facials', 'lime' ),
-			lux_button( 'Shop home care', home_url( '/shop/' ), 'outline-light' ),
-		],
-		'skynco-glo2-facial.jpg',
+		[ 'See treatments and prices', '#new-clients' ],
 		'services'
 	);
 
@@ -413,20 +408,13 @@ function lux_about_elements() {
 	$col = [ 'flex_direction' => 'column' ];
 	$els = [];
 
-	$els[] = lux_page_hero(
+	$els[] = lux_hero(
 		'01 Hero',
-		'About Skyn&amp;Co.',
 		'Skincare that feels like a <em>ritual.</em>',
 		'Skyn&amp;Co. Skincare &amp; Wellness is a skincare studio in Watertown, MA, founded by licensed esthetician Hana Rahim. We believe skincare is restoration, confidence and self-care.',
-		[
-			lux_button( 'Book Appointment', $k['services'] ),
-			lux_button( 'Call ' . $k['phone'], $k['tel'], 'outline' ),
-		],
-		lux_con(
-			$col + [ 'width' => lux_u( 42, '%' ), 'width_tablet' => lux_u( 100, '%' ), 'flex_align_items' => 'center' ],
-			[ lux_img( 'Skincare and self-care moments', [ 'image' => $k['img']( 'skynco-our-story.png' ), 'space' => lux_u( 500 ) ] ) ],
-			'Hero image'
-		)
+		[ 'Book Appointment', $k['services'] ],
+		'about',
+		[ 'chip' => 'Licensed esthetician · 10+ years' ]
 	);
 
 	$stat = function ( $num, $label ) {
@@ -544,17 +532,13 @@ function lux_contact_elements() {
 	$col = [ 'flex_direction' => 'column' ];
 	$els = [];
 
-	$els[] = lux_photo_hero(
+	$els[] = lux_hero(
 		'01 Hero',
-		'Contact',
 		'Visit the <em>studio.</em>',
 		'Questions about a treatment, a booking or which facial is right for you? Call, email or stop by our private studio in Watertown, MA.',
-		[
-			lux_button( 'Call ' . $k['phone'], $k['tel'], 'lime' ),
-			lux_button( 'Book Appointment', $k['services'], 'outline-light' ),
-		],
-		'skynco-new-client-facial.jpg',
-		'contact'
+		[ 'Call ' . $k['phone'], $k['tel'] ],
+		'contact',
+		[ 'chip' => '150 Arsenal St, Suite 210 · Watertown, MA' ]
 	);
 
 	$ways = [
@@ -658,12 +642,13 @@ function lux_terms_elements() {
 	$col = [ 'flex_direction' => 'column' ];
 	$els = [];
 
-	$els[] = lux_page_hero(
+	$els[] = lux_hero(
 		'01 Hero',
-		'Please read before booking',
 		'Studio <em>policies.</em>',
 		'To make sure every client gets a relaxing, personal experience, please review these policies before your appointment. Product returns and shipping are covered at the end.',
-		[ lux_button( 'Book Appointment', $k['services'] ), lux_button( 'Read the FAQ', home_url( '/faq/' ), 'outline' ) ]
+		[ 'Book Appointment', $k['services'] ],
+		'policies',
+		[ 'chip' => 'Please read before booking' ]
 	);
 
 	$rules = [

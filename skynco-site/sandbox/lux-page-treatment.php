@@ -45,57 +45,13 @@ function lux_treatment_elements( array $t ) {
 	$book    = home_url( '/book/?service=' . $t[0] );
 	$els     = [];
 
-	$card_kids = [];
-	if ( $t[7] ) {
-		$card_kids[] = lux_img( $t[1], [ 'image' => $k['img']( $t[7] ), '_css_classes' => 'lux-ratio-43', 'image_border_radius' => lux_box( 20 ) ] );
-	}
-	$card_kids[] = lux_con(
-		$row + [ 'flex_justify_content' => 'space-between', 'flex_align_items' => 'flex-end', 'flex_gap' => lux_gap( 12 ), 'flex_wrap_mobile' => 'nowrap' ],
-		[
-			lux_heading( '$' . $t[4], 'div', [ 'f' => 'Fraunces', 's' => 44, 'w' => '500', 'lh' => 1 ] ),
-			lux_heading( $t[3] . ' minutes', 'div', [ 'f' => 'Manrope', 's' => 15, 'w' => '600', 'lh' => 1.3 ], 'muted' ),
-		],
-		'Price'
-	);
-	$card_kids[] = lux_text( '<p>' . ( $t[5] > 0 ? 'A $' . $t[5] . ' deposit holds your appointment. The balance is paid at the studio.' : 'Pay at the studio after your appointment.' ) . '</p>', 'small', 'muted' );
-	$card_kids[] = lux_button( 'Book this treatment', $book, 'lime', [ 'align' => 'justify' ] );
-	$card_kids[] = lux_button( 'Call ' . $k['phone'], $k['tel'], 'outline', [ 'align' => 'justify' ] );
-
-	$els[] = lux_section(
+	$els[] = lux_hero(
 		'01 Hero',
-		[
-			'background_background'     => 'gradient',
-			'background_color'          => '#FFF8F6',
-			'background_color_stop'     => lux_u( 30, '%' ),
-			'background_color_b'        => '#F7E3E6',
-			'background_color_b_stop'   => lux_u( 100, '%' ),
-			'background_gradient_type'  => 'linear',
-			'background_gradient_angle' => lux_u( 170, 'deg' ),
-			'flex_direction'            => 'row',
-			'flex_direction_tablet'     => 'column',
-			'flex_justify_content'      => 'space-between',
-			'flex_align_items'          => 'center',
-			'flex_gap'                  => lux_gap( 56 ),
-			'padding'                   => lux_box( 80, 24, 88, 24 ),
-			'padding_mobile'            => lux_box( 48, 16, 56, 16 ),
-		],
-		[
-			lux_con(
-				$col + [ 'width' => lux_u( 54, '%' ), 'width_tablet' => lux_u( 100, '%' ), 'flex_gap' => lux_gap( 20 ), 'flex_align_items' => 'flex-start' ],
-				[
-					lux_text( '<p><a href="' . home_url( '/services/' ) . '">Services</a> &nbsp;/&nbsp; ' . esc_html( $t[2] ) . '</p>', [ 'f' => 'Manrope', 's' => 14, 'w' => '600', 'lh' => 1.4 ], 'muted', [ '_css_classes' => 'lux-crumbs' ] ),
-					lux_heading( esc_html( $t[1] ), 'h1', [ 'f' => 'Fraunces', 's' => 56, 'st' => 46, 'sm' => 38, 'w' => '500', 'lh' => 1.08, 'ls' => -0.01 ] ),
-					lux_text( '<p>' . esc_html( $t[6] ) . '</p>', [ 'f' => 'Manrope', 's' => 18, 'w' => '400', 'lh' => 30, 'lhu' => 'px' ], 'muted', $k['narrow']( 560 ) ),
-					lux_w( 'html', [ 'html' => '<div class="lux-chips"><span>' . (int) $t[3] . ' min</span><span>$' . (int) $t[4] . '</span>' . ( $t[5] > 0 ? '<span>$' . (int) $t[5] . ' deposit</span>' : '<span>Pay in studio</span>' ) . '<span>With Hana</span></div>' ], 'Chips' ),
-				],
-				'Hero text'
-			),
-			lux_con(
-				$col + $k['card']( 'white', $k['border']() ) + [ 'width' => lux_u( 40, '%' ), 'width_tablet' => lux_u( 100, '%' ), 'padding' => lux_box( 22 ), 'border_radius' => lux_box( 28 ), 'flex_gap' => lux_gap( 14 ), 'css_classes' => 'lux-book-card' ],
-				$card_kids,
-				'Booking card'
-			),
-		]
+		esc_html( $t[1] ),
+		esc_html( $t[6] ),
+		[ 'Book this treatment', $book ],
+		$t[7] ? $t[7] : 'policies',
+		[ 'chip' => (int) $t[3] . ' min · $' . (int) $t[4] . ( $t[5] > 0 ? ' · $' . (int) $t[5] . ' deposit' : ' · pay in studio' ) ]
 	);
 
 	$list = function ( $items, $title, $dark = false ) use ( $k, $col ) {

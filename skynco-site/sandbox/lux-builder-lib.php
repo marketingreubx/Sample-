@@ -362,3 +362,18 @@ function lux_save_page( $slug, $title, array $elements, $template = 'elementor_h
 	$doc->save( [ 'elements' => $elements, 'settings' => [ 'hide_title' => 'yes', 'template' => $template ] ] );
 	return $id;
 }
+
+/**
+ * Page hero in the shop style: full-width photo, even overlay, centred chip,
+ * headline, short line and one button. $btn is [label, url]; $o goes to skynco_hero_html().
+ */
+function lux_hero( $title, $h1, $text, $btn, $img, array $o = [] ) {
+	$html = function_exists( 'skynco_hero_html' )
+		? skynco_hero_html( $o + [ 'img' => $img, 'title' => $h1, 'lead' => $text, 'btn' => $btn ] )
+		: '<h1>' . $h1 . '</h1>';
+	return lux_section(
+		$title,
+		[ 'content_width' => 'full', 'padding' => lux_box( 0, 0, 0, 0 ), 'padding_mobile' => lux_box( 0, 0, 0, 0 ) ],
+		[ lux_w( 'html', [ 'html' => $html ], 'Hero' ) ]
+	);
+}
