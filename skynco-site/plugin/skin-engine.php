@@ -501,8 +501,10 @@ function skynco_skin_plan_payload( array $answers ) {
 		$first   = ( $p['start_new'] && 1 !== $p['main'] ) ? 1 : $p['main'];
 		if ( 'virtual' === $meet && $virtual ) {
 			$book = $virtual;
+		} elseif ( 'studio' === $meet ) {
+			$book = $first;
 		} elseif ( 'products' === $p['goal'] ) {
-			$book = ( '' === $meet && $virtual ) ? $virtual : 0; // Offer the video call unless they declined it.
+			$book = 'none' !== $meet ? $virtual : 0; // Offer the free video call unless they declined it.
 		} else {
 			$book = $first;
 		}
