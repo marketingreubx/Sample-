@@ -20,16 +20,16 @@ add_action(
   .skb{right:12px!important;bottom:12px!important}
   .skb-launch{padding:6px!important}.skb-launch__t{display:none!important}
 
-  /* Shop hero: the photo as shot (not zoomed), fading into plum, copy over its lower edge */
+  /* Shop hero: photo fills the background under a plum overlay (like the homepage) */
   .skh-slides{min-height:0!important}
-  .skh-slide{display:block!important;background:#26101F}
-  .skh-bg{position:absolute!important;inset:0 auto auto 0!important;width:100%!important;height:auto!important;aspect-ratio:1/1;object-fit:cover;object-position:100% 50%!important}
-  .skh-slide::before{inset:0 0 auto 0!important;height:100vw!important;background:linear-gradient(180deg,rgba(38,16,31,.05) 0%,rgba(38,16,31,.15) 45%,rgba(38,16,31,.75) 78%,#26101F 100%)!important}
-  .skh-wrap{padding:calc(100vw - 110px) 16px 30px!important;margin:0!important}
-  .skh .skh-title{font-size:32px!important;line-height:1.1!important;margin:0 0 10px!important}
-  .skh-lead{font-size:15px!important;line-height:1.55!important;max-width:none!important}
-  .skh-cta{margin-top:18px!important;gap:8px!important;flex-wrap:nowrap!important}
-  .skh-cta .skh-btn{flex:1;justify-content:center;padding:13px 10px!important;font-size:14.5px!important}
+  .skh-slide{display:flex!important;flex-direction:column;justify-content:flex-end;min-height:min(78vh,600px);background:#26101F}
+  .skh-bg{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;object-fit:cover;object-position:84% 30%!important}
+  .skh-slide::before{inset:0!important;height:auto!important;background:linear-gradient(180deg,rgba(38,16,31,.35) 0%,rgba(38,16,31,.55) 40%,rgba(38,16,31,.88) 72%,rgba(38,16,31,.96) 100%)!important}
+  .skh-wrap{padding:120px 16px 32px!important;margin:0!important}
+  .skh .skh-title{font-size:34px!important;line-height:1.08!important;margin:0 0 12px!important}
+  .skh-lead{font-size:15.5px!important;line-height:1.6!important;max-width:none!important;color:#F3E3EA!important}
+  .skh-cta{margin-top:20px!important;gap:10px!important;flex-direction:column}
+  .skh-cta .skh-btn{width:100%;justify-content:center;padding:15px 12px!important;font-size:15px!important}
   .skh-card{display:none!important}
 
   /* Offers: one swipeable strip instead of a tall stacked box */
