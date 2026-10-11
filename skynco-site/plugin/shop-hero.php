@@ -75,7 +75,7 @@ add_action(
 <style id="skynco-shop-hero">
 .skh{position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center;min-height:min(86vh,760px);background:#1E0C18;color:#fff;font-family:Manrope,sans-serif;text-align:center}
 .skh *{box-sizing:border-box}.skh p{margin:0}
-.skh-bg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 28%}
+.skh .skh-bg{position:absolute;inset:0;width:100%!important;height:100%!important;max-width:none!important;object-fit:cover;object-position:50% 28%}
 .skh::before{content:"";position:absolute;inset:0;z-index:1;background:linear-gradient(180deg,rgba(26,10,22,.55) 0%,rgba(26,10,22,.5) 45%,rgba(26,10,22,.72) 100%)}
 .skh-inner{position:relative;z-index:2;width:100%;max-width:820px;padding:110px 24px 130px;display:flex;flex-direction:column;align-items:center}
 .skh-proof{display:inline-flex;align-items:center;gap:8px;padding:8px 16px;border-radius:999px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.22);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);font:500 13.5px Manrope,sans-serif;color:#F7EAF0}
@@ -99,7 +99,7 @@ add_action(
 .sk-stars__n{margin-left:6px;font:700 13px Manrope,sans-serif;color:#2A1A24;vertical-align:middle}.sk-stars__n span{color:#9A8791;font-weight:600}
 @media(max-width:767px){
 .skh{min-height:640px}
-.skh-bg{object-position:50% 22%}
+.skh .skh-bg{object-position:50% 22%}
 .skh::before{background:linear-gradient(180deg,rgba(26,10,22,.45) 0%,rgba(26,10,22,.6) 50%,rgba(26,10,22,.82) 100%)}
 .skh-inner{padding:72px 18px 96px}
 .skh .skh-title{font-size:40px!important;margin:18px 0 12px!important}
