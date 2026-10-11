@@ -414,7 +414,7 @@ function lux_about_elements() {
 		'Skyn&amp;Co. Skincare &amp; Wellness is a skincare studio in Watertown, MA, founded by licensed esthetician Hana Rahim. We believe skincare is restoration, confidence and self-care.',
 		[ 'Book Appointment', $k['services'] ],
 		'about',
-		[ 'chip' => 'Licensed esthetician · 10+ years' ]
+		[ 'chip' => 'Licensed esthetician · 10+ years', 'pos' => '50% 75%' ]
 	);
 
 	$stat = function ( $num, $label ) {

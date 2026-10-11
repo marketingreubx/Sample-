@@ -50,7 +50,7 @@ function lux_treatment_elements( array $t ) {
 		esc_html( $t[1] ),
 		esc_html( $t[6] ),
 		[ 'Book this treatment', $book ],
-		$t[7] ? $t[7] : 'policies',
+		[ 'signature-facial' => 'book', 'brightening-facial' => 'contact', 'derma-facial' => 'faq', 'acne-facial' => 'services', 'teen-facial' => 'policies', 'tca-peel' => 'services', 'gentlemans-facial' => 'skynco-new-client-facial.jpg' ][ $t[0] ] ?? ( $t[7] && ! preg_match( '/\.png$/', $t[7] ) ? $t[7] : 'policies' ),
 		[ 'chip' => (int) $t[3] . ' min · $' . (int) $t[4] . ( $t[5] > 0 ? ' · $' . (int) $t[5] . ' deposit' : ' · pay in studio' ) ]
 	);
 
