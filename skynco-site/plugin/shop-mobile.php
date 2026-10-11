@@ -41,22 +41,22 @@ add_action(
   .sk-offers b{font-size:15px!important}.sk-offers span{font-size:13px!important}
 
   /* Product grids: two neat columns, no half-cut swipe rows */
-  .sk-grid:not(.sk-grid--feature){display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:10px!important;overflow:visible!important;margin:0!important;padding:0!important}
-  .sk-grid:not(.sk-grid--feature)>.sk-card{flex:none!important;width:auto!important;border-radius:18px}
-  .sk-grid:not(.sk-grid--feature) .sk-card__img{aspect-ratio:1/1}
-  .sk-grid:not(.sk-grid--feature) .sk-badge{top:8px;left:8px;padding:5px 8px;font-size:10px}
-  .sk-grid:not(.sk-grid--feature) .sk-card__body{padding:10px 12px 12px!important;gap:5px!important}
-  .sk-grid:not(.sk-grid--feature) .sk-card__title{font-size:15px!important;line-height:1.25!important;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
-  .sk-grid:not(.sk-grid--feature) .sk-card__short{display:none!important}
-  .sk-grid:not(.sk-grid--feature) .sk-card__rating .sk-stars{font-size:11px;letter-spacing:1px}
-  .sk-grid:not(.sk-grid--feature) .sk-card__rating .sk-stars__n{font-size:11px}
-  .sk-grid:not(.sk-grid--feature) .sk-card__foot{flex-direction:column;align-items:stretch;gap:8px;padding-top:6px}
-  .sk-grid:not(.sk-grid--feature) .sk-price{font-size:15px}
-  .sk-grid:not(.sk-grid--feature) .sk-add{width:100%!important;justify-content:center;padding:10px 8px!important;font-size:13px!important}
+  body .sk-grid.sk-grid:not(.sk-grid--feature){display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:10px!important;overflow:visible!important;margin:0!important;padding:0!important}
+  body .sk-grid.sk-grid:not(.sk-grid--feature)>.sk-card{flex:none!important;width:auto!important;border-radius:18px}
+  body .sk-grid.sk-grid:not(.sk-grid--feature) .sk-card__img{aspect-ratio:1/1}
+  body .sk-grid.sk-grid:not(.sk-grid--feature) .sk-badge{top:8px;left:8px;padding:5px 8px;font-size:10px}
+  body .sk-grid.sk-grid:not(.sk-grid--feature) .sk-card__body{padding:10px 12px 12px!important;gap:5px!important}
+  body .sk-grid.sk-grid:not(.sk-grid--feature) .sk-card__title{font-size:15px!important;line-height:1.25!important;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+  body .sk-grid.sk-grid:not(.sk-grid--feature) .sk-card__short{display:none!important}
+  body .sk-grid.sk-grid:not(.sk-grid--feature) .sk-card__rating .sk-stars{font-size:11px;letter-spacing:1px}
+  body .sk-grid.sk-grid:not(.sk-grid--feature) .sk-card__rating .sk-stars__n{font-size:11px}
+  body .sk-grid.sk-grid:not(.sk-grid--feature) .sk-card__foot{flex-direction:column;align-items:stretch;gap:8px;padding-top:6px}
+  body .sk-grid.sk-grid:not(.sk-grid--feature) .sk-price{font-size:15px}
+  body .sk-grid.sk-grid:not(.sk-grid--feature) .sk-add{width:100%!important;justify-content:center;padding:10px 8px!important;font-size:13px!important}
 
   /* Kits: compact horizontal cards stacked */
-  .sk-grid.sk-grid--feature{display:flex!important;flex-direction:column;gap:12px!important;overflow:visible!important;margin:0!important;padding:0!important}
-  .sk-grid--feature>.sk-card{flex:none!important;width:auto!important;display:grid!important;grid-template-columns:118px minmax(0,1fr);border-radius:20px}
+  body .sk-grid.sk-grid.sk-grid--feature{display:flex!important;flex-direction:column;gap:12px!important;overflow:visible!important;margin:0!important;padding:0!important}
+  body .sk-grid.sk-grid--feature>.sk-card{flex:none!important;width:auto!important;display:grid!important;grid-template-columns:118px minmax(0,1fr);border-radius:20px}
   .sk-grid--feature .sk-card__img{aspect-ratio:auto;height:100%;min-height:150px}
   .sk-grid--feature .sk-badge{top:8px;left:8px;padding:5px 8px;font-size:10px}
   .sk-grid--feature .sk-card__body{padding:12px 14px!important;gap:5px!important}
@@ -67,7 +67,7 @@ add_action(
   .sk-grid--feature .sk-add{padding:10px 14px!important;font-size:13px!important}
 
   /* Reviews band: swipe through */
-  .skrb-grid{display:flex!important;overflow-x:auto;scroll-snap-type:x mandatory;gap:12px!important;margin:0 -16px;padding:0 16px 6px;scrollbar-width:none}
+  body .skrb-grid.skrb-grid{display:flex!important;overflow-x:auto;scroll-snap-type:x mandatory;gap:12px!important;margin:0 -16px;padding:0 16px 6px;scrollbar-width:none}
   .skrb-grid::-webkit-scrollbar{display:none}
   .skrb-card{flex:0 0 84%;scroll-snap-align:center;padding:20px!important}
   .e-con.e-parent:has(.sk-offers){--margin-top:16px;margin-top:16px!important}
