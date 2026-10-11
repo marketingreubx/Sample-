@@ -11,6 +11,7 @@ if ( ! defined( 'ABSPATH' ) || function_exists( 'lux_lp_treatments' ) ) {
 function lux_lp_treatments() {
 	return [
 		[ 'new-client-facial', 'New Client Facial & Consultation', 'Start Here', 60, 155, 30, 'A full Signature Facial plus a 15-minute consultation, written skin analysis and home regimen. For first visits or after 12+ months.', 'skynco-new-client-facial.jpg' ],
+		[ 'virtual-consultation', 'Virtual Skin Consultation', 'Start Here', 20, 0, 0, 'A free 20-minute video call with Hana: talk through your skin, your current routine and your goals, and get product picks and a treatment plan before you visit.', '' ],
 		[ 'signature-facial', 'Signature Facial', 'Facials', 50, 150, 30, 'Fully customized: double cleanse, skin analysis, steam and exfoliation, extractions, light therapy and a custom treatment.', 'skynco-peel-mask.png' ],
 		[ 'acne-facial', 'Acne Facial', 'Facials', 60, 150, 30, 'Deep cleanse, exfoliation and purifying mask with Blue LED and argon high frequency to target breakout bacteria.', 'skynco-facial-treatment-room.png' ],
 		[ 'brightening-facial', 'Brightening Facial', 'Facials', 60, 150, 30, 'Powerful enzymes smooth the skin and soften the look of sun and age spots for an even, glowing tone.', 'skynco-peel-mask.png' ],

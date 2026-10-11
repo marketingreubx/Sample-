@@ -26,6 +26,10 @@ function skynco_skin_questions() {
 			[ 'scars', 'Acne scars or rough texture' ], [ 'dull', 'Dull, tired-looking skin' ], [ 'bumps', 'Shaving bumps or ingrown hairs' ],
 			[ 'wax', 'Hair removal (waxing)' ],
 		] ],
+		[ 'id' => 'goal', 'q' => 'What are you hoping to get from this?', 'opts' => [
+			[ 'products', 'The right products to use at home' ], [ 'treatment', 'A treatment at the studio' ],
+			[ 'both', 'Both: a treatment and a home routine' ], [ 'unsure', 'Not sure yet, tell me what I need' ],
+		] ],
 		[ 'id' => 'feel', 'q' => 'By midday, how does your skin feel?', 'opts' => [
 			[ 'oily_all', 'Shiny all over' ], [ 'oily_t', 'Shiny forehead and nose only' ], [ 'comfortable', 'Comfortable' ], [ 'tight', 'Tight, dry or flaky' ], [ 'varies', 'It changes a lot' ],
 		] ],
@@ -46,6 +50,12 @@ function skynco_skin_questions() {
 		[ 'id' => 'age', 'q' => 'What is your age range?', 'opts' => [ [ 'teen', '14 to 17' ], [ '18', '18 to 29' ], [ '30', '30 to 44' ], [ '45', '45 to 59' ], [ '60', '60 or over' ] ] ],
 		[ 'id' => 'budget', 'q' => 'How simple should your home routine be?', 'opts' => [ [ 'essentials', 'Just the essentials (3 steps)' ], [ 'full', 'A complete routine' ], [ 'best', 'Whatever gets the best results' ] ] ],
 		[ 'id' => 'visit', 'q' => 'Have you had a treatment at Skyn&Co. before?', 'opts' => [ [ 'new', 'No, this would be my first visit' ], [ 'back', 'Yes, I have been before' ] ] ],
+		[ 'id' => 'meet', 'if' => [ 'goal', [ 'products' ] ], 'q' => 'Would you like a free 20-minute video call with Hana to confirm your products before you buy?', 'opts' => [
+			[ 'virtual', 'Yes, book a free video call' ], [ 'none', 'No thanks, just show me the products' ],
+		] ],
+		[ 'id' => 'meet', 'if' => [ 'goal', [ 'treatment', 'both', 'unsure' ] ], 'q' => 'Last one: how would you like to start with Hana?', 'opts' => [
+			[ 'studio', 'In the studio, with a facial and consultation' ], [ 'virtual', 'A free video consultation first' ], [ 'later', 'I will decide later' ],
+		] ],
 	];
 }
 
@@ -74,7 +84,43 @@ function skynco_skin_parse_text( $text ) {
 		}
 	}
 	$red = (bool) preg_match( '/bleed|mole (is )?(changing|grow)|changing mole|open sore|infect|pus|swollen|fever|sudden rash|hives|spreading/', $t );
-	return [ 'concerns' => array_slice( $found, 0, 3 ), 'redflag' => $red ];
+	$buy   = (bool) preg_match( '/\b(buy|order|shop|product|routine|serum|cleanser|moisturi[sz]er|sunscreen|spf|toner|cream|home ?care)\b/', $t );
+	$treat = (bool) preg_match( '/\b(facial|treatment|appointment|book|peel|microneedl|dermaplan|extraction|session|visit)\b/', $t );
+	$goal  = $buy && $treat ? 'both' : ( $buy ? 'products' : ( $treat ? 'treatment' : '' ) );
+	return [ 'concerns' => array_slice( $found, 0, 3 ), 'redflag' => $red, 'goal' => $goal ];
+}
+
+/**
+ * What the client needs: home products, a treatment, or both. Uses their answer, and when
+ * they are not sure, deduces it from the concerns (some only respond to professional care).
+ * Returns [goal, reason or ''].
+ */
+function skynco_skin_goal( array $a, array $p ) {
+	$g = in_array( $a['goal'] ?? '', [ 'products', 'treatment', 'both' ], true ) ? $a['goal'] : '';
+	if ( $g ) {
+		return [ $g, '' ];
+	}
+	$c    = (array) ( $p['concerns'] ?? [] );
+	$pro  = array_values( array_intersect( $c, [ 'scars', 'lines', 'melasma', 'congestion', 'spots', 'bumps' ] ) );
+	$deep = in_array( $a['breakout'] ?? '', [ 'deep', 'hormonal', 'congested' ], true );
+	if ( $pro || $deep ) {
+		$what = $pro ? strtolower( skynco_skin_concern_label( $pro[0] ) ) : 'breakouts like yours';
+		return [ 'both', ucfirst( $what ) . ' respond best to professional treatment, and the right home routine keeps the results going.' ];
+	}
+	if ( $c && ! array_diff( $c, [ 'dry', 'oily', 'dull', 'sensitive', 'redness', 'breakouts' ] ) ) {
+		return [ 'products', 'What you describe usually improves with the right home routine alone. A facial is a bonus, not a must.' ];
+	}
+	return [ 'both', 'A treatment gets you there faster, and the home routine keeps it going.' ];
+}
+
+/** LatePoint ID of the free video consultation, or 0. */
+function skynco_skin_virtual_id() {
+	foreach ( function_exists( 'skynco_ai_services' ) ? skynco_ai_services() : [] as $id => $s ) {
+		if ( false !== stripos( $s['name'], 'virtual' ) ) {
+			return (int) $id;
+		}
+	}
+	return 0;
 }
 
 /* ---------------------------------------------------------------------------
@@ -351,6 +397,10 @@ function skynco_skin_plan_html( array $p ) {
 	$h .= '<p class="skp-plan__k">Your personalised skin plan</p>';
 	$h .= '<div class="skp-plan__profile"><div><span>Skin type</span><b>' . $e( $p['type'] ) . '</b></div><div><span>Focus</span><b>' . $e( implode( ', ', array_map( 'skynco_skin_concern_label', $p['concerns'] ) ) ) . '</b></div></div>';
 
+	$goal = $p['goal'] ?? 'both';
+	$need = [ 'products' => 'Home care: the right routine', 'treatment' => 'Treatment at the studio', 'both' => 'A treatment plus a home routine' ][ $goal ];
+	$h   .= '<p class="skp-plan__need"><span>What you need</span><b>' . $e( $need ) . '</b>' . ( ! empty( $p['goal_why'] ) ? '<em>' . $e( $p['goal_why'] ) . '</em>' : '' ) . '</p>';
+
 	if ( $p['refer'] ) {
 		$h .= '<p class="skp-plan__alert"><b>Please see a dermatologist too.</b> Painful, deep or cystic breakouts (or anything bleeding, spreading or changing) need medical care, often prescription treatment. Facials can support that care, but not replace it.</p>';
 	}
@@ -361,6 +411,9 @@ function skynco_skin_plan_html( array $p ) {
 	}
 	$h .= '</ul>';
 
+	$treat_html = '';
+	$h0         = $h;
+	$h          = '';
 	$h .= '<p class="skp-plan__h">Your treatment plan</p><ol class="skp-plan__steps">';
 	if ( $p['start_new'] && $main && 1 !== $p['main'] && isset( $svc[1] ) ) {
 		$h .= '<li><b>Start with the ' . $e( $svc[1]['name'] ) . '</b> ($' . (int) $svc[1]['price'] . ', ' . (int) $svc[1]['duration'] . ' min). Hana analyses your skin in person and confirms this plan.</li>';
@@ -376,6 +429,15 @@ function skynco_skin_plan_html( array $p ) {
 		$h .= '<li><b>Add-on:</b> ' . $e( implode( '; ', $p['addons'] ) ) . '.</li>';
 	}
 	$h .= '</ol>';
+	$treat_html = $h;
+	$h          = $h0;
+	if ( 'products' === $goal ) {
+		if ( $main ) {
+			$h .= '<p class="skp-plan__note">Start with the routine below. If you want faster results later, the <b>' . $e( $main['name'] ) . '</b> ($' . (int) $main['price'] . ') is the treatment that fits your skin best.</p>';
+		}
+	} else {
+		$h .= $treat_html;
+	}
 
 	$row = function ( $list ) use ( $prod, $e ) {
 		$o = '<ol class="skp-plan__routine">';
@@ -385,6 +447,9 @@ function skynco_skin_plan_html( array $p ) {
 		}
 		return $o . '</ol>';
 	};
+	if ( 'treatment' === $goal ) {
+		$h .= '<p class="skp-plan__h">Home care that protects your results</p><p class="skp-plan__note">Optional, but it makes each treatment last longer.</p>';
+	}
 	$h .= '<div class="skp-plan__cols"><div><p class="skp-plan__h">Morning</p>' . $row( $p['am'] ) . '</div><div><p class="skp-plan__h">Evening</p>' . $row( $p['pm'] ) . '</div></div>';
 
 	// Products and one-tap routine.
@@ -424,18 +489,32 @@ function skynco_skin_plan_html( array $p ) {
 
 /** Plan plus the cards the chat shows (booking card first). */
 function skynco_skin_plan_payload( array $answers ) {
-	$p     = skynco_skin_analyze( $answers );
-	$cards = [ [ 'type' => 'plan', 'html' => skynco_skin_plan_html( $p ) ] ];
+	$p = skynco_skin_analyze( $answers );
+	if ( empty( $p['wax'] ) ) {
+		[ $p['goal'], $p['goal_why'] ] = skynco_skin_goal( $answers, $p );
+	}
+	$meet      = $answers['meet'] ?? '';
+	$p['meet'] = $meet;
+	$cards     = [ [ 'type' => 'plan', 'html' => skynco_skin_plan_html( $p ) ] ];
 	if ( empty( $p['wax'] ) && function_exists( 'skynco_ai_service_card' ) ) {
-		$first = ( $p['start_new'] && 1 !== $p['main'] ) ? 1 : $p['main'];
-		$sc    = skynco_ai_service_card( $first );
+		$virtual = skynco_skin_virtual_id();
+		$first   = ( $p['start_new'] && 1 !== $p['main'] ) ? 1 : $p['main'];
+		if ( 'virtual' === $meet && $virtual ) {
+			$book = $virtual;
+		} elseif ( 'products' === $p['goal'] ) {
+			$book = ( '' === $meet && $virtual ) ? $virtual : 0; // Offer the video call unless they declined it.
+		} else {
+			$book = $first;
+		}
+		$sc = $book ? skynco_ai_service_card( $book ) : null;
 		if ( $sc ) {
 			$cards[] = $sc;
 		}
 	}
 	$svc     = function_exists( 'skynco_ai_services' ) ? skynco_ai_services() : [];
 	$summary = ! empty( $p['wax'] ) ? 'Waxing plan shown.' : sprintf(
-		'Plan shown. Skin type: %s. Focus: %s. Treatment: %s (%s). Routine: %s.%s%s',
+		'Plan shown. Needs: %s. Skin type: %s. Focus: %s. Treatment: %s (%s). Routine: %s.%s%s',
+		$p['goal'] . ( $meet ? ', consultation: ' . $meet : '' ),
 		$p['type'],
 		implode( ', ', $p['concerns'] ),
 		$svc[ $p['main'] ]['name'] ?? '',
@@ -459,7 +538,18 @@ function skynco_skin_plan_ajax() {
 	}
 	$a['redflag'] = ! empty( $raw['redflag'] );
 	$out          = skynco_skin_plan_payload( $a );
-	$intro        = ! empty( $out['plan']['wax'] ) ? 'Here are the waxing options.' : 'Thank you, that gives me a clear picture. Here is your personalised plan:';
+	$pl           = $out['plan'];
+	if ( ! empty( $pl['wax'] ) ) {
+		$intro = 'Here are the waxing options.';
+	} elseif ( 'virtual' === ( $pl['meet'] ?? '' ) ) {
+		$intro = 'Thank you, that gives me a clear picture. Here is your personalised plan, and below it you can book your free video call with Hana.';
+	} elseif ( 'products' === $pl['goal'] ) {
+		$intro = 'Thank you. You mainly need the right home routine, so here it is, built for your skin:';
+	} elseif ( 'treatment' === $pl['goal'] ) {
+		$intro = 'Thank you. Here is the treatment that fits your skin best, with how often to come in:';
+	} else {
+		$intro = 'Thank you, that gives me a clear picture. You will get the best results from a treatment plus the right home routine. Here is your plan:';
+	}
 	wp_send_json_success( [ 'text' => $intro, 'cards' => $out['cards'] ] );
 }
 
@@ -527,6 +617,11 @@ add_action(
 .skp-plan__fine{margin-top:12px!important;font-size:11.5px;color:#9A8791}
 .skb-step{display:flex;align-items:center;gap:8px;margin:0 0 6px;font:700 10.5px Manrope,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#9A8791}
 .skb-step i{flex:1;height:4px;border-radius:99px;background:#F3E3E9;overflow:hidden}.skb-step i b{display:block;height:100%;background:#D1127E;border-radius:99px}
+.skp-plan__need{margin:10px 0 4px!important;padding:10px 12px;border-radius:12px;background:#3B1530;color:#fff}
+.skp-plan__need span{display:block;font:700 10px Manrope,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:#FF8FCB}
+.skp-plan__need b{display:block;font-size:14px}
+.skp-plan__need em{display:block;margin-top:4px;font-style:normal;font-size:12.5px;color:#EBD7E1}
+.skp-plan__note{font-size:13px;color:#5B4753}
 .skb-chips{max-height:min(34vh,260px);overflow-y:auto;overscroll-behavior:contain}
 .skb-chips button.is-sel{background:#3B1530!important;color:#fff!important;border-color:#3B1530!important}
 .skb-chips button.skb-go{background:#D1127E!important;color:#fff!important;border-color:#D1127E!important}

@@ -11,6 +11,7 @@ if ( ! defined( 'ABSPATH' ) || function_exists( 'lux_treatment_details' ) ) {
 function lux_treatment_details() {
 	return [
 		'new-client-facial'  => [ [ 'Full Signature Facial customized to your skin', '15-minute skin consultation', 'Completed skin analysis', 'Detailed home-care regimen and product recommendations', 'Your next best treatments, planned with you' ], [ 'First-time clients', 'Returning after 12 months or more', 'Anyone unsure what to book' ], 'For both women and men. Arrive with a clean face, and bring a list of the products you use now.' ],
+		'virtual-consultation' => [ [ '20-minute video call with Hana', 'Review of your skin, routine and goals', 'Product picks for your home routine', 'A treatment plan if you want one', 'Video link sent by email after booking' ], [ 'Buying products and not sure which', 'Planning your first treatment', 'Clients who live outside Watertown' ], 'Free. Please join from somewhere with good natural light and a clean, makeup-free face so Hana can see your skin.' ],
 		'signature-facial'   => [ [ 'Facial cleanse and second cleanse', 'Skin analysis', 'Steam with exfoliation', 'Extractions', 'Light therapy', 'Custom skin treatment and finishing products' ], [ 'Regular skin maintenance', 'Dull or congested skin', 'A personalized glow-up' ], 'Each session is customized on the day to your skin type, concerns and goals.' ],
 		'acne-facial'        => [ [ 'Deep cleanse and exfoliation', 'Customized purifying mask', 'Blue LED light therapy', 'Argon high frequency to target bacteria' ], [ 'Breakouts and clogged pores', 'Oily or sensitive, acne-prone skin' ], 'Designed to detoxify and balance the skin and support its natural healing process.' ],
 		'brightening-facial' => [ [ 'Enzyme exfoliation', 'Smoothing and brightening treatment', 'Hydrating finish' ], [ 'Uneven tone', 'Sun and age spots', 'Dull, tired-looking skin' ], 'Leaves skin glowing and bright with no downtime.' ],
@@ -50,8 +51,8 @@ function lux_treatment_elements( array $t ) {
 		esc_html( $t[1] ),
 		esc_html( $t[6] ),
 		[ 'Book this treatment', $book ],
-		[ 'signature-facial' => 'book', 'brightening-facial' => 'contact', 'derma-facial' => 'faq', 'acne-facial' => 'services', 'teen-facial' => 'policies', 'tca-peel' => 'services', 'gentlemans-facial' => 'skynco-new-client-facial.jpg' ][ $t[0] ] ?? ( $t[7] && ! preg_match( '/\.png$/', $t[7] ) ? $t[7] : 'policies' ),
-		[ 'chip' => (int) $t[3] . ' min · $' . (int) $t[4] . ( $t[5] > 0 ? ' · $' . (int) $t[5] . ' deposit' : ' · pay in studio' ) ]
+		[ 'signature-facial' => 'book', 'brightening-facial' => 'contact', 'derma-facial' => 'faq', 'acne-facial' => 'services', 'teen-facial' => 'policies', 'tca-peel' => 'services', 'gentlemans-facial' => 'skynco-new-client-facial.jpg', 'virtual-consultation' => 'about' ][ $t[0] ] ?? ( $t[7] && ! preg_match( '/\.png$/', $t[7] ) ? $t[7] : 'policies' ),
+		[ 'chip' => (int) $t[3] . ' min · ' . ( $t[4] > 0 ? '$' . (int) $t[4] . ( $t[5] > 0 ? ' · $' . (int) $t[5] . ' deposit' : ' · pay in studio' ) : 'Free · video call' ) ]
 	);
 
 	$list = function ( $items, $title, $dark = false ) use ( $k, $col ) {
@@ -125,7 +126,7 @@ function lux_treatment_elements( array $t ) {
 		]
 	);
 
-	$els[] = lux_page_cta( 'Ready for your <em>' . esc_html( $t[1] ) . '?</em>', 'Pick a time that suits you. ' . ( $t[5] > 0 ? 'A $' . $t[5] . ' deposit holds your spot.' : 'Pay at the studio.' ), $book );
+	$els[] = lux_page_cta( 'Ready for your <em>' . esc_html( $t[1] ) . '?</em>', 'Pick a time that suits you. ' . ( $t[4] <= 0 ? 'It is free, and Hana emails you the video link.' : ( $t[5] > 0 ? 'A $' . $t[5] . ' deposit holds your spot.' : 'Pay at the studio.' ) ), $book );
 	return $els;
 }
 
@@ -159,7 +160,7 @@ function lux_build_treatment_pages() {
 /** Map a menu label ("Chemical Peel, visible peeling (TCA)") to its treatment slug, or '' if none. */
 function lux_tslug( $name ) {
 	$n = strtolower( html_entity_decode( $name ) );
-	$rules = [ 'tca' => 'tca-peel', 'peel' => 'chemical-peel', 'derma' => 'derma-facial', 'teen' => 'teen-facial', 'new client' => 'new-client-facial', 'gentleman' => 'gentlemans-facial', 'virtual' => '' ];
+	$rules = [ 'tca' => 'tca-peel', 'peel' => 'chemical-peel', 'derma' => 'derma-facial', 'teen' => 'teen-facial', 'new client' => 'new-client-facial', 'gentleman' => 'gentlemans-facial', 'virtual' => 'virtual-consultation' ];
 	foreach ( $rules as $needle => $slug ) {
 		if ( false !== strpos( $n, $needle ) ) {
 			return $slug;

@@ -101,7 +101,7 @@ Policies: a \$25 to \$50 deposit holds most facials when booking online; waxing 
 
 How to consult (you are a thorough, expert skin therapist, not a menu):
 - Be warm, expert and concise: 2 to 4 short sentences, or a few short "- " bullets. No emojis, no markdown headings or bold.
-- Run a real consultation, one or two questions at a time, adapting to what they say. Build up: main concerns and goals (up to 3), how skin feels by midday (oily all over, oily T-zone, comfortable, tight or flaky, changes), how it reacts to products (rarely, sometimes, often stings or flares), for breakouts the pattern (occasional small spots, hormonal chin and jaw, painful deep or cystic, mostly blackheads), current actives (retinol/tretinoin/adapalene, Accutane now or in the last 6 months, AHA/BHA acids, benzoyl peroxide, prescription), sunscreen habits and any recent tan or sunburn, pregnancy or breastfeeding, age range, how simple the home routine should be, and whether it is their first visit.
+- Run a real consultation, one or two questions at a time, adapting to what they say. Build up: main concerns and goals (up to 3), how skin feels by midday (oily all over, oily T-zone, comfortable, tight or flaky, changes), how it reacts to products (rarely, sometimes, often stings or flares), for breakouts the pattern (occasional small spots, hormonal chin and jaw, painful deep or cystic, mostly blackheads), current actives (retinol/tretinoin/adapalene, Accutane now or in the last 6 months, AHA/BHA acids, benzoyl peroxide, prescription), sunscreen habits and any recent tan or sunburn, pregnancy or breastfeeding, age range, how simple the home routine should be, whether it is their first visit, and what they want: products for home, a treatment, or both. If they are not sure, deduce it (scars, fine lines, melasma, dark spots, congestion and hormonal or deep breakouts need professional treatment plus home care; mild dryness, oiliness, dullness or sensitivity usually improve with the right routine alone) and tell them why. Before you finish, offer how to start with Hana: in the studio, or a free 20-minute virtual (video) consultation, which suits people who mainly want products or want advice before booking.
 - Reason like a professional: link symptoms to likely causes (oily but tight usually means dehydration; chin and jaw breakouts that follow the cycle are usually hormonal; patchy brown cheeks and upper lip suggest melasma; stinging with everything suggests a damaged barrier). Ask a follow-up when an answer changes the plan.
 - As soon as you have enough (usually 5 to 8 answers), call build_skin_plan with what you learned. It returns the studio's personalised plan (skin type, likely causes, treatment and cadence, AM/PM routine from our shop, safety notes) and shows it to the client. Then add 2 or 3 sentences in your own words: the key insight about their skin, why the first treatment fits, and the one habit that will make the biggest difference. Offer to check open times.
 - Safety always wins: Accutane in the last 6 months means no peels, microneedling, dermaplaning or facial waxing; retinoids stop 5 to 7 days before those; pregnancy means no peels, microneedling or retinoids; a recent tan or sunburn means waiting about 2 weeks. Painful cystic acne, bleeding, spreading rashes, infection or a changing mole need a dermatologist or doctor: say so clearly and kindly.
@@ -208,7 +208,7 @@ function skynco_ai_service_card( $service_id ) {
 	if ( ! $svc ) {
 		return null;
 	}
-	return [ 'type' => 'service', 'id' => $svc['id'], 'name' => $svc['name'], 'meta' => $svc['duration'] . ' min · $' . rtrim( rtrim( number_format( $svc['price'], 2 ), '0' ), '.' ), 'book' => skynco_ai_book_url( $svc['id'] ), 'info' => $svc['url'] ];
+	return [ 'type' => 'service', 'id' => $svc['id'], 'name' => $svc['name'], 'meta' => $svc['duration'] . ' min · ' . ( $svc['price'] > 0 ? '$' . rtrim( rtrim( number_format( $svc['price'], 2 ), '0' ), '.' ) : 'Free video call' ), 'book' => skynco_ai_book_url( $svc['id'] ), 'info' => $svc['url'] ];
 }
 
 function skynco_ai_product_card( array $slugs ) {
@@ -267,6 +267,8 @@ function skynco_ai_tools() {
 					'age'      => [ 'type' => 'string', 'enum' => [ 'teen', '18', '30', '45', '60' ] ],
 					'budget'   => [ 'type' => 'string', 'enum' => [ 'essentials', 'full', 'best' ] ],
 					'visit'    => [ 'type' => 'string', 'enum' => [ 'new', 'back' ] ],
+					'goal'     => [ 'type' => 'string', 'enum' => [ 'products', 'treatment', 'both', 'unsure' ], 'description' => 'What the client wants; unsure lets the plan deduce it' ],
+					'meet'     => [ 'type' => 'string', 'enum' => [ 'studio', 'virtual', 'none', 'later' ], 'description' => 'How they want to start: studio visit, free virtual consultation, or neither' ],
 					'redflag'  => [ 'type' => 'boolean', 'description' => 'True for bleeding, spreading rash, infection, swelling or a changing mole' ],
 				],
 				'required'   => [ 'concerns' ],
@@ -600,7 +602,7 @@ add_action(
 	function visible(){var qs=Q.filter(function(q){if(!q.if)return true;var v=st.a[q.if[0]]||[];return q.if[1].some(function(x){return v.indexOf(x)>-1;});});var c=st.a.concerns||[];if(c.length===1&&c[0]==='wax'){qs=qs.filter(function(q){return q.id==='concerns'||q.id==='actives';});}return qs;}
 	function guidedStart(resume,pre){
 		st={a:{},sel:[],redflag:false,q:null};
-		if(pre&&pre.concerns&&pre.concerns.length){st.a.concerns=pre.concerns;st.redflag=!!pre.redflag;}
+		if(pre&&pre.concerns&&pre.concerns.length){st.a.concerns=pre.concerns;st.redflag=!!pre.redflag;}if(pre&&pre.goal){st.a.goal=pre.goal;}
 		if(!resume){botSay(pre&&pre.concerns&&pre.concerns.length?'Thanks, that helps. I noted: '+pre.labels.join(', ')+'. A few quick questions so I can build your plan.':'Let’s do your skin consultation. It takes about a minute, and you get a full plan: your skin type, what is going on, the right treatment and a morning and evening routine.');}
 		ask();
 	}
@@ -631,8 +633,8 @@ add_action(
 		var t=typing(),fd=new FormData();fd.append('action','skynco_skin_parse');fd.append('nonce',C.nonce);fd.append('text',text);
 		fetch(C.ajax,{method:'POST',body:fd,credentials:'same-origin'}).then(function(r){return r.json();}).then(function(r){t.remove();var d=(r&&r.data)||{};
 			if(d.redflag){botSay('Some of what you describe (bleeding, spreading, infection, swelling or a changing mole) needs a doctor or dermatologist first. Please see them, and Hana is happy to care for your skin once you are cleared.');}
-			if(d.concerns&&d.concerns.length){var labels=d.concerns.map(function(k){var o=((Q[0]||{}).opts||[]).filter(function(x){return x[0]===k;})[0];return o?o[1].toLowerCase():k;});guidedStart(false,{concerns:d.concerns,labels:labels,redflag:d.redflag});}
-			else if(!d.redflag){botSay('Tell me a little about your skin, for example “breakouts on my chin and an oily T-zone”, or tap your concerns below.');guidedStart(true);}
+			if(d.concerns&&d.concerns.length){var labels=d.concerns.map(function(k){var o=((Q[0]||{}).opts||[]).filter(function(x){return x[0]===k;})[0];return o?o[1].toLowerCase():k;});guidedStart(false,{concerns:d.concerns,labels:labels,redflag:d.redflag,goal:d.goal});}
+			else if(!d.redflag){botSay('Tell me a little about your skin, for example “breakouts on my chin and an oily T-zone”, or tap your concerns below.');guidedStart(true,d.goal?{goal:d.goal}:null);}
 		}).catch(function(){t.remove();});
 	}
 
