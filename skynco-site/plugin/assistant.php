@@ -539,6 +539,7 @@ add_action(
 		?>
 <div id="skc-bot" class="skb" data-open="0">
 	<button type="button" class="skb-launch" aria-controls="skb-panel" aria-expanded="false"><span class="skb-launch__i"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.5c.7 4.3 2.2 5.8 6.5 6.5-4.3.7-5.8 2.2-6.5 6.5-.7-4.3-2.2-5.8-6.5-6.5 4.3-.7 5.8-2.2 6.5-6.5z"/></svg></span><span class="skb-launch__t">Free skin consult</span></button>
+	<div class="skb-tease" hidden><button type="button" class="skb-tease__x" aria-label="Dismiss">×</button><b>Not sure what your skin needs?</b><span>Take a 1-minute skin consultation and get your plan.</span></div>
 	<section id="skb-panel" class="skb-panel" role="dialog" aria-label="Skyn&amp;Co. skin specialist" hidden>
 		<header class="skb-head"><span class="skb-av">S</span><div><p class="skb-name">Skyn&amp;Co. Skin Specialist</p><p class="skb-sub"><span class="skb-dot"></span><?php echo skynco_ai_live() ? 'Virtual consultation · replies instantly' : 'Virtual consultation'; ?></p></div><button type="button" class="skb-x" aria-label="Close">×</button></header>
 		<div class="skb-log" aria-live="polite"></div>
@@ -557,7 +558,7 @@ add_action(
 	function save(){try{sessionStorage.setItem(KEY,JSON.stringify(hist.slice(-30)));}catch(e){}}
 	function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
 	function fmt(t){var h=esc(t).split(/\n{2,}/).map(function(p){var lines=p.split('\n');if(lines.every(function(l){return /^\s*[-•]\s+/.test(l);})){return '<ul>'+lines.map(function(l){return '<li>'+l.replace(/^\s*[-•]\s+/,'')+'</li>';}).join('')+'</ul>';}return '<p>'+p.replace(/\n/g,'<br>')+'</p>';}).join('');return h;}
-	function scroll(){log.scrollTop=log.scrollHeight;}
+	function scroll(){log.scrollTop=log.scrollHeight;requestAnimationFrame(function(){log.scrollTop=log.scrollHeight;});}
 	function bubble(role,html){var d=document.createElement('div');d.className='skb-msg skb-msg--'+role;d.innerHTML=html;log.appendChild(d);scroll();return d;}
 	function typing(){return bubble('bot','<span class="skb-typing"><i></i><i></i><i></i></span>');}
 	function card(c){
@@ -568,7 +569,7 @@ add_action(
 		if(c.type==='slots'){if(!c.days.length) return '<div class="skb-card"><p class="skb-card__t">No open times in the next two weeks</p><p class="skb-card__m">Text Hana at (857) 228-4708 and she will fit you in.</p></div>';return '<div class="skb-card"><p class="skb-card__k">Open times · '+esc(c.service)+'</p>'+c.days.map(function(d){return '<p class="skb-day">'+esc(d.label)+'</p><div class="skb-times">'+d.times.map(function(t){return '<a href="'+esc(t.url)+'">'+esc(t.label)+'</a>';}).join('')+'</div>';}).join('')+'<p class="skb-card__m">Tap a time to finish booking. You only add your details.</p><a class="skb-link" href="'+esc(c.more)+'">See all dates</a></div>';}
 		return '';
 	}
-	function setChips(list){chips.innerHTML=list.map(function(c){return '<button type="button" data-v="'+esc(c[0])+'">'+esc(c[1])+'</button>';}).join('');}
+	function setChips(list){chips.innerHTML=list.map(function(c){return '<button type="button" data-v="'+esc(c[0])+'">'+esc(c[1])+'</button>';}).join('');scroll();}
 	function render(){log.innerHTML='';hist.forEach(function(m){if(m.role==='user'){bubble('me',fmt(m.content));}else{bubble('bot',fmt(m.content)+(m.cards||[]).map(card).join(''));}});}
 	function greet(){
 		var g='Hi, I’m the Skyn&Co. skin specialist. I’ll analyse your skin with a few quick questions, then give you a full plan: what is going on, the right treatment and how often, and a morning and evening routine, with safety checks for things like Accutane, retinoids and pregnancy.';
@@ -576,9 +577,14 @@ add_action(
 		if(C.ai){setChips([['ai:Hi! I’d like a skin consultation.','Start my skin consultation'],['ai:Which facial is right for me?','Which facial is right for me?'],['ai:I want to book an appointment.','Book an appointment'],['ai:Can you recommend products for my skin?','Recommend products']]);}
 		else{guidedStart();}
 	}
-	function open(){root.dataset.open='1';panel.hidden=false;launch.setAttribute('aria-expanded','true');if(!started){started=true;if(hist.length){render();if(!C.ai)setChips([['restart','Start a new consultation']]);}else{greet();}}setTimeout(function(){input.focus();},50);}
+	function open(){root.dataset.open='1';panel.hidden=false;launch.setAttribute('aria-expanded','true');if(!started){started=true;if(hist.length){render();if(!C.ai)setChips([['restart','Start a new consultation']]);}else{greet();}}if(!window.matchMedia('(pointer:coarse)').matches)setTimeout(function(){input.focus();},50);}
 	function close(){root.dataset.open='0';panel.hidden=true;launch.setAttribute('aria-expanded','false');}
 	launch.addEventListener('click',function(){root.dataset.open==='1'?close():open();});
+	var tease=root.querySelector('.skb-tease'),teaseKey='skb_tease_off';
+	function teaseOff(){tease.hidden=true;try{sessionStorage.setItem(teaseKey,'1');}catch(e){}}
+	try{if(!sessionStorage.getItem(teaseKey)&&!hist.length){setTimeout(function(){if(root.dataset.open!=='1'){tease.hidden=false;setTimeout(function(){if(!tease.hidden)tease.hidden=true;},12000);}},5000);}}catch(e){}
+	tease.addEventListener('click',function(e){if(e.target.closest('.skb-tease__x')){teaseOff();return;}teaseOff();open();});
+	launch.addEventListener('click',teaseOff);
 	root.querySelector('.skb-x').addEventListener('click',close);
 	document.addEventListener('click',function(e){var a=e.target.closest('a[href="#skin-consult"],[data-skin-consult]');if(a){e.preventDefault();open();}});
 
@@ -612,9 +618,9 @@ add_action(
 		var q=qs[i],n=i+1,seen={};qs.forEach(function(x){seen[x.id]=1;});N=qs.length+Q.filter(function(x){if(!x.if||st.a[x.if[0]]!==undefined||seen[x.id])return false;seen[x.id]=1;return true;}).length;st.q=q;st.sel=[];
 		var html='<p class="skb-step">Step '+n+' of '+N+'<i><b style="width:'+Math.round(n/N*100)+'%"></b></i></p>'+fmt(q.q);
 		hist.push({role:'assistant',content:q.q});save();bubble('bot',html);
-		drawChips();
+		drawChips();chips.scrollTop=0;scroll();
 	}
-	function drawChips(){var q=st.q;chips.innerHTML=q.opts.map(function(o){return '<button type="button" data-q="'+esc(o[0])+'" class="'+(st.sel.indexOf(o[0])>-1?'is-sel':'')+'">'+esc(o[1])+'</button>';}).join('')+(q.multi?'<button type="button" class="skb-go" data-go="1">Continue'+(st.sel.length?' ('+st.sel.length+')':'')+'</button>':'');}
+	function drawChips(){var q=st.q;chips.innerHTML=q.opts.map(function(o){return '<button type="button" data-q="'+esc(o[0])+'" class="'+(st.sel.indexOf(o[0])>-1?'is-sel':'')+'">'+esc(o[1])+'</button>';}).join('')+(q.multi?'<button type="button" class="skb-go" data-go="1">Continue'+(st.sel.length?' ('+st.sel.length+')':'')+'</button>':'');scroll();}
 	function pick(v,label){var q=st.q;if(!q)return;
 		if(q.multi){if(v==='none'){st.sel=['none'];}else{st.sel=st.sel.filter(function(x){return x!=='none';});var k=st.sel.indexOf(v);if(k>-1){st.sel.splice(k,1);}else if(st.sel.length<q.multi){st.sel.push(v);}}drawChips();return;}
 		st.a[q.id]=v;meSay(label);chips.innerHTML='';st.q=null;setTimeout(ask,250);}
@@ -669,6 +675,21 @@ add_action(
 #ast-scroll-top{bottom:88px!important}
 .skb-launch{display:flex;align-items:center;gap:10px;padding:10px 18px 10px 10px;border:0;border-radius:999px;background:#3B1530;color:#fff;font:700 14px Manrope,sans-serif;cursor:pointer;box-shadow:0 14px 30px -12px rgba(38,16,31,.6);transition:transform .2s}
 .skb-launch:hover{transform:translateY(-2px)}
+.skb-launch__i{position:relative}
+.skb-launch__i::after{content:"";position:absolute;inset:-4px;border-radius:50%;border:2px solid #FF8CC8;opacity:0;animation:skbring 2.4s ease-out infinite}
+@keyframes skbring{0%{transform:scale(.85);opacity:.9}70%{transform:scale(1.6);opacity:0}100%{opacity:0}}
+.skb-launch{animation:skbnudge 6s ease-in-out 3s infinite}
+@keyframes skbnudge{0%,86%,100%{transform:none}89%{transform:translateY(-6px) rotate(-3deg)}92%{transform:translateY(0) rotate(2deg)}95%{transform:translateY(-3px)}}
+.skb-launch__i svg{animation:skbspark 3s ease-in-out infinite}
+@keyframes skbspark{0%,100%{transform:scale(1) rotate(0)}50%{transform:scale(1.18) rotate(20deg)}}
+@media(prefers-reduced-motion:reduce){.skb-launch,.skb-launch__i::after,.skb-launch__i svg{animation:none!important}}
+.skb-tease{position:absolute;right:0;bottom:calc(100% + 12px);width:250px;padding:14px 34px 14px 16px;border-radius:18px 18px 6px 18px;background:#fff;color:#2A1A24;box-shadow:0 18px 40px -16px rgba(38,16,31,.45);border:1px solid #EFE2E6;cursor:pointer;animation:skbtease .4s cubic-bezier(.2,.9,.3,1.3)}
+.skb-tease[hidden]{display:none}
+.skb-tease b{display:block;font:700 14px/1.3 Manrope,sans-serif;color:#3B1530}
+.skb-tease span{display:block;margin-top:4px;font-size:13px;line-height:1.45;color:#5B4753}
+.skb-tease__x{position:absolute;top:6px;right:6px;width:24px!important;height:24px!important;min-width:0!important;padding:0!important;border:0!important;border-radius:50%!important;background:#F6ECEF!important;color:#3B1530!important;font:400 16px/24px Manrope,sans-serif!important;cursor:pointer}
+@keyframes skbtease{from{opacity:0;transform:translateY(10px) scale(.95)}to{opacity:1;transform:none}}
+.skb[data-open="1"] .skb-tease{display:none}
 .skb-launch__i{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(135deg,#D1127E,#FF8CC8)}
 .skb[data-open="1"] .skb-launch{display:none}
 .skb-panel{position:absolute;right:0;bottom:0;width:390px;max-width:calc(100vw - 24px);height:min(640px,calc(100vh - 110px));display:flex;flex-direction:column;background:#FBF6F4;border-radius:26px;overflow:hidden;box-shadow:0 30px 70px -20px rgba(38,16,31,.55);border:1px solid #EFE2E6}
@@ -729,8 +750,11 @@ add_action(
 .skb-mini{margin-top:auto;padding:5px 0;border-radius:999px;background:#3B1530;color:#fff!important;font:700 11px Manrope,sans-serif;text-align:center;text-decoration:none!important}
 @media(max-width:600px){
 .skb{right:12px;bottom:12px}
-.skb-launch{padding:8px 14px 8px 8px;font-size:13px}
-.skb-launch__i{width:32px;height:32px}
+.skb-launch{padding:7px 16px 7px 7px;font-size:13.5px}
+.skb-launch__i{width:40px;height:40px}
+.skb-chips{max-height:min(30vh,230px)!important;gap:6px!important;padding:8px 12px 10px!important;border-top:1px solid #EFE2E6;background:#FBF6F4}
+.skb-chips button{padding:8px 13px!important;font-size:13.5px!important}
+.skb-tease{width:min(250px,calc(100vw - 32px))}
 .skb[data-open="1"]{left:0;right:0;bottom:0;top:0}
 .skb-panel{position:fixed;inset:0;width:100%;max-width:none;height:100%;height:100dvh;border-radius:0;border:0}
 #ast-scroll-top{bottom:76px!important}

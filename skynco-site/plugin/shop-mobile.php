@@ -18,7 +18,6 @@ add_action(
   /* Floating clutter */
   #ast-scroll-top{display:none!important}
   .skb{right:12px!important;bottom:12px!important}
-  .skb-launch{padding:6px!important}.skb-launch__t{display:none!important}
 
   /* Offers: one swipeable strip instead of a tall stacked box */
   .elementor-widget-html .sk-offers{display:flex!important;overflow-x:auto;scroll-snap-type:x mandatory;gap:10px;margin:0 -16px;padding:2px 16px 6px;background:none!important;border:0!important;box-shadow:none!important;border-radius:0!important;scrollbar-width:none}
