@@ -31,6 +31,10 @@ add_action(
   .skh-cta{margin-top:20px!important;gap:10px!important;flex-direction:column}
   .skh-cta .skh-btn{width:100%;justify-content:center;padding:15px 12px!important;font-size:15px!important}
   .skh-card{display:none!important}
+  /* One still image on phones: no rotating slides, no jumping */
+  .skh-slide:not(:first-child){display:none!important}
+  .skh-slide:first-child{opacity:1!important;visibility:visible!important;transition:none!important}
+  .skh-slide:first-child .skh-copy>*{opacity:1!important;transform:none!important}
 
   /* Offers: one swipeable strip instead of a tall stacked box */
   .elementor-widget-html .sk-offers{display:flex!important;overflow-x:auto;scroll-snap-type:x mandatory;gap:10px;margin:0 -16px;padding:2px 16px 6px;background:none!important;border:0!important;box-shadow:none!important;border-radius:0!important;scrollbar-width:none}

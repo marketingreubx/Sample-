@@ -85,7 +85,7 @@ add_shortcode(
 <script>
 (function(){
 	var s=document.currentScript.previousElementSibling, sl=s.querySelectorAll('.skh-slide'), n=sl.length, i=0, t;
-	if(n<2) return;
+	if(n<2||window.matchMedia('(max-width:767px)').matches) return; // Phones show one still image.
 	function go(k){ i=(k+n)%n; sl.forEach(function(e,j){e.classList.toggle('is-on',j===i);e.setAttribute('aria-hidden',j===i?'false':'true');}); restart(); }
 	function restart(){ clearInterval(t); if(!window.matchMedia('(prefers-reduced-motion: reduce)').matches){t=setInterval(function(){go(i+1);},4000);} }
 	s.addEventListener('keydown',function(e){if(e.key==='ArrowRight')go(i+1);if(e.key==='ArrowLeft')go(i-1);});
