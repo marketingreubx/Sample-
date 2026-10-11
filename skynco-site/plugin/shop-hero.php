@@ -69,15 +69,15 @@ function skynco_hero_html( array $a ) {
 		: esc_html( $a['chip'] );
 	ob_start();
 	?>
-<section class="skh skh--<?php echo esc_attr( $a['size'] ); ?>"<?php echo $a['label'] ? ' aria-label="' . esc_attr( $a['label'] ) . '"' : ''; ?>>
+<section class="skh skh--<?php echo esc_attr( $a['size'] ); ?><?php echo $a['brands'] ? ' skh--brands' : ''; ?>"<?php echo $a['label'] ? ' aria-label="' . esc_attr( $a['label'] ) . '"' : ''; ?>>
 	<img class="skh-bg" src="<?php echo esc_url( skynco_hero_img( $a['img'] ) ); ?>" alt="" fetchpriority="high" style="object-position:<?php echo esc_attr( $a['pos'] ); ?>">
 	<div class="skh-inner">
 		<?php if ( $a['chip'] ) : ?><p class="skh-proof"><?php echo $chip; // phpcs:ignore ?></p><?php endif; ?>
 		<h1 class="skh-title"><?php echo wp_kses( $a['title'], [ 'em' => [], 'br' => [] ] ); ?></h1>
 		<?php if ( $a['lead'] ) : ?><p class="skh-lead"><?php echo wp_kses( $a['lead'], [ 'a' => [ 'href' => [] ] ] ); ?></p><?php endif; ?>
 		<?php if ( $a['btn'] ) : ?><a class="skh-btn" href="<?php echo esc_url( $a['btn'][1] ); ?>"><?php echo esc_html( $a['btn'][0] ); ?></a><?php endif; ?>
-		<?php if ( $a['brands'] ) : ?><div class="skh-brands"><p>Professional brands we use and stock</p><div class="skh-marquee"><ul class="skh-track"><?php echo skynco_hero_brands(); // phpcs:ignore ?></ul></div></div><?php endif; ?>
 	</div>
+	<?php if ( $a['brands'] ) : ?><div class="skh-brands"><p>Professional brands we use and stock</p><div class="skh-marquee"><ul class="skh-track"><?php echo skynco_hero_brands(); // phpcs:ignore ?></ul></div></div><?php endif; ?>
 </section>
 	<?php
 	return ob_get_clean();
@@ -100,6 +100,7 @@ add_shortcode(
 				'title'  => 'Studio results, <em>at home.</em>',
 				'lead'   => 'The professional skincare Hana uses in the treatment room, chosen for your skin and delivered to your door.',
 				'btn'    => [ 'Shop the kits', '#kits' ],
+				'brands' => true,
 				'pos'    => '50% 28%',
 				'label'  => 'Shop home care',
 			]
@@ -124,7 +125,8 @@ add_action(
 .skh-lead{max-width:560px;font-size:18px;line-height:1.65;color:#F1DFE8}
 .skh-btn{margin-top:30px;display:inline-flex;align-items:center;justify-content:center;padding:16px 34px;border-radius:999px;background:#D1127E;color:#fff!important;font:700 16px Manrope,sans-serif;text-decoration:none!important;box-shadow:0 14px 30px -12px rgba(209,18,126,.8);transition:transform .2s,background .2s}
 .skh-btn:hover{background:#B00F6A;transform:translateY(-2px)}
-.skh-brands{margin-top:44px;width:100%;max-width:760px}
+.skh-brands{position:absolute;z-index:2;left:50%;bottom:28px;transform:translateX(-50%);width:calc(100% - 48px);max-width:760px}
+.skh--brands .skh-inner{padding-bottom:130px}
 .skh-brands p{font:600 12.5px Manrope,sans-serif;letter-spacing:.06em;color:rgba(255,255,255,.75)}
 .skh-marquee{margin-top:18px;overflow:hidden;width:100%;-webkit-mask-image:linear-gradient(90deg,transparent,#000 12%,#000 88%,transparent);mask-image:linear-gradient(90deg,transparent,#000 12%,#000 88%,transparent)}
 .skh-track{list-style:none;margin:0;padding:0;display:flex;align-items:center;width:max-content;color:#fff;opacity:.92;animation:skhmarq 22s linear infinite}
@@ -148,7 +150,7 @@ add_action(
 .skh .skh-title{font-size:31px!important;line-height:1.1!important;margin:14px 0 10px!important}
 .skh-lead{font-size:14.5px;line-height:1.55;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
 .skh-btn{margin-top:18px;width:auto;max-width:none;padding:13px 26px;font-size:15px}
-.skh-brands{margin-top:26px}.skh-brands p{font-size:11px}.skh-marquee{margin-top:12px}
+.skh-brands{bottom:18px;width:calc(100% - 32px)}.skh--brands .skh-inner{padding-top:36px;padding-bottom:96px}.skh-brands p{font-size:11px}.skh-marquee{margin-top:12px}
 .skh-track li{padding:0 18px}.skh-track{animation-duration:16s}
 .skh-b--derm,.skh-b--elta{font-size:18px}.skh-b--image{font-size:15px}.skh-b--is{font-size:13px}.skh-b--alastin{font-size:14px}
 }
