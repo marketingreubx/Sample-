@@ -319,12 +319,21 @@ function ir_pb_library( $uid ) {
 	return $out;
 }
 
-/* /checkout/?add-to-cart=ID&coupon=CODE applies the code automatically. */
+/* ?add-to-cart=ID&coupon=CODE applies the code automatically (remembered until the item is in the cart). */
 add_action( 'wp_loaded', function () {
-	if ( empty( $_GET['coupon'] ) || is_admin() || ! function_exists( 'WC' ) || ! WC()->cart ) { return; }
-	$code = wc_format_coupon_code( wp_unslash( $_GET['coupon'] ) );
-	if ( $code && ! WC()->cart->has_discount( $code ) ) { WC()->cart->apply_coupon( $code ); }
-}, 25 );
+	if ( empty( $_GET['coupon'] ) || is_admin() || ! function_exists( 'WC' ) || ! WC()->session ) { return; }
+	if ( ! WC()->session->has_session() ) { WC()->session->set_customer_session_cookie( true ); }
+	WC()->session->set( 'ir_pending_coupon', wc_format_coupon_code( wp_unslash( $_GET['coupon'] ) ) );
+}, 5 );
+function ir_pb_apply_pending_coupon() {
+	if ( ! function_exists( 'WC' ) || ! WC()->session || ! WC()->cart || WC()->cart->is_empty() ) { return; }
+	$code = WC()->session->get( 'ir_pending_coupon' );
+	if ( ! $code ) { return; }
+	WC()->session->set( 'ir_pending_coupon', null );
+	if ( ! WC()->cart->has_discount( $code ) ) { WC()->cart->apply_coupon( $code ); }
+}
+add_action( 'woocommerce_add_to_cart', 'ir_pb_apply_pending_coupon', 20 );
+add_action( 'wp_loaded', 'ir_pb_apply_pending_coupon', 30 );
 
 /* ---------- routing ---------- */
 
