@@ -136,29 +136,60 @@ function ir_pb_rate_ok( $what, $max ) {
 	return true;
 }
 
-/* Thank-you page: verify the reference, create the account, log a brand-new buyer straight in. */
-function ir_pb_ajax_claim() {
-	$ref = sanitize_text_field( wp_unslash( $_POST['ref'] ?? '' ) );
-	if ( ! $ref || ! ir_pb_rate_ok( 'claim', 20 ) ) { wp_send_json( [ 'ok' => false, 'state' => 'error' ] ); }
+/** Record a verified playbook payment once: create or find the buyer, give access, email the login link. */
+function ir_pb_accept_tx( $ref, $tx ) {
 	$used = get_option( 'ir_pb_refs', [] );
-	if ( isset( $used[ $ref ] ) ) {
-		wp_send_json( [ 'ok' => true, 'state' => ( get_current_user_id() === (int) $used[ $ref ] ) ? 'ready' : 'login', 'url' => ir_pb_url() ] );
-	}
-	$tx = ir_pb_ps_get( '/transaction/verify/' . rawurlencode( $ref ) );
-	if ( ! ir_pb_tx_ok( $tx ) ) { wp_send_json( [ 'ok' => false, 'state' => 'unverified' ] ); }
+	if ( isset( $used[ $ref ] ) ) { return (int) $used[ $ref ]; }
 	$c = $tx['customer'] ?? [];
 	list( $uid, $created ) = ir_pb_user_for_email( $c['email'] ?? '', $c['first_name'] ?? '', $c['last_name'] ?? '' );
-	if ( ! $uid ) { wp_send_json( [ 'ok' => false, 'state' => 'error' ] ); }
+	if ( ! $uid ) { return 0; }
 	$used[ $ref ] = $uid;
 	update_option( 'ir_pb_refs', $used, false );
-	ir_pb_grant( $uid, 'paystack:' . $ref );
 	if ( $created ) {
-		wp_set_current_user( $uid );
-		wp_set_auth_cookie( $uid, true );
-		wp_send_json( [ 'ok' => true, 'state' => 'ready', 'url' => ir_pb_url() ] );
+		$p = get_option( 'ir_pb_autologin', [] );
+		$p[ $ref ] = time();
+		update_option( 'ir_pb_autologin', $p, false );
 	}
-	wp_send_json( [ 'ok' => true, 'state' => get_current_user_id() === $uid ? 'ready' : 'login', 'url' => ir_pb_url(), 'email' => $c['email'] ?? '' ] );
+	ir_pb_grant( $uid, 'paystack:' . $ref );
+	return $uid;
 }
+
+/* Thank-you page: confirm the reference, then log a brand-new buyer straight in (once per payment). */
+function ir_pb_ajax_claim() {
+	$ref = sanitize_text_field( wp_unslash( $_POST['ref'] ?? '' ) );
+	if ( ! $ref || ! ir_pb_rate_ok( 'claim', 40 ) ) { wp_send_json( [ 'ok' => false, 'state' => 'error' ] ); }
+	$used = get_option( 'ir_pb_refs', [] );
+	if ( ! isset( $used[ $ref ] ) ) {
+		$tx = ir_pb_ps_get( '/transaction/verify/' . rawurlencode( $ref ) );
+		if ( ! ir_pb_tx_ok( $tx ) || ! ir_pb_accept_tx( $ref, $tx ) ) { wp_send_json( [ 'ok' => false, 'state' => 'unverified' ] ); }
+		$used = get_option( 'ir_pb_refs', [] );
+	}
+	$uid = (int) $used[ $ref ];
+	$p = get_option( 'ir_pb_autologin', [] );
+	if ( isset( $p[ $ref ] ) ) {
+		$fresh = time() - (int) $p[ $ref ] < DAY_IN_SECONDS;
+		unset( $p[ $ref ] );
+		update_option( 'ir_pb_autologin', $p, false );
+		if ( $fresh ) {
+			wp_set_current_user( $uid );
+			wp_set_auth_cookie( $uid, true );
+			wp_send_json( [ 'ok' => true, 'state' => 'ready', 'url' => ir_pb_url() ] );
+		}
+	}
+	$u = get_userdata( $uid );
+	wp_send_json( [ 'ok' => true, 'state' => get_current_user_id() === $uid ? 'ready' : 'login', 'url' => ir_pb_url(), 'email' => $u ? $u->user_email : '' ] );
+}
+
+/* Paystack webhook (the URL the WooCommerce Paystack plugin uses). Works even when the API blocks this server's IP. */
+add_action( 'woocommerce_api_tbz_wc_paystack_webhook', function () {
+	$sig = $_SERVER['HTTP_X_PAYSTACK_SIGNATURE'] ?? '';
+	$json = file_get_contents( 'php://input' );
+	$secret = ir_pb_ps_secret();
+	if ( ! $sig || ! $json || ! $secret || ! hash_equals( hash_hmac( 'sha512', $json, $secret ), $sig ) ) { return; }
+	$ev = json_decode( $json, true );
+	if ( ( $ev['event'] ?? '' ) !== 'charge.success' || empty( $ev['data']['reference'] ) ) { return; }
+	if ( ir_pb_tx_ok( $ev['data'] ) ) { ir_pb_accept_tx( sanitize_text_field( $ev['data']['reference'] ), $ev['data'] ); }
+}, 1 );
 add_action( 'wp_ajax_ir_pb_claim', 'ir_pb_ajax_claim' );
 add_action( 'wp_ajax_nopriv_ir_pb_claim', 'ir_pb_ajax_claim' );
 
