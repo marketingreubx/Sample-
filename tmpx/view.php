@@ -283,6 +283,9 @@ function ir_pb_render( $view, $msg = '', $err = '' ) {
   <div class="pb-pane" data-pane="login">
    <h2>Welcome back</h2><p class="sub">Log in to open your playbook.</p>
    <?php echo $alert; ?>
+   <?php if ( ! empty( $GLOBALS['ir_pb_force'] ) ) : ?>
+   <form class="pb-f" method="post" style="margin-bottom:18px"><input type="hidden" name="pb_act" value="force"><input type="hidden" name="tok" value="<?php echo esc_attr( $GLOBALS['ir_pb_force'] ); ?>"><button class="pb-btn orange">Log out the other device and continue</button></form>
+   <?php endif; ?>
    <form class="pb-f" method="post"><input type="hidden" name="pb_act" value="login">
     <label for="log">Email</label><input id="log" type="text" name="log" required autocomplete="username" placeholder="you@email.com" value="<?php echo esc_attr( wp_unslash( $_POST['log'] ?? '' ) ); ?>">
     <label for="pwd">Password</label><input id="pwd" type="password" name="pwd" required autocomplete="current-password">

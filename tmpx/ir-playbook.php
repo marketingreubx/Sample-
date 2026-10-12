@@ -315,8 +315,29 @@ add_action( 'template_redirect', function () {
 		$login = sanitize_text_field( wp_unslash( $_POST['log'] ?? '' ) );
 		if ( is_email( $login ) && ( $by = get_user_by( 'email', $login ) ) ) { $login = $by->user_login; }
 		$u = wp_signon( [ 'user_login' => $login, 'user_password' => (string) wp_unslash( $_POST['pwd'] ?? '' ), 'remember' => true ], is_ssl() );
-		if ( is_wp_error( $u ) ) { $err = 'That email and password did not match. Try again or reset your password.'; $view = 'login'; }
+		if ( is_wp_error( $u ) && $u->get_error_code() === 'tutor_login_limit' && ( $lu = get_user_by( 'login', $login ) ) ) {
+			// Right password, but Tutor's one-device limit is full. Offer to sign the other device out.
+			$tok = wp_generate_password( 32, false );
+			set_transient( 'ir_pb_force_' . $tok, $lu->ID, 10 * MINUTE_IN_SECONDS );
+			$GLOBALS['ir_pb_force'] = $tok;
+			$err = 'You are already logged in on another device. Your account can be open on one device at a time.'; $view = 'login';
+		} elseif ( is_wp_error( $u ) ) { $err = 'That email and password did not match. Try again or reset your password.'; $view = 'login'; }
 		else { wp_safe_redirect( ir_pb_url() ); exit; }
+	}
+	if ( $method === 'POST' && $act === 'force' ) {
+		$tok = sanitize_key( wp_unslash( $_POST['tok'] ?? '' ) );
+		$uid = $tok ? (int) get_transient( 'ir_pb_force_' . $tok ) : 0;
+		if ( $uid ) {
+			delete_transient( 'ir_pb_force_' . $tok );
+			if ( class_exists( '\\TUTOR_PRO\\DeviceManagement' ) ) {
+				\TUTOR_PRO\DeviceManagement::clear_all_sessions_by_user_id( $uid );
+				\TUTOR_PRO\DeviceManagement::add_new_login_device( $uid );
+			}
+			WP_Session_Tokens::get_instance( $uid )->destroy_all();
+			wp_set_current_user( $uid ); wp_set_auth_cookie( $uid, true );
+			wp_safe_redirect( ir_pb_url() ); exit;
+		}
+		$err = 'That took too long. Log in again.'; $view = 'login';
 	}
 	if ( $method === 'POST' && $act === 'forgot' ) {
 		if ( ir_pb_rate_ok( 'forgot', 8 ) ) {
