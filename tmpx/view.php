@@ -275,9 +275,10 @@ function ir_pb_render( $view, $msg = '', $err = '' ) {
    <label for="pass">New password</label><input id="pass" type="password" name="pass" minlength="8" required autocomplete="new-password" placeholder="At least 8 characters">
    <button class="pb-btn">Save and open my playbook</button></form>
 <?php elseif ( $view === 'noaccess' ) : ?>
-  <h2>No playbook on this account yet</h2>
-  <p class="sub">You are logged in as <b><?php echo esc_html( $cur->user_email ); ?></b>, but this account has not bought the Cold DM Playbook.</p>
-  <a class="pb-btn orange" style="width:100%" href="<?php echo esc_url( ir_pb_sales_url() ); ?>">Get the playbook for ₦4,500</a>
+  <h2>Your dashboard is empty for now</h2>
+  <p class="sub">You are logged in as <b><?php echo esc_html( $cur->user_email ); ?></b>. Courses and playbooks you buy with this email show up here.</p>
+  <a class="pb-btn orange" style="width:100%" href="<?php echo esc_url( ir_pb_sales_url() ); ?>">Get the Cold DM Playbook for ₦4,500</a>
+  <a class="pb-btn ghost" style="width:100%;margin-top:10px" href="<?php echo esc_url( home_url( '/academy/' ) ); ?>">Browse courses</a>
   <div class="pb-sep">Paid with another email?</div>
   <form class="pb-f" method="post"><input type="hidden" name="pb_act" value="claim">
    <label for="cemail">Email you paid with</label><input id="cemail" type="email" name="email" required placeholder="you@email.com">
@@ -388,6 +389,7 @@ function ir_pb_render_app( $err ) {
  <div class="pb-me"><button class="pb-av" id="pbMe" aria-label="Account"><?php echo esc_html( strtoupper( mb_substr( $first, 0, 1 ) ) ); ?></button>
   <div class="pb-me-menu" id="pbMeMenu" hidden><div class="pb-me-h"><b><?php echo esc_html( $first ); ?></b><small><?php echo esc_html( $u->user_email ); ?></small></div>
    <a href="<?php echo esc_url( $data['support'] ); ?>" target="_blank" rel="noopener"><?php echo ir_pb_icon( 'chat' ); ?>Support group</a>
+   <a href="<?php echo esc_url( home_url( '/dashboard/settings/' ) ); ?>"><?php echo ir_pb_icon( 'home' ); ?>Account settings</a>
    <a href="https://wa.me/2348104699214" target="_blank" rel="noopener"><?php echo ir_pb_icon( 'phone' ); ?>WhatsApp Reuben</a>
    <a href="<?php echo esc_url( $logout ); ?>"><?php echo ir_pb_icon( 'out' ); ?>Log out</a></div></div>
 </header>

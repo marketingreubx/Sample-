@@ -438,6 +438,18 @@ add_action( 'template_redirect', function () {
 	exit;
 }, 1 );
 
+/* One dashboard: Tutor's student dashboard home (and enrolled-courses list) open the member hub instead.
+   Instructors and admins keep Tutor's dashboard; course pages, settings and quizzes are untouched. */
+add_action( 'template_redirect', function () {
+	if ( ! function_exists( 'tutor_utils' ) || ! ir_pb_page_id() ) { return; }
+	$dash = (int) tutor_utils()->get_option( 'tutor_dashboard_page_id' );
+	if ( ! $dash || ! is_page( $dash ) ) { return; }
+	$sub = (string) get_query_var( 'tutor_dashboard_page' );
+	if ( $sub !== '' && ! in_array( $sub, [ 'index', 'enrolled-courses' ], true ) ) { return; }
+	if ( is_user_logged_in() && ( current_user_can( 'manage_options' ) || tutor_utils()->is_instructor( get_current_user_id(), true ) ) ) { return; }
+	wp_safe_redirect( ir_pb_url() ); exit;
+}, 4 );
+
 /* ---------- admin ---------- */
 
 add_action( 'admin_menu', function () {

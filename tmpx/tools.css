@@ -91,3 +91,5 @@
  .pbt-grid2{grid-template-columns:1fr}.pbt-out{position:static}.pbt-fields{grid-template-columns:1fr}
  .pb-tools{grid-template-columns:1fr}.pbt-page-h h1{font-size:26px}
 }
+.pbt-card,.pbt-leads,.pbt-lead{min-width:0}.pbt-lead-top{flex-wrap:wrap}
+@media (max-width:980px){.pbt-chips{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;margin:0 -16px;padding:0 16px 4px}.pbt-chips::-webkit-scrollbar{display:none}.pbt-lead-top .h{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis}.pbt-lead select{margin-left:0}.pbt-due .w{flex-basis:100%;order:3}}
