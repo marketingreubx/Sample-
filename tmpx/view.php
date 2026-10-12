@@ -223,7 +223,7 @@ body.modal-open{overflow:hidden}
  .pb-stats{grid-template-columns:repeat(2,1fr);gap:10px}.pb-stats b{font-size:22px}
  .pb-sits{grid-template-columns:1fr}.pb-secs{grid-template-columns:1fr}
  .pb-support{flex-wrap:wrap}.pb-support .pb-btn{width:100%}
- .pb-lh{flex-wrap:wrap}.pb-lh>div{flex-basis:calc(100% - 70px)}.pb-save{margin-left:68px}
+ .pb-lh{gap:12px}.pb-save{padding:10px;border-radius:12px}.pb-save span{display:none}
  .pb-main{padding-bottom:110px}
  .pb-tabs{display:grid;grid-template-columns:repeat(4,1fr);position:fixed;left:12px;right:12px;bottom:12px;z-index:45;background:color-mix(in srgb,var(--surface) 86%,transparent);-webkit-backdrop-filter:blur(18px) saturate(170%);backdrop-filter:blur(18px) saturate(170%);border:1px solid var(--line);border-radius:20px;padding:6px;box-shadow:0 14px 40px rgba(10,22,51,.18)}
  .pb-tabs a,.pb-tabs button{display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 4px;border:0;background:transparent;color:var(--muted);font-size:11.5px;font-weight:700;text-decoration:none;border-radius:14px}
@@ -536,18 +536,18 @@ function ir_pb_render_app( $err ) {
  /* search */
  var modal=document.getElementById('pbSearch'),q=document.getElementById('pbQ'),res=document.getElementById('pbRes'),IDX=null,sel=0;
  function esc(s){return s.replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
- function load(){if(IDX)return Promise.resolve(IDX);try{var c=sessionStorage.getItem('ir_pb_idx');if(c){IDX=JSON.parse(c);return Promise.resolve(IDX)}}catch(e){}
-  return post({action:'ir_pb_index'}).then(function(j){IDX=j||[];try{sessionStorage.setItem('ir_pb_idx',JSON.stringify(IDX))}catch(e){}return IDX})}
+ var PEND=null;function load(){if(IDX)return Promise.resolve(IDX);if(PEND)return PEND;try{var c=sessionStorage.getItem('ir_pb_idx');if(c){IDX=JSON.parse(c);return Promise.resolve(IDX)}}catch(e){}
+  PEND=post({action:'ir_pb_index'}).then(function(j){IDX=j||[];try{sessionStorage.setItem('ir_pb_idx',JSON.stringify(IDX))}catch(e){}return IDX});return PEND}
  function empty(){res.innerHTML='<div class="pb-res-h">Popular</div>'+SIT.slice(0,6).map(function(s){return '<a class="pb-hit" href="'+BASE+s.s+'/"><span class="e">'+s.e+'</span><span><b>'+esc(s.t)+'</b></span></a>'}).join('');sel=-1}
  function run(){var v=q.value.trim().toLowerCase();if(!v){empty();return}
-  load().then(function(ix){var words=v.split(/\s+/).filter(Boolean);var out=[];
+  load().then(function(ix){if(q.value.trim().toLowerCase()!==v)return;var words=v.split(/\s+/).filter(Boolean);var out=[];
    ix.forEach(function(l){var t=l.t.toLowerCase(),x=l.x.toLowerCase(),g=l.g.toLowerCase(),sc=0,ok=true;
     words.forEach(function(w){var a=t.indexOf(w),c=x.indexOf(w),d=g.indexOf(w);if(a<0&&c<0&&d<0){ok=false;return}sc+=(a>=0?(a===0?14:9):0)+(d>=0?3:0)+(c>=0?Math.min(6,1+x.split(w).length-1):0)});
     if(ok)out.push({l:l,sc:sc})});
    out.sort(function(a,b){return b.sc-a.sc});
    if(!out.length){res.innerHTML='<div class="pb-res-none">No lessons match “'+esc(v)+'”. Try a simpler word like <b>price</b>, <b>ghost</b> or <b>follow</b>.</div>';return}
    res.innerHTML='<div class="pb-res-h">'+out.length+' result'+(out.length>1?'s':'')+'</div>'+out.slice(0,12).map(function(o){var l=o.l,x=l.x,i=x.toLowerCase().indexOf(words[0]),sn='';
-    if(i>=0){var s=Math.max(0,i-50);sn=(s?'…':'')+x.slice(s,i+110)+'…'}else{sn=x.slice(0,140)+'…'}
+    if(i>=0){var s=Math.max(0,i-50);sn=(s?'… ':'')+x.slice(s,i+110).trim()+' …'}else{sn=x.slice(0,140)+'…'}
     sn=esc(sn);words.forEach(function(w){if(w.length>1)sn=sn.replace(new RegExp('('+w.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+')','ig'),'<mark>$1</mark>')});
     return '<a class="pb-hit" href="'+BASE+l.s+'/"><span class="e">'+l.i+'</span><span><b>'+esc(l.t)+'</b><small class="g">'+esc(l.g)+'</small><small>'+sn+'</small></span></a>'}).join('');sel=-1})}
  function openS(){modal.hidden=false;b.classList.add('modal-open');closeNav();q.value='';empty();setTimeout(function(){q.focus()},30);load()}

@@ -269,7 +269,8 @@ add_action( 'wp_ajax_ir_pb_index', function () {
 	if ( ! ir_pb_has_access() ) { wp_send_json( [] ); }
 	$out = [];
 	foreach ( ir_pb_lessons() as $l ) {
-		$t = html_entity_decode( wp_strip_all_tags( str_replace( [ '</p>', '</li>', '</h2>', '</h3>', '</td>', '<br>' ], ' ', $l['html'] ) ), ENT_QUOTES, 'UTF-8' );
+		$h = preg_replace( '#<button.*?</button>#s', ' ', $l['html'] );
+		$t = html_entity_decode( wp_strip_all_tags( str_replace( [ '</p>', '</li>', '</h2>', '</h3>', '</td>', '<br>', '</div>' ], ' ', $h ) ), ENT_QUOTES, 'UTF-8' );
 		$out[] = [ 's' => $l['slug'], 't' => $l['title'], 'i' => $l['icon'], 'g' => $l['section'], 'x' => trim( preg_replace( '/\s+/u', ' ', $t ) ) ];
 	}
 	wp_send_json( $out );
