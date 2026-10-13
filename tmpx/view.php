@@ -500,6 +500,7 @@ html[data-theme=dark]{--bg:#040A1C;--surface:#0A1430;--soft:#0F1C40;--line:#1826
 .pv-continue .pv-line{background:rgba(255,255,255,.14)}
 @media (max-width:980px){.pb-tabs .on{color:#1450C2!important}html[data-theme=dark] .pb-tabs .on{color:#7FA3E6!important}}
 /* contrast */.pb-buy a{color:#B4490A!important}html[data-theme=dark] .pb-buy a{color:#FFB27A!important}
+/* contrast 2 */.pbt-kpis em{opacity:1!important}html[data-theme=dark] .pbt-miss{color:#FFB27A!important}
 CSS;
 }
 

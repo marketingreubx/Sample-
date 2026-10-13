@@ -12,11 +12,10 @@ add_action( 'wp_head', function () {
 /* Dark sections: solid navy behind the gradient so text never sits on a light page */
 body:not(.elementor-template-canvas) .irx-band{background-color:#071233!important}
 
-/* Dark mode: accent used as text gets a lighter blue... */
-html[data-theme="dark"] .elementor-kit-205{--e-global-color-iraccent:#7FA8F5;--e-global-color-primary:#7FA8F5}
-/* ...and anything that puts white text on the accent keeps a deeper blue */
-html[data-theme="dark"] .elementor-button,html[data-theme="dark"] .e-n-tab-title,html[data-theme="dark"] .ir-av-more,html[data-theme="dark"] .is-on,html[data-theme="dark"] .irb-total,html[data-theme="dark"] .is-me,html[data-theme="dark"] .woocommerce .button,html[data-theme="dark"] .woocommerce button.button,html[data-theme="dark"] input[type="submit"],html[data-theme="dark"] .irc-btn{--e-global-color-iraccent:#1F5FD6;--e-global-color-primary:#1F5FD6}
-html[data-theme="dark"] .elementor-field-type-submit .elementor-button,html[data-theme="dark"] .ir-btn--primary .elementor-button{background-color:#1F5FD6}
+/* Dark mode: the accent stays a deep blue (white text on it stays readable)... */
+html[data-theme="dark"] .elementor-kit-205{--e-global-color-iraccent:#1F5FD6;--e-global-color-primary:#1F5FD6}
+/* ...and text widgets that use the accent as a text colour get a lighter blue */
+html[data-theme="dark"] .elementor-widget-heading,html[data-theme="dark"] .elementor-widget-text-editor,html[data-theme="dark"] .elementor-widget-icon-list,html[data-theme="dark"] .elementor-widget-counter,html[data-theme="dark"] .elementor-widget-icon-box{--e-global-color-iraccent:#7FA8F5;--e-global-color-primary:#7FA8F5}
 
 /* Links inside dark sections */
 .ir-on-band .elementor-widget-text-editor a:not(.elementor-button),.irx-band .elementor-widget-text-editor a:not(.elementor-button){color:#9CC2FF!important}
@@ -47,8 +46,19 @@ html[data-theme="dark"] .woocommerce form .input-text,html[data-theme="dark"] .w
 html[data-theme="dark"] .woocommerce-info,html[data-theme="dark"] .woocommerce-message{background:#101C33!important;color:#E6ECF7!important}
 html[data-theme="dark"] .woocommerce span.onsale{background:#C2410C!important;color:#fff!important}
 
-/* Tutor login popup stays white in dark mode: keep its links dark enough */
-.tutor-modal .tutor-btn-ghost,.tutor-modal .tutor-btn-link,.tutor-login-form-wrapper a,.tutor-login-wrap a{color:#1450C2!important}
+/* Tutor LMS: brand buttons in both modes */
+.tutor-btn-primary{background-color:#1450C2!important;border-color:#1450C2!important;color:#fff!important}
+.tutor-btn-primary:hover{background-color:#0E3F9E!important}
+html:not([data-theme="dark"]) .tutor-modal .tutor-btn-ghost,html:not([data-theme="dark"]) .tutor-modal .tutor-btn-link{color:#1450C2!important}
+/* Tutor LMS: dark mode through its own colour tokens */
+html[data-theme="dark"] body{--tutor-surface-base:#070F1F;--tutor-surface-l1:#101C33;--tutor-surface-l1-hover:#15233E;--tutor-surface-l2:#1E2C47;--tutor-surface-l2-hover:#2A3A5E;--tutor-surface-l3:#15233E;--tutor-surface-sidebar-l1:#0B1529;--tutor-surface-brand-secondary:#1E3A6E;--tutor-surface-brand-tertiary:#13274A;--tutor-surface-brand-quaternary:#13274A;--tutor-surface-success:#0F2E1C;--tutor-surface-warning:#2A2312;--tutor-surface-critical:#3A1414;
+--tutor-text-primary:#F2F5FA;--tutor-text-secondary:#C9D3E6;--tutor-text-subdued:#A9B6D0;--tutor-text-disabled:#5A6785;--tutor-text-brand:#7FA8F5;--tutor-text-brand-hover:#A5BFF0;--tutor-text-highlighted-hover:#C9D3E6;--tutor-text-success:#4ADE80;--tutor-text-warning:#FDBA74;--tutor-text-caution:#FCD34D;
+--tutor-icon-idle:#C9D3E6;--tutor-icon-hover:#F2F5FA;--tutor-icon-secondary:#A9B6D0;--tutor-icon-subdued:#8592AE;--tutor-icon-brand:#7FA8F5;--tutor-icon-brand-hover:#A5BFF0;
+--tutor-button-primary:#1450C2;--tutor-button-primary-hover:#0E3F9E;--tutor-button-primary-soft:#13274A;--tutor-button-primary-soft-hover:#1E3A6E;--tutor-button-secondary:#1E2C47;--tutor-button-secondary-hover:#2A3A5E;--tutor-button-outline-hover:#1E2C47;--tutor-button-ghost-hover:#1E2C47;--tutor-button-disabled:#1E2C47;
+--tutor-border-idle:#1E2C47;--tutor-border-idle2:#1E2C47;--tutor-border-hover:#2A3A5E;--tutor-border-tertiary:#5A6785;
+--tutor-body-color:#E6ECF7;--tutor-color-black:#F2F5FA;--tutor-color-secondary:#C9D3E6;--tutor-color-muted:#A9B6D0;--tutor-color-gray-10:#15233E;--tutor-border-color:#1E2C47;--tutor-color-primary:#7FA8F5}
+html[data-theme="dark"] .tutor-page-wrap,html[data-theme="dark"] .tutor-wrap{background:transparent!important}
+html[data-theme="dark"] .tutor-accordion-item,html[data-theme="dark"] .tutor-card,html[data-theme="dark"] .tutor-sidebar-card{background-color:#101C33!important;border-color:#1E2C47!important}
 </style>
 	<?php
 }, 99 );
