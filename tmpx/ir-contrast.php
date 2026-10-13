@@ -59,6 +59,52 @@ html[data-theme="dark"] body{--tutor-surface-base:#070F1F;--tutor-surface-l1:#10
 --tutor-body-color:#E6ECF7;--tutor-color-black:#F2F5FA;--tutor-color-secondary:#C9D3E6;--tutor-color-muted:#A9B6D0;--tutor-color-gray-10:#15233E;--tutor-border-color:#1E2C47;--tutor-color-primary:#7FA8F5}
 html[data-theme="dark"] .tutor-page-wrap,html[data-theme="dark"] .tutor-wrap{background:transparent!important}
 html[data-theme="dark"] .tutor-accordion-item,html[data-theme="dark"] .tutor-card,html[data-theme="dark"] .tutor-sidebar-card{background-color:#101C33!important;border-color:#1E2C47!important}
+/* Remaining spots */
+html[data-theme="dark"] .ir-av-more{background:#1F5FD6!important}
+html[data-theme="dark"] .elementor-element-1c223fe{--e-global-color-iraccent:#1F5FD6}
+.elementor-element-2f60333 .elementor-heading-title{color:#FFFFFF!important}
+.ast-woo-product-category,.single-product-category a{opacity:1!important}
+html[data-theme="dark"] .single-product-category a{color:#7FA8F5!important}
+html[data-theme="dark"] .tutor-btn-ghost,html[data-theme="dark"] .tutor-btn-link,html[data-theme="dark"] .tutor-nav-link,html[data-theme="dark"] .tutor-course-wishlist-btn,html[data-theme="dark"] .tutor-course-share-btn,html[data-theme="dark"] .tutor-mr-4{color:#7FA8F5!important}
+html[data-theme="dark"] .tutor-color-secondary,html[data-theme="dark"] .tutor-color-secondary p{color:#C9D3E6!important}
+html[data-theme="dark"] .tutor-color-muted,html[data-theme="dark"] .tutor-enrolled-info-text{color:#A9B6D0!important}
+html[data-theme="dark"] .tutor-color-black,html[data-theme="dark"] .tutor-fs-6:not(.tutor-btn){color:#F2F5FA}
+html[data-theme="dark"] .tutor-alert,html[data-theme="dark"] .tutor-alert-text{background-color:#15233E!important;color:#E6ECF7!important}
+html[data-theme="dark"] .tutor-color-success{color:#4ADE80!important}
 </style>
 	<?php
+	echo ir_contrast_tutor_dark_css();
 }, 99 );
+
+/**
+ * Tutor hard-codes white and light-grey panels in its stylesheets. Collect those selectors once
+ * (cached per Tutor version) and give them a dark panel in dark mode.
+ */
+function ir_contrast_tutor_dark_css() {
+	if ( ! defined( 'TUTOR_VERSION' ) ) { return ''; }
+	$key = 'ir_tutor_dark_css_' . md5( TUTOR_VERSION . '2' );
+	$css = get_transient( $key );
+	if ( $css === false ) {
+		$sel = [];
+		foreach ( [ 'tutor-front.min.css', 'tutor.min.css', 'tutor-core.min.css', 'tutor-learning-area.min.css' ] as $fn ) {
+			$c = @file_get_contents( WP_PLUGIN_DIR . '/tutor/assets/css/' . $fn );
+			if ( ! $c ) { continue; }
+			$c = preg_replace( '~/\*.*?\*/~s', '', $c );
+			foreach ( explode( '}', $c ) as $rule ) {
+				$p = strrpos( $rule, '{' );
+				if ( $p === false ) { continue; }
+				$body = substr( $rule, $p + 1 );
+				if ( ! preg_match( '~background(?:-color)?:\s*(#fff\b|#ffffff|#fcfcfd|#fcfcfc|#fafafa|#f4f6f9|#eff1f6|#f5f5f6|#f9fafb|white\b)~i', $body ) ) { continue; }
+				$sels = preg_replace( '~^.*\{~s', '', trim( substr( $rule, 0, $p ) ) );
+				foreach ( explode( ',', $sels ) as $one ) {
+					$one = trim( $one );
+					if ( ! $one || strlen( $one ) > 140 || preg_match( '~hover|btn|::|white|slider|switch|ui-|backend|builder|modal-close|tutor-bg-~', $one ) ) { continue; }
+					$sel[ $one ] = 1;
+				}
+			}
+		}
+		$css = $sel ? '<style id="ir-tutor-dark">' . implode( ',', array_map( function ( $x ) { return 'html[data-theme="dark"] ' . $x; }, array_keys( $sel ) ) ) . '{background-color:#101C33!important;border-color:#1E2C47!important}</style>' : '';
+		set_transient( $key, $css, WEEK_IN_SECONDS );
+	}
+	return $css;
+}
