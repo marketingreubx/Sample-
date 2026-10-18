@@ -16,7 +16,7 @@ Read `references/style-guide.md` before your first edit in a conversation. It ho
 `scripts/hormozi_edit.py` does the heavy lifting with ffmpeg and faster-whisper. You make the creative decisions in between.
 
 ```
-python3 scripts/hormozi_edit.py analyze RAW.mp4 --work WORKDIR [--model small] [--language en]
+python3 scripts/hormozi_edit.py analyze RAW.mp4 --work WORKDIR [--preset shorts|playbook] [--model small] [--language en]
 #   -> WORKDIR/transcript.json  (every word with timestamps)
 #   -> WORKDIR/plan.json        (auto cut list, zooms, captions, emphasis)
 #   -> prints the transcript segment by segment with ids and times
@@ -72,6 +72,15 @@ Work through these in order. Times in plan.json are always SOURCE times; the ren
 **e. Caption emphasis.** In `captions`, set `"emph": true` on at most one word per caption and roughly one in every three captions: numbers, money, results, the enemy word (sugar, crunches, mistake), and the payoff. Too many highlights means none of them matter. Fix any word whisper misheard by editing its `w` text (brand names, Nigerian foods, product names).
 
 **f. Pop-up text and emojis.** Add to `overlays`: `{"type":"text","t":SOURCE_TIME,"dur":1.4,"text":"🚫 100 CRUNCHES","y":0.2,"color":"red","size":110}`. Use them for the hook, lists ("STEP 1"), numbers and contrasts. Keep them to 1 to 4 words. Place them in the top third so they never collide with captions.
+
+**f2. Playbook effects (preset playbook, measured from Hormozi's "my exact playbook" video, style guide section 15).**
+- Every big number gets a rolling counter: `{"type":"counter","t":T,"dur":1.8,"to":3000000000,"label":"IMPRESSIONS","y":0.5}` (supports `prefix` "$", `suffix` "+", `decimals`).
+- A small white context line above long captions: add `"context": "What type of content"` to a caption and drop those words from its `words` list.
+- An orange light-leak on section changes: `{"type":"flash","t":T,"dur":0.7}`.
+- Proof screenshots in a panel: `{"type":"image","t":T,"dur":2,"file":"/abs/path.png","x":0.5,"y":0.22,"w":0.85}`.
+- `effects.blur_in` / `effects.blur_out` (seconds) give the focus-pull open and close; `style.progress_bar` and `style.bottom_shade` are on by default in this preset.
+- Leave one deliberate pause before the biggest reveal ("they made... zero sales") by widening that segment's end; cut every other silence.
+- Effects timed inside a removed gap snap to the next kept moment, so they never vanish silently.
 
 **g. Sound design.** Add to `sfx`: `{"t":SOURCE_TIME,"file":"whoosh.wav","vol":0.5}`. Whoosh on big zoom changes and section turns, pop on pop-up text, ding on a number or a win, boom (sparingly, once per video at most) on the biggest reveal. Fewer, well-placed sounds feel premium; one per cut feels cheap.
 

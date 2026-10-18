@@ -2,7 +2,7 @@
 
 The style that made Alex Hormozi's shorts recognisable is simple on the surface: big bold captions, constant zooms, no dead air. Underneath, every choice serves retention. Learn the reasons, not just the look, and you can apply it to any speaker.
 
-> Reference video analysis: the user's chosen reference (https://youtu.be/21flGkcZO3A) has not been measured yet. When the file is available, run `scripts/study_reference.py` on it and replace the defaults in section 12 with its real numbers.
+> Reference video measured: "How to become rich with social media (my exact playbook)", https://youtu.be/21flGkcZO3A. Full breakdown in section 15, reproduced by `--preset playbook`.
 
 ---
 
@@ -133,3 +133,41 @@ Target runtime: 20 to 45 seconds for reach, up to 60 to 90 seconds for teaching 
 - [ ] The CTA is clear, with one ask, and the video ends on its last word
 - [ ] The meaning of every statement is preserved (critical for health and money claims)
 - [ ] Export spec matches section 12
+
+
+## 15. Reference breakdown: "How to become rich with social media (my exact playbook)"
+
+Measured from the actual file (10 min 21 s, 1280x720, 16:9 studio long-form): 44 hard cuts detected at a 0.2 scene threshold, frames sampled every second through the hook, plus the full transcript.
+
+**Hook (0 to 8 s), the most edited part of the whole video**
+- Opens with a focus pull: the first ~0.6 s is heavily blurred and snaps sharp. The video also ends on a blur-out into an orange light leak.
+- Framing changes roughly every second during the hook (wide, punch-in, wide), then relaxes.
+- Spoken structure: a question ("What type of content should you make that makes the most money?"), an instant contrarian twist ("Not necessarily gets the most reach"), then a credibility stack of huge numbers (3 billion impressions, 4.5 million subscribers, 35,000 pieces of content, $106 million in a single weekend), then the promise ("high ROI strategy, different from what most people tell you"), then an open loop ("the videos with the most views and the videos that made the most money... guess what? They're not the same").
+- Every big number gets a full-screen **rolling counter**: white, bold, soft white glow, counting up fast with an ease-out, and a small neon-yellow label above it (IMPRESSIONS).
+
+**Captions**
+- Full captions only during the hook. After that the body runs mostly clean, with occasional **keyword captions** for key phrases (for example BEGINNER ORIENTED, bottom-left, beside a graphic).
+- Style: heavy geometric sans (Poppins or Montserrat ExtraBold class), ALL CAPS, **neon yellow (#F2FF29)** with a soft yellow glow and a thin dark outline. Up to 2 lines and about 2 to 6 words per screen.
+- Words **build on** (reveal one by one as spoken, the newest fading in) rather than a highlight jumping across a fixed line.
+- A small **white, sentence-case context line** sits above the big yellow words when the phrase is long ("What type of content" in small white text above SHOULD YOU in big yellow).
+- Captions sit in the lower third over a darkened bottom gradient for legibility.
+
+**Body (8 s to the end)**
+- Cuts mostly change camera angle (front medium, side 3/4 with the branded chair, dark-background profile) rather than jump-zooming constantly. Average shot is about 14 s on hard cuts, with subtle punch-ins between them.
+- Proof graphics: screenshots of real data (top 6 videos with view counts) placed in a panel beside the speaker, captioned with the keyword.
+- Story-led teaching: a personal story (a dietitian with fewer than 6,000 followers doing over $1M a year), a test he ran, the result, then the lesson.
+- Dramatic beats keep their pause: "they made... no sales. Think about how wild that is. Zero. None." Silence is cut everywhere else, but a pause before a reveal stays.
+- **Mid-roll lead magnet (~5:20):** a different set and outfit, full-screen branded motion graphics on white (the $100M Scaling Roadmap), a purple brand colour, and a **purple progress bar along the top edge**, then a hard return to the main set.
+- Transitions: an orange light-leak flash, quick blur dissolves, dark navy title cards.
+- Ending: a direct challenge to the viewer, then how they track it (UTMs, in-video CTAs), then a blur-out.
+
+**How this translates to a short (what `--preset playbook` does)**
+- Blur-in open (0.6 s) and blur-out close (0.8 s)
+- Neon-yellow build-on captions with glow, 2 lines, optional small white context line (add `"context"` to a caption)
+- `counter` overlays for every big number, with a label
+- `flash` overlays (orange light leak) on section changes
+- `image` overlays for proof screenshots (data, DMs, results, before and after)
+- A purple top progress bar and a dark bottom shade under the captions
+- Keep one dramatic pause before the main reveal; cut every other silence
+
+Use `--preset shorts` for the classic fast karaoke look and `--preset playbook` for this one. Brand colours can replace neon and purple in plan.json.

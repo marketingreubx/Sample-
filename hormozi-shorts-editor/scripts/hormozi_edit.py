@@ -37,6 +37,7 @@ POWER_WORDS = {
 COLORS = {
     "white": "&H00FFFFFF", "yellow": "&H0000E5FF", "green": "&H0033FF33",
     "red": "&H003333FF", "black": "&H00000000", "blue": "&H00FF9933",
+    "neon": "&H0029FFF2", "purple": "&H00FF2C6A", "orange": "&H00006AFF",
 }
 
 
@@ -63,6 +64,28 @@ def probe(path):
     num, den = v.get("avg_frame_rate", "30/1").split("/")
     fps = float(num) / float(den) if float(den) else 30.0
     return {"w": w, "h": h, "fps": fps, "dur": float(info["format"]["duration"]), "audio": has_audio}
+
+
+# Style presets. "shorts" = classic Hormozi short-form karaoke captions.
+# "playbook" = measured from the reference video 21flGkcZO3A (How to become rich with social media):
+# neon-yellow build-on captions with glow, small white context line, rolling number counters,
+# blur-in open / blur-out close, light-leak flashes, purple top progress bar, dark bottom shade.
+PRESETS = {
+    "shorts": {
+        "style": {"font": "Montserrat Black", "size": 125, "base_color": "white", "active_color": "yellow",
+                  "emphasis_color": "green", "outline": 7, "shadow": 3, "uppercase": True,
+                  "position_y": 0.68, "pop": True, "mode": "highlight", "glow": False},
+        "effects": {},
+    },
+    "playbook": {
+        "style": {"font": "Poppins ExtraBold", "context_font": "Poppins SemiBold", "size": 185,
+                  "base_color": "neon", "active_color": "neon", "emphasis_color": "white", "outline": 4,
+                  "shadow": 2, "uppercase": True, "position_y": 0.70, "pop": False, "mode": "reveal",
+                  "glow": True, "max_line_chars": 15, "bottom_shade": True,
+                  "progress_bar": {"color": "purple", "height": 12}},
+        "effects": {"blur_in": 0.6, "blur_out": 0.8},
+    },
+}
 
 
 # ---------------------------------------------------------------- analyze
@@ -167,7 +190,10 @@ def cmd_analyze(a):
     # Hormozi rhythm: alternate wide and punched-in framing on every cut
     for i, s in enumerate(segs):
         s["zoom"] = 1.0 if i % 2 == 0 else a.punch
-    caps = build_captions(words, segs, a.max_words, a.max_chars)
+    mw, mc = a.max_words, a.max_chars
+    if a.preset == "playbook" and mw == 3 and mc == 16:
+        mw, mc = 5, 30
+    caps = build_captions(words, segs, mw, mc)
     raw_len = sum(s["end"] - s["start"] for s in segs)
 
     plan = {
@@ -177,11 +203,8 @@ def cmd_analyze(a):
         "language": lang,
         "output": {"width": 1080, "height": 1920, "fps": 30, "lufs": -14},
         "framing": {"focus_x": 0.5, "focus_y": 0.42},
-        "style": {
-            "font": "Montserrat Black", "size": 112, "base_color": "white",
-            "active_color": "yellow", "emphasis_color": "green", "outline": 7,
-            "shadow": 3, "uppercase": True, "position_y": 0.68, "pop": True,
-        },
+        "style": PRESETS[a.preset]["style"],
+        "effects": PRESETS[a.preset]["effects"],
         "segments": segs,
         "captions": caps,
         "sfx": [],
@@ -220,21 +243,48 @@ def source_to_output_map(segments):
         table.append((s["start"], s["end"], t))
         t += d
 
-    def f(x):
+    def f(x, snap=False):
         for a, b, o in table:
             if a - 0.02 <= x <= b + 0.02:
                 return o + min(max(x - a, 0), b - a)
+        if snap:  # effects timed inside a removed gap land on the next kept moment
+            nxt = [(a, o) for a, b, o in table if a > x]
+            if nxt:
+                return min(nxt)[1]
         return None
     return f, t, order
+
+
+def col(name):
+    return COLORS.get(name, name)
+
+
+def split_two_lines(words, max_line):
+    """Insert a line break near the middle when a caption is too long for one line."""
+    text = " ".join(words)
+    if len(text) <= max_line or len(words) < 2:
+        return words
+    best, best_d, run_len = 1, 10 ** 9, 0
+    for i in range(1, len(words)):
+        run_len += len(words[i - 1]) + 1
+        d = abs(run_len - len(text) / 2)
+        if d < best_d:
+            best, best_d = i, d
+    return words[:best - 1] + [words[best - 1] + "\\N"] + words[best:]
+
+
+def fmt_num(v, decimals=0):
+    return f"{v:,.{decimals}f}"
 
 
 def build_ass(plan, tmap, total):
     st = plan["style"]
     W, H = plan["output"]["width"], plan["output"]["height"]
-    base = COLORS.get(st["base_color"], st["base_color"])
-    act = COLORS.get(st["active_color"], st["active_color"])
-    emp = COLORS.get(st["emphasis_color"], st["emphasis_color"])
+    base, act, emp = col(st["base_color"]), col(st["active_color"]), col(st["emphasis_color"])
+    mode = st.get("mode", "highlight")          # highlight = shorts karaoke, reveal = playbook build-on
+    glow = st.get("glow", False)
     y = int(H * st["position_y"])
+    ctx_font = st.get("context_font", "Poppins SemiBold")
     lines = [
         "[Script Info]", "ScriptType: v4.00+", f"PlayResX: {W}", f"PlayResY: {H}",
         "WrapStyle: 2", "ScaledBorderAndShadow: yes", "",
@@ -244,54 +294,119 @@ def build_ass(plan, tmap, total):
         "Alignment, MarginL, MarginR, MarginV, Encoding",
         f"Style: Cap,{st['font']},{st['size']},{base},{base},&H00000000,&H96000000,-1,0,0,0,100,100,1,0,1,"
         f"{st['outline']},{st['shadow']},5,60,60,0,1",
+        f"Style: Ctx,{ctx_font},{int(st['size'] * 0.5)},&H00FFFFFF,&H00FFFFFF,&H00000000,&H96000000,0,0,0,0,100,100,0,0,1,"
+        f"3,2,5,60,60,0,1",
+        f"Style: Fx,{st['font']},100,&H00FFFFFF,&H00FFFFFF,&H00000000,&H00000000,0,0,0,0,100,100,0,0,1,0,0,7,0,0,0,1",
         "", "[Events]",
         "Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text",
     ]
+
+    def ev(layer, a, b, style, text):
+        lines.append(f"Dialogue: {layer},{ass_time(a)},{ass_time(b)},{style},,0,0,0,,{text}")
+
+    # legibility shade behind the caption zone
+    if st.get("bottom_shade"):
+        top = int(H * 0.52)
+        ev(0, 0, total, "Fx", f"{{\\an7\\pos(0,0)\\p1\\c&H000000&\\alpha&H60&\\blur90}}"
+                              f"m 0 {top} l {W} {top} {W} {H} 0 {H}{{\\p0}}")
+
+    # progress bar (the reference runs a brand-colour bar across the top)
+    pb = st.get("progress_bar")
+    if pb:
+        hgt = pb.get("height", 12)
+        ev(9, 0, total, "Fx", f"{{\\an7\\pos(0,0)\\p1\\c{col(pb.get('color', 'purple'))}\\fscx0"
+                              f"\\t(0,{int(total * 1000)},\\fscx100)}}m 0 0 l {W} 0 {W} {hgt} 0 {hgt}{{\\p0}}")
+
     pos = f"\\an5\\pos({W // 2},{y})"
-    for ci, c in enumerate(plan["captions"]):
+    caps = plan["captions"]
+    for ci, c in enumerate(caps):
         ws = c["words"]
         times = [(tmap(w["s"]), tmap(w["e"])) for w in ws]
         if any(a is None for a, _ in times):
             continue
         c_start = times[0][0]
-        nxt = None
-        if ci + 1 < len(plan["captions"]):
-            nxt = tmap(plan["captions"][ci + 1]["words"][0]["s"])
+        nxt = tmap(caps[ci + 1]["words"][0]["s"]) if ci + 1 < len(caps) else None
         c_end = max(times[-1][1], c_start + 0.25)
         if nxt is not None and nxt > c_start:
             c_end = min(max(c_end, nxt), c_end + 0.6)
         c_end = min(c_end, total)
-        for wi, w in enumerate(ws):
+        if c.get("context"):
+            ev(2, c_start, c_end, "Ctx", f"{{\\an5\\pos({W // 2},{y - int(st['size'] * 0.95)})\\fad(80,0)}}"
+                                         f"{ass_escape(c['context'])}")
+        raw = []
+        for x in ws:
+            txt = ass_escape(x["w"].upper() if st.get("uppercase") else x["w"])
+            raw.append(re.sub(r"[.,;:!]+$", "", txt))
+        shown = split_two_lines(raw, st.get("max_line_chars", 18)) if mode == "reveal" else raw
+        for wi in range(len(ws)):
             a = times[wi][0] if wi else c_start
             b = times[wi + 1][0] if wi + 1 < len(ws) else c_end
             if b <= a:
                 continue
             parts = []
             for wj, x in enumerate(ws):
-                txt = ass_escape(x["w"].upper() if st.get("uppercase") else x["w"])
-                txt = re.sub(r"[.,;:!]+$", "", txt)
-                if x.get("emph"):
-                    parts.append(f"{{\\c{emp}\\fscx112\\fscy112}}{txt}{{\\fscx100\\fscy100\\c{base}}}")
-                elif wj == wi:
-                    parts.append(f"{{\\c{act}}}{txt}{{\\c{base}}}")
+                txt = shown[wj]
+                if mode == "reveal":
+                    colr = emp if x.get("emph") else act
+                    if wj < wi:
+                        parts.append(f"{{\\alpha&H00&\\c{colr}}}{txt}")
+                    elif wj == wi:      # newest word fades/pops in, like the reference
+                        parts.append(f"{{\\alpha&HC0&\\c{colr}\\t(0,120,\\alpha&H00&)}}{txt}")
+                    else:               # not spoken yet: reserve its space so nothing jumps
+                        parts.append(f"{{\\alpha&HFF&}}{txt}")
                 else:
-                    parts.append(txt)
+                    if x.get("emph"):
+                        parts.append(f"{{\\c{emp}\\fscx112\\fscy112}}{txt}{{\\fscx100\\fscy100\\c{base}}}")
+                    elif wj == wi:
+                        parts.append(f"{{\\c{act}}}{txt}{{\\c{base}}}")
+                    else:
+                        parts.append(txt)
+            body = " ".join(parts).replace("\\N ", "\\N")
             pop = "\\fscx70\\fscy70\\t(0,90,\\fscx105\\fscy105)\\t(90,140,\\fscx100\\fscy100)" \
                 if (st.get("pop") and wi == 0) else ""
-            lines.append(f"Dialogue: 0,{ass_time(a)},{ass_time(b)},Cap,,0,0,0,,{{{pos}{pop}}}" + " ".join(parts))
+            if glow:
+                gl = re.sub(r"\\c&H[0-9A-Fa-f]+&", "", body)
+                ev(3, a, b, "Cap", f"{{{pos}{pop}\\bord{st['outline'] + 10}\\3c{act}\\blur14\\1a&HFF&\\shad0}}{gl}")
+            ev(4, a, b, "Cap", f"{{{pos}{pop}}}{body}")
+
     for o in plan.get("overlays", []):
-        if o.get("type") != "text":
-            continue
-        a = tmap(o["t"])
+        kind = o.get("type", "text")
+        a = tmap(o["t"], snap=True)
         if a is None:
             continue
-        b = a + o.get("dur", 1.5)
+        dur = o.get("dur", 1.5)
+        b = min(a + dur, total)
         oy = int(H * o.get("y", 0.2))
-        size = o.get("size", 110)
-        col = COLORS.get(o.get("color", "white"), o.get("color", "white"))
-        lines.append(f"Dialogue: 1,{ass_time(a)},{ass_time(b)},Cap,,0,0,0,,"
-                     f"{{\\an5\\pos({W // 2},{oy})\\fs{size}\\c{col}\\fscx70\\fscy70\\t(0,100,\\fscx100\\fscy100)}}"
-                     f"{ass_escape(o['text'])}")
+        size = o.get("size", 200 if kind == "counter" else 120)
+        colr = col(o.get("color", "white"))
+        if kind == "text":
+            ev(6, a, b, "Cap", f"{{\\an5\\pos({W // 2},{oy})\\fs{size}\\c{colr}\\fscx70\\fscy70"
+                               f"\\t(0,100,\\fscx100\\fscy100)}}{ass_escape(o['text'])}")
+        elif kind == "counter":
+            # rolling number with ease-out, white with glow, optional small label above
+            frm, to = float(o.get("from", 0)), float(o["to"])
+            run_t = min(o.get("count_dur", 0.9), dur)
+            steps = max(int(run_t * 20), 2)
+            pre, suf, dec = o.get("prefix", ""), o.get("suffix", ""), o.get("decimals", 0)
+            for k in range(steps + 1):
+                p = k / steps
+                v = frm + (to - frm) * (1 - (1 - p) ** 3)
+                ta = a + run_t * k / steps
+                tb = a + run_t * (k + 1) / steps if k < steps else b
+                txt = f"{pre}{fmt_num(v, dec)}{suf}"
+                ev(6, ta, tb, "Cap", f"{{\\an5\\pos({W // 2},{oy})\\fs{size}\\c{colr}\\bord4\\3c&H000000&"
+                                     f"\\shad0}}{txt}")
+                if o.get("glow", True):
+                    ev(5, ta, tb, "Cap", f"{{\\an5\\pos({W // 2},{oy})\\fs{size}\\1a&HFF&\\bord14\\3c{colr}"
+                                         f"\\blur16\\shad0}}{txt}")
+            if o.get("label"):
+                ev(7, a, b, "Cap", f"{{\\an5\\pos({W // 2},{oy - int(size * 0.75)})\\fs{int(size * 0.45)}"
+                                   f"\\c{col(o.get('label_color', 'neon'))}\\fad(100,0)}}{ass_escape(o['label'])}")
+        elif kind == "flash":
+            # light-leak style colour burst used as a transition in the reference
+            top = int(H * o.get("from_y", 0.45))
+            ev(1, a, b, "Fx", f"{{\\an7\\pos(0,0)\\p1\\c{col(o.get('color', 'orange'))}&\\alpha&H{o.get('alpha', '55')}&\\blur140"
+                              f"\\fad({int(dur * 350)},{int(dur * 650)})}}m 0 {top} l {W} {top} {W} {H} 0 {H}{{\\p0}}")
     return "\n".join(lines) + "\n"
 
 
@@ -352,7 +467,7 @@ def cmd_render(a):
     mix_inputs = ["[voice]"]
     n = 1
     for k, sfx in enumerate(plan.get("sfx", [])):
-        t = tmap(sfx["t"])
+        t = tmap(sfx["t"], snap=True)
         f = sfx["file"] if os.path.isabs(sfx["file"]) else os.path.join(SFX_DIR, sfx["file"])
         if t is None or not os.path.exists(f):
             continue
@@ -377,9 +492,36 @@ def cmd_render(a):
     grade = "eq=contrast=1.06:saturation=1.12:brightness=0.01,unsharp=5:5:0.6:5:5:0.0"
     fonts = FONTS_DIR.replace("\\", "/").replace(":", "\\:")
     ass_f = ass.replace("\\", "/").replace(":", "\\:")
-    vf = f"[0:v]{grade},ass='{ass_f}':fontsdir='{fonts}'[vout]"
+    fx = plan.get("effects", {})
+    vchain = [f"[0:v]{grade}[g0]"]
+    cur = "[g0]"
+    bi, bo = float(fx.get("blur_in", 0)), float(fx.get("blur_out", 0))
+    if bi or bo:
+        # focus-pull open / close: crossfade between a heavily blurred copy and the sharp image
+        k_in = f"min(T/{bi},1)" if bi else "1"
+        k_out = f"min(({total:.3f}-T)/{bo},1)" if bo else "1"
+        k = f"max(0,min({k_in},{k_out}))"
+        vchain.append(f"{cur}split[sh][bl0];[bl0]gblur=sigma=28[bl];"
+                      f"[sh][bl]blend=all_expr='A*{k}+B*(1-{k})'[g1]")
+        cur = "[g1]"
+    imgs = [o for o in plan.get("overlays", []) if o.get("type") == "image"]
+    for j, o in enumerate(imgs):
+        t0 = tmap(o["t"], snap=True)
+        f = o["file"]
+        if t0 is None or not os.path.exists(f):
+            continue
+        t1 = min(t0 + o.get("dur", 2.0), total)
+        inputs += ["-loop", "1", "-framerate", str(FPS), "-t", f"{total:.3f}", "-i", f]
+        iw = int(W * o.get("w", 0.8)) // 2 * 2
+        cx, cy = o.get("x", 0.5), o.get("y", 0.35)
+        vchain.append(f"[{n}:v]scale={iw}:-2,format=rgba,fade=t=in:st={t0:.3f}:d=0.15:alpha=1,"
+                      f"fade=t=out:st={max(t1 - 0.15, t0):.3f}:d=0.15:alpha=1[im{j}]")
+        vchain.append(f"{cur}[im{j}]overlay=x=W*{cx}-w/2:y=H*{cy}-h/2:enable='between(t,{t0:.3f},{t1:.3f})'[o{j}]")
+        cur = f"[o{j}]"
+        n += 1
+    vchain.append(f"{cur}ass='{ass_f}':fontsdir='{fonts}'[vout]")
     fcs = os.path.join(work, "final.txt")
-    open(fcs, "w").write(";\n".join([vf] + mix))
+    open(fcs, "w").write(";\n".join(vchain + mix))
     print("pass 2: captions, grade, audio mix, loudness")
     run(["ffmpeg", "-y", *inputs, "-filter_complex_script", fcs, "-map", "[vout]", "-map", "[aout]",
          "-c:v", "libx264", "-preset", "slow", "-crf", "18", "-profile:v", "high", "-pix_fmt", "yuv420p",
@@ -421,6 +563,8 @@ def main():
     an.add_argument("--max-words", type=int, default=3)
     an.add_argument("--max-chars", type=int, default=16)
     an.add_argument("--keep-fillers", action="store_true")
+    an.add_argument("--preset", choices=sorted(PRESETS), default="shorts",
+                    help="shorts = classic karaoke captions; playbook = the measured reference look")
     an.set_defaults(fn=cmd_analyze)
 
     r = sub.add_parser("render", help="render final vertical short from plan.json")
