@@ -1,6 +1,6 @@
 ---
 name: viral-remix-studio
-description: Remix a proven viral Instagram Reel, TikTok or YouTube video/Short for any niche the user names. The user pastes a link (plus their niche); the skill pulls the post's transcript, caption, on-screen text and performance, decodes its exact viral structure (hook, beats, timing, payoff, CTA), then rewrites it beat-for-beat for the new niche as a ready-to-film script with shot directions, on-screen text, audio notes and a ready-to-post caption. If the original is already in the user's niche, it does a light "switch-up" (new wording, example, angle, setting) so it doesn't look copy-pasted while keeping the structure identical. Use whenever the user pastes an Instagram/YouTube/TikTok link and says remix this, recreate this, do this for my niche, make my version, script this for [niche], or "turn this into content for my client". Also use when they paste a transcript or describe a viral video instead of a link.
+description: Remix a proven viral Instagram Reel/carousel, TikTok video/slideshow or YouTube video/Short for any niche the user names. The user pastes a link (plus their niche); the skill pulls the post's transcript, caption, on-screen text and performance, decodes its exact viral structure (hook, beats, timing, payoff, CTA), then rewrites it beat-for-beat for the new niche as a ready-to-film script with shot directions, on-screen text, audio notes and a ready-to-post caption. If the original is already in the user's niche, it does a light "switch-up" (new wording, example, angle, setting) so it doesn't look copy-pasted while keeping the structure identical. Use whenever the user pastes an Instagram, TikTok (incl. vm.tiktok.com short links) or YouTube link and says remix this, recreate this, do this for my niche, make my version, script this for [niche], or "turn this into content for my client". Also use when they paste a transcript or describe a viral video instead of a link.
 ---
 
 # Viral Remix Studio
@@ -13,7 +13,7 @@ Read `references/viral-formats.md` the first time in a conversation (format libr
 
 ## Inputs
 
-- **Link** (Instagram Reel/post, YouTube video/Short, TikTok). Required, or a pasted transcript/description instead.
+- **Link** (Instagram Reel/post/carousel, TikTok video or slideshow, YouTube video/Short). Required, or a pasted transcript/description instead.
 - **Niche** (e.g. "esthetician in Abuja", "social media manager for estheticians"). If missing, ask once in one short line. If the user has a default niche from earlier in the conversation, use it.
 - Optional: brand/handle, offer, CTA keyword, who will be on camera, language/slang (e.g. Nigerian Pidgin mix).
 
@@ -29,7 +29,12 @@ Use whatever tool is available, in this order:
 
 **YouTube** (`streamers/youtube-scraper`): `{"startUrls": [{"url": "<url>"}], "maxResults": 1, "maxResultsShorts": 1, "transcriptionAndSubtitle": "TRANSCRIPTION_AS_FALLBACK", "subtitlesFormat": "plaintext", "aiVideoDescription": true}`. The AI video description gives time-segmented visuals, which is what you need for shot directions. Transcripts land in the run's key-value store when not in the dataset.
 
-**TikTok**: `clockworks/tiktok-scraper` (or search actors for "tiktok") with the video URL.
+**TikTok** (`clockworks/tiktok-scraper`): `{"postURLs": ["<tiktok url>"], "resultsPerPage": 1, "downloadSubtitlesOptions": "DOWNLOAD_AND_TRANSCRIBE_VIDEOS_WITHOUT_SUBTITLES", "aiVideoDescription": true, "shouldDownloadSlideshowImages": true}`.
+- Works with full links (`tiktok.com/@user/video/…`) and short links (`vm.tiktok.com/…`, `tiktok.com/t/…`). If a short link fails, ask the user to open it and paste the full URL.
+- Read: `text` (caption), `playCount`, `diggCount` (likes), `commentCount`, `shareCount`, `collectCount` (saves), `videoMeta.duration`, `musicMeta` (sound name, original or not), subtitles/transcript, and `videoMeta.aiVideoDescription` (scene-by-scene visuals, use it for shot directions). Transcription and the AI description are small paid add-ons charged per video.
+- **Photo mode / slideshows:** the slides are the content. Decode each slide's text and image, keep the slide count, and remix slide by slide (see the slideshow table in Step 4).
+- **Sound:** if the format depends on a trending sound (`musicMeta.musicOriginal` false), name the sound and tell the user to use the same one from TikTok's sound library. Business accounts may only have the Commercial Music Library, so suggest a similar commercial sound if needed.
+- When remixing a TikTok for Instagram (or the reverse), keep the structure and change only platform details: caption length, hashtags, the on-screen text safe zone.
 
 Poll with `get-actor-run`, then read with `get-dataset-items` using `fields=` to keep output small.
 
@@ -92,6 +97,13 @@ Rules:
 - Hook is spoken AND shown as on-screen text in the first 1–2 seconds, unless the original is silent/ASMR (then text only).
 - Write the script the way people talk: short sentences, contractions, no corporate words. Match the user's audience's language (allow Pidgin/slang if they asked or the niche is local).
 - For no-talking formats (ASMR, transformations, POV skits), write shot-by-shot directions + on-screen text instead of dialogue.
+- For TikTok/Instagram slideshows (photo carousels), replace the table with:
+
+  | Slide | Image (what to shoot or generate) | Text on slide |
+  |---|---|---|
+
+  Same slide count as the original; slide 1 is the hook, the last slide is the CTA.
+- Ask which platform the remix is for only if it matters; default to the platform of the original link.
 - Give **2 alternative hooks** using the same hook type, under the table.
 
 ## Step 5 — Caption

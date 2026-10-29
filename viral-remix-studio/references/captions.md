@@ -9,6 +9,14 @@ Match the caption length of the original's format: short for ASMR/POV/skits (1�
 4. **One CTA**: the comment-keyword mechanic if the original used one or the goal is leads ("Comment GLOW and I'll send you prices"); otherwise save/share ("Send this to the friend who…").
 5. **3–5 hashtags max**: 1 niche, 1–2 location, 1 service, 1 brand.
 
+## Platform tweaks (same structure, different packaging)
+| | Instagram | TikTok | YouTube Shorts |
+|---|---|---|---|
+| Length | 1–10 lines by format | 1–3 lines; the video carries it | Title ≤ 60 chars + 1–2 line description |
+| Keywords | In the caption sentences | In the caption **and** the on-screen text (TikTok search reads both) | In the title |
+| Hashtags | 3–5 | 3–5 (niche + location + service; skip #fyp) | 1–3 |
+| CTA | Comment keyword or share | Comment keyword, "save this", or reply-with-video bait | "Subscribe for…" or comment keyword |
+
 ## Rules
 - One CTA only. No "call, DM, visit our website and click the link" stacks.
 - No phone number dumps unless the user asks.
