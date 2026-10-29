@@ -1,0 +1,19 @@
+
+/* ---------- v5: bulk DMs, goal, mobile tidy ---------- */
+input,textarea,select{font-size:16px!important}
+.sw-goal{display:grid;gap:8px;padding:14px 16px;border-radius:16px;background:var(--bg);border:1px solid var(--line);margin:0 0 16px}
+.sw-goal>div:first-child{font-size:15px;color:var(--muted)}.sw-goal>div:first-child b{color:var(--text);font-size:20px}
+.sw-goalbar{height:8px;border-radius:99px;background:var(--line);overflow:hidden}.sw-goalbar i{display:block;height:100%;background:var(--acc);border-radius:99px;transition:width .3s}
+.sw-gq,.pbt-gq{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:13.5px;color:var(--muted)}
+.sw-gq button,.pbt-gq button{border:1px solid var(--line);background:var(--surface);color:var(--text);border-radius:99px;padding:5px 12px;font-weight:700;font-size:13.5px;cursor:pointer}
+.sw-gq button.on{background:var(--acc);border-color:var(--acc);color:#fff}
+.pbt-gq{margin-top:10px}.pbt-gq::before{content:"Quick goal";margin-right:2px}
+.pbt-today .pbt-gq{color:#C7D1E8}.pbt-today .pbt-gq button{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.18);color:#fff}.pbt-today .pbt-gq button.on{background:#FF7A1A;border-color:#FF7A1A}
+.sw-m.sent{border-color:#16A34A;background:rgba(22,163,74,.05)}.sw-m.sent .sw-s.ig{background:#16A34A;border-color:#16A34A}
+.sw-ai>summary small{display:block;font-weight:500;color:var(--muted);font-size:12.5px}
+#bkNext{margin-top:16px}
+.pbt-counters,.pbt-counters.pbt-six{grid-template-columns:repeat(6,1fr)}
+@media (max-width:980px){.pbt-counters,.pbt-counters.pbt-six{grid-template-columns:repeat(3,1fr)}.pbt-counters .pbt-c:first-child{grid-column:auto}}
+@media (max-width:560px){.pbt-counters,.pbt-counters.pbt-six{grid-template-columns:repeat(2,1fr);gap:8px}.pbt-c{padding:12px}.pbt-c b{font-size:26px!important}}
+.pbt-c{min-width:0}.pbt-c small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pbt-bulk{display:inline-flex;align-items:center;gap:6px;margin-top:12px;padding:11px 16px;border-radius:12px;background:#FF7A1A;color:#fff!important;font-weight:800;font-size:15px;text-decoration:none}.pbt-bulk:hover{filter:brightness(1.06)}
