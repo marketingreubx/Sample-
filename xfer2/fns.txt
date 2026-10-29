@@ -1,0 +1,63 @@
+/** Every site email: navy header with the person's name, white body, brand blue buttons. */
+function ir_pb_mail( $to, $subject, $inner, $o = [] ) {
+	$o = is_array( $o ) ? $o : [];
+	$f = 'font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',Roboto,Helvetica,Arial,sans-serif';
+	$u = is_email( $to ) ? get_user_by( 'email', $to ) : false;
+	$name = $o['name'] ?? ( $u && function_exists( 'ir_first_name' ) ? ir_first_name( $u ) : '' );
+	$name = ( $name === 'there' ) ? '' : trim( (string) $name );
+	/* The email's own heading moves into the header, with the name on its own line. */
+	$title = $o['title'] ?? '';
+	if ( $title === '' && preg_match( '#^\s*<h1[^>]*>(.*?)</h1>#is', $inner, $m ) ) {
+		$title = trim( html_entity_decode( wp_strip_all_tags( $m[1] ), ENT_QUOTES, 'UTF-8' ) );
+		$inner = substr( $inner, strlen( $m[0] ) );
+	}
+	$lead = $title; $hi = ''; $tail = '';
+	if ( $name !== '' && substr( $title, -1 ) === ',' ) {
+		$hi = $name;
+	} elseif ( $name !== '' && preg_match( '/^(.*?),?\s+' . preg_quote( $name, '/' ) . '\s*([.!]?\s*\X?)$/u', $title, $mm ) && $mm[1] !== '' ) {
+		$lead = $mm[1] . ','; $hi = $name; $tail = trim( $mm[2] );
+	} elseif ( $name !== '' && empty( $o['kicker'] ) ) {
+		$o['kicker'] = 'Hi ' . $name . ' 👋';
+	}
+	$kicker = $o['kicker'] ?? '';
+	$pre = $o['preheader'] ?? trim( mb_substr( preg_replace( '/\s+/', ' ', html_entity_decode( wp_strip_all_tags( $inner ), ENT_QUOTES, 'UTF-8' ) ), 0, 110 ) );
+	$w = function ( $h ) { return '<span class="gm-s" style="display:inline-block"><span class="gm-d" style="display:inline-block">' . $h . '</span></span>'; };
+	$hero = '<div style="' . $f . ';font-weight:800;font-size:19px;letter-spacing:-.3px;color:#ffffff">' . $w( 'Igho Reuben' ) . '<span style="color:#4D8BFF">.</span></div>'
+		. ( $kicker !== '' ? '<div style="margin-top:22px"><span style="display:inline-block;padding:7px 13px;border:1px solid #2E4A8F;border-radius:999px;background-color:#13285F;background-image:linear-gradient(#13285F,#13285F);color:#ffffff;' . $f . ';font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase">' . $w( esc_html( $kicker ) ) . '</span></div>' : '' )
+		. ( $title !== '' ? '<div style="margin-top:' . ( $kicker !== '' ? '16' : '26' ) . 'px;' . $f . ';font-size:' . ( mb_strlen( $lead ) > 30 ? 28 : 34 ) . 'px;line-height:1.12;font-weight:800;letter-spacing:-1px;color:#ffffff">' . $w( esc_html( $lead ) ) . '</div>' : '' )
+		. ( $hi !== '' ? '<div style="' . $f . ';font-size:38px;line-height:1.12;font-weight:800;letter-spacing:-1px;color:#FF9A52">' . esc_html( $hi ) . '<span style="color:#4D8BFF">.</span>' . ( $tail !== '' && $tail !== '.' ? ' ' . esc_html( $tail ) : '' ) . '</div>' : '' )
+		. ( ! empty( $o['sub'] ) ? '<div style="margin-top:14px;' . $f . ';font-size:16px;line-height:1.55;color:#ffffff">' . $w( esc_html( $o['sub'] ) ) . '</div>' : '' );
+	$unsub = ! empty( $GLOBALS['ir_mail_unsub'] ) ? ' · <a href="' . esc_url( $GLOBALS['ir_mail_unsub'] ) . '" style="color:#8A97B4">Unsubscribe</a>' : '';
+	$html = '<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light"><meta name="supported-color-schemes" content="light"><style>u + .body .gm-s{background:#000;mix-blend-mode:screen}u + .body .gm-d{background:#000;mix-blend-mode:difference}</style></head>'
+		. '<body class="body" style="margin:0;padding:0;background:#EEF2FB">'
+		. '<div style="display:none;max-height:0;overflow:hidden;opacity:0;color:#EEF2FB">' . esc_html( $pre ) . str_repeat( '&#8204;&nbsp;', 40 ) . '</div>'
+		. '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#EEF2FB"><tr><td align="center" style="padding:28px 12px">'
+		. '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:560px;border-radius:22px;overflow:hidden;background:#ffffff;box-shadow:0 10px 30px rgba(10,26,74,.10)">'
+		. '<tr><td bgcolor="#0A1A4A" style="background-color:#0A1A4A;background-image:linear-gradient(155deg,#16348A 0%,#0A1A4A 55%,#060F2B 100%);padding:30px 30px 34px">' . $hero . '</td></tr>'
+		. '<tr><td bgcolor="#FF7A1A" style="height:4px;line-height:4px;font-size:0;background:#FF7A1A;background-image:linear-gradient(90deg,#1660E8,#4D8BFF 45%,#FF9A52 75%,#FF7A1A)">&nbsp;</td></tr>'
+		. '<tr><td style="padding:30px 30px 8px;' . $f . ';font-size:16px;line-height:1.6;color:#33415F">' . $inner . '</td></tr>'
+		. '<tr><td style="padding:8px 30px 30px;' . $f . '"><div style="border-top:1px solid #E6EBF5;padding-top:18px;font-size:13px;line-height:1.6;color:#8A97B4">Questions? Just reply to this email, or WhatsApp <a href="https://wa.me/2348104699214" style="color:#1660E8;text-decoration:none;font-weight:700">+234 810 469 9214</a>.<br>Igho Reuben · <a href="' . esc_url( home_url( '/' ) ) . '" style="color:#8A97B4">ighoreuben.com</a>' . $unsub . '</div></td></tr>'
+		. '</table></td></tr></table></body></html>';
+	$h = [ 'Content-Type: text/html; charset=UTF-8' ];
+	if ( function_exists( 'ir_mail_from' ) ) { $h[] = 'From: ' . ir_mail_name() . ' <' . ir_mail_from() . '>'; }
+	return wp_mail( $to, $subject, $html, $h );
+}
+function ir_pb_btn( $url, $label ) {
+	return '<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:26px 0"><tr><td bgcolor="#1660E8" style="border-radius:14px;background-color:#1660E8"><a href="' . esc_url( $url ) . '" style="display:inline-block;padding:15px 26px;font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',Roboto,Helvetica,Arial,sans-serif;font-size:16px;font-weight:700;color:#ffffff;text-decoration:none;border-radius:14px">' . esc_html( $label ) . ' &rarr;</a></td></tr></table>';
+}
+/** The login card on sign-up emails, styled like a member ID card. */
+function ir_pb_mail_card( $label, $value, $note ) {
+	return '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:22px 0 4px"><tr><td bgcolor="#F1F5FF" style="border:1px solid #D6E2FF;border-radius:18px;background-color:#F1F5FF;padding:20px 22px">'
+		. '<div style="font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#5B6B8C">' . esc_html( $label ) . '</div>'
+		. '<div style="margin-top:8px;font-size:18px;font-weight:800;color:#1660E8;word-break:break-word;overflow-wrap:anywhere">' . esc_html( $value ) . '</div>'
+		. '<div style="margin-top:8px;font-size:14px;color:#6B7A99">' . esc_html( $note ) . '</div></td></tr></table>';
+}
+/** Numbered "start here" steps for sign-up emails. */
+function ir_pb_mail_steps( $steps ) {
+	$h = '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:6px 0 4px">';
+	foreach ( $steps as $i => $s ) {
+		$h .= '<tr><td width="38" valign="top" style="padding:8px 0"><div style="width:28px;height:28px;line-height:28px;border-radius:9px;background:#EAF1FF;color:#1660E8;font-weight:800;font-size:14px;text-align:center">' . ( $i + 1 ) . '</div></td>'
+			. '<td valign="top" style="padding:10px 0 8px;font-size:15.5px;line-height:1.5;color:#33415F"><b style="color:#0A1633">' . esc_html( $s[0] ) . '</b> ' . esc_html( $s[1] ) . '</td></tr>';
+	}
+	return $h . '</table>';
+}
