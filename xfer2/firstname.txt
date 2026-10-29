@@ -1,0 +1,11 @@
+/** The name members see in greetings and emails: their first name, else the name they gave at checkout or in the writer. Always one word. */
+function ir_first_name( $u ) {
+	$p = function_exists( 'ir_rw_profile' ) ? ir_rw_profile( $u->ID ) : [];
+	foreach ( [ $u->first_name, get_user_meta( $u->ID, 'billing_first_name', true ), $p['name'] ?? '', $u->display_name, $u->user_login ] as $n ) {
+		$n = trim( preg_replace( '/\s+/', ' ', (string) $n ) );
+		if ( $n === '' || strpos( $n, '@' ) !== false ) { continue; }
+		$n = explode( ' ', $n )[0];
+		return $n === mb_strtolower( $n ) ? mb_convert_case( $n, MB_CASE_TITLE ) : $n;
+	}
+	return 'there';
+}
