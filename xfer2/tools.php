@@ -280,6 +280,7 @@ var SYS="You are a senior graphic designer and commercial photographer who write
 "- If the flyer is graphic design, describe it as a flat print or Canva-style layout: simple shapes, a clean grid, solid colour blocks, subtle paper or print texture, real product photos cut out cleanly, no 3D effects.\n"+
 "- Never use the words hyperrealistic, ultra detailed, 8k, 4k, masterpiece, cinematic, epic, award winning, octane, unreal engine, glowing, ethereal or magical. They make images look fake.\n"+
 "- Avoid the AI look: no plastic or airbrushed skin, no glossy shine, no glowing edges, no heavy bokeh orbs, no oversaturated or teal and orange colours, no perfect symmetry, no fantasy lighting, no floating objects, no extra fingers, no warped products.\n"+
+"- In both prompts describe colours in plain words (warm beige, soft gold, deep charcoal), never hex codes. Hex codes belong only in the palette.\n"+
 "- The negative prompt lists all of these AI tells, plus text, letters, watermark and logo for the no-text prompt.\n"+
 "- Tips must be practical: generate the background only and add the text in Canva, use the user's own client or product photo where possible, pick the most natural of 4 results, and lower the stylize setting.\n"+
 "No em dashes or en dashes.\n"+
@@ -297,7 +298,7 @@ function block(title,id,text,note){return '<div class="tl-res"><div class="tl-re
 function render(d){var h='';['layout','palette','tips'].forEach(function(k){if(!Array.isArray(d[k]))d[k]=d[k]?[d[k]]:[]});d.layout=d.layout.map(function(l){return typeof l==='string'?{new:l}:l||{}});d.palette=d.palette.map(function(c){return typeof c==='string'?{hex:c}:c||{}});
 if(d.design_summary)h+='<p class="tl-note">'+T.esc(d.design_summary)+'</p>';
 h+='<h2>1. Recreate the image style</h2>';
-var ar=d.aspect_ratio&&/\d+:\d+/.test(d.aspect_ratio)?' --ar '+d.aspect_ratio.match(/\d+:\d+/)[0]:'';d.image_prompt=String(d.image_prompt||'').replace(/\b(hyper-?realistic|ultra[- ]detailed|8k|4k|masterpiece|award[- ]winning|octane render|unreal engine)\b,?\s*/gi,'');
+var ar=d.aspect_ratio&&/\d+:\d+/.test(d.aspect_ratio)?' --ar '+d.aspect_ratio.match(/\d+:\d+/)[0]:'';var cut=function(x){return String(x||'').split(/\n?\s*negative prompt\s*:/i)[0].replace(/\s*\(?#[0-9a-f]{6}\)?/gi,'').trim()};d.prompt_with_text=d.prompt_with_text?cut(d.prompt_with_text):'';d.image_prompt=cut(d.image_prompt).replace(/\b(hyper-?realistic|ultra[- ]detailed|8k|4k|masterpiece|award[- ]winning|octane render|unreal engine)\b,?\s*/gi,'');
 h+=block('Image prompt (no text)','tlP1',d.image_prompt+ar+' --style raw --stylize 50','Best in Midjourney. In ChatGPT or Leonardo, paste it without the --settings at the end. Add your text after in Canva for the most real look.');
 if(d.prompt_with_text)h+=block('Prompt with your new text','tlP2',d.prompt_with_text,'Use in Ideogram or ChatGPT images, which can write text.');
 if(d.negative_prompt)h+=block('Avoid (negative prompt)','tlP3',d.negative_prompt);
