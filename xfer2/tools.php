@@ -286,7 +286,7 @@ var user='FLYER MEASUREMENTS\nShape: '+r.w+' x '+r.h+' pixels, closest ratio '+r
 T.busy(true,'Designing your version...');
 return IRAI.askJSON({system:SYS,user:user,max:4000,onStatus:function(s){T.busy(true,s)}},function(j){return j.image_prompt}).then(function(d){T.busy(false);if(!d.aspect_ratio)d.aspect_ratio=ratio(r.w,r.h);render(d)})}).catch(function(x){T.busy(false);T.err(x.message)})};
 function block(title,id,text,note){return '<div class="tl-res"><div class="tl-res-h"><b>'+title+'</b><button type="button" class="tl-copy" data-copy="#'+id+'">Copy</button></div>'+(note?'<p class="tl-txt" style="color:var(--muted);font-size:13.5px;margin:0 0 8px">'+note+'</p>':'')+'<p class="tl-txt" id="'+id+'">'+T.esc(text)+'</p></div>'}
-function render(d){var h='';
+function render(d){var h='';['layout','palette','tips'].forEach(function(k){if(!Array.isArray(d[k]))d[k]=d[k]?[d[k]]:[]});d.layout=d.layout.map(function(l){return typeof l==='string'?{new:l}:l||{}});d.palette=d.palette.map(function(c){return typeof c==='string'?{hex:c}:c||{}});
 if(d.design_summary)h+='<p class="tl-note">'+T.esc(d.design_summary)+'</p>';
 h+='<h2>1. Recreate the image style</h2>';
 h+=block('Image prompt (no text)','tlP1',d.image_prompt+(d.aspect_ratio&&/\d+:\d+/.test(d.aspect_ratio)?' --ar '+d.aspect_ratio:''),'Use in Midjourney, Leonardo or ChatGPT. Add your text after in Canva.');
@@ -329,7 +329,7 @@ function cap(p,ms){return Promise.race([p,new Promise(function(r){setTimeout(fun
 function readVideo(blob,spokenSegs){
   var getSpeech=spokenSegs?Promise.resolve({text:spokenSegs.map(function(s){return s.text}).join(' '),segs:spokenSegs}):IRMEDIA.transcribe(blob,function(f,m){step(m,0.1+0.5*f)}).catch(function(){return{text:'',segs:[]}});
   return getSpeech.then(function(sp){step('Watching the video for on-screen text...',0.62);
-    return cap(IRMEDIA.watch(blob,{spoken:sp.text,onProgress:function(f,m){step(m,0.62+0.3*f)}}).catch(function(){return null}),45000).then(function(w){IRMEDIA.stopOcr();return{speech:sp,seen:w}})})}
+    return cap(IRMEDIA.watch(blob,{spoken:sp.text,onProgress:function(f,m){step(m,0.62+0.3*f)}}).catch(function(){return null}),25000).then(function(w){IRMEDIA.stopOcr();return{speech:sp,seen:w}})})}
 function getLink(u){step('Opening the post...',0.05);
   return Promise.all([IRAI.post('ir_pp_reel_fetch',{url:u},C.ppn),IRAI.post('ir_tl_post',{url:u}).catch(function(){return null})]).then(function(r){var j=r[0],p=r[1]&&r[1].ok?r[1].post:{};
     if(!j||!j.ok){throw new Error((j&&j.err)||'We could not open that post. Save the video to your phone and upload it here.')}
@@ -372,7 +372,7 @@ T.ls('tl_niche',$('#tlNiche').value.trim());out.innerHTML='';
   return IRAI.askJSON({system:SYS,user:L.join('\n'),max:6000,onStatus:function(s){step(s,0.95)}},function(j){return j.remake}).then(function(d){T.busy(false);d.hashtags=(d.hashtags||[]).slice(0,3).map(function(h){return '#'+String(h).toLowerCase().replace(/[^a-z0-9_]/g,'')});render(d,m)});
 }).catch(function(x){T.busy(false);IRMEDIA.stopOcr();T.err(x.message||'Something went wrong. Please try again.')})};
 function li(a){return(a||[]).length?'<ul class="tl-list">'+a.map(function(x){return '<li>'+T.esc(x)+'</li>'}).join('')+'</ul>':''}
-function render(d,m){var r=d.remake||{},h='',plain=[];
+function render(d,m){var A=function(x){return Array.isArray(x)?x:x?[x]:[]};d.why_it_works=A(d.why_it_works);d.structure=A(d.structure);d.keep=A(d.keep);d.remake=d.remake||{};var r=d.remake,h='',plain=[];r.hooks=A(r.hooks);r.script=A(r.script).map(function(x){return typeof x==='string'?{say:x}:x||{}});r.shot_list=A(r.shot_list);d.structure=d.structure.map(function(x){return typeof x==='string'?{what_happens:x}:x||{}});
 h+='<h2>Why the original works</h2><div class="tl-res"><span class="tl-tag">'+T.esc(d.content_type||'')+'</span><p class="tl-txt" style="margin:6px 0 8px">'+T.esc(d.summary||'')+'</p>'+li(d.why_it_works)+'</div>';
 if((d.structure||[]).length){h+='<details class="tl-res tl-more"><summary>See the original structure, beat by beat</summary>'+d.structure.map(function(b){return '<div class="tl-beat"><span class="t">'+T.esc(b.time||'')+'</span><div><p><b>'+T.esc(b.part||'')+'</b>'+T.esc(b.what_happens||'')+'</p>'+(b.on_screen_text?'<p><b>Text</b>'+T.esc(b.on_screen_text)+'</p>':'')+(b.audio?'<p><b>Audio</b>'+T.esc(b.audio)+'</p>':'')+'</div></div>'}).join('')+(d.keep&&d.keep.length?'<p style="margin:12px 0 4px;font-weight:700">Keep these when you remake it:</p>'+li(d.keep):'')+'</details>'}
 h+='<h2>Your version'+(r.title?': '+T.esc(r.title):'')+'</h2>';
