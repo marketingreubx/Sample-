@@ -1,7 +1,0 @@
-function ir_login_mail_link( $u ) {
-	$p = 'margin:0 0 14px;font-size:16px;line-height:1.6;color:#33415F';
-	$inner = '<p style="' . $p . '">Tap the button to choose your password. You go straight into your dashboard with your courses, playbooks and prompts.</p>'
-		. ir_pb_mail_card( 'Your login email', $u->user_email, 'The link below works once.' )
-		. ir_pb_btn( ir_pb_set_link( $u->ID ), 'Log in and set my password' );
-	return ir_pb_mail( $u->user_email, 'Your login link for Igho Reuben', $inner, [ 'kicker' => 'Your login link', 'title' => 'Welcome back,', 'preheader' => 'Tap to set your password and open your dashboard.' ] );
-}
