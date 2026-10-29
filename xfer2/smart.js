@@ -557,6 +557,7 @@
       else if (ang === 'compliment') { lines = [hi + ' ' + (o ? fill(k(BK.like, 1), v) : k(BK.none, 1)), fill(BK.who[(i + seed) % 4], v) + ' ' + k(BK.ask.compliment, 3)]; }
       else if (ang === 'direct') { lines = [hi + ' ' + fill(k(BK.who, 2), v) + (o ? ' ' + fill(k(BK.seen, 1), v) : ''), k(BK.ask.direct, 3)]; }
       else { lines = [hi + ' ' + (o ? fill(k(BK.seen, 1), v) + ' ' + k(BK.cost, 4) : k(BK.none, 1)), fill(o ? k(BK.who, 2) : BK.who[(i + seed) % 4], v), o ? k(BK.ask.problem, 3) : k(BK.ask.compliment, 3)]; }
+      lines[0] = lines[0].replace(/^([^\n]*?@[\w.]+,) (?!I\b|I'|Instagram)([A-Z])/, function (m, g, c) { return g + ' ' + c.toLowerCase(); });
       return { h: x.h, obs: x.obs, text: lines.join('\n\n') };
     });
   }
@@ -566,7 +567,7 @@
       '<p class="sw-hint">Each one is worded differently. Tap <b>Open DM</b>: the message is copied, their chat opens in Instagram, paste and send. It is logged in your tracker with a follow-up reminder.</p>' +
       '<div class="sw-msgs">' + L.map(function (x, i) {
         var on = OUT.sent[i];
-        return '<div class="sw-m' + (on ? ' sent' : '') + '"><div class="sw-m-h"><b>@' + esc(x.h) + '</b>' + (x.obs ? '<small>' + esc(x.obs) + '</small>' : '') + '</div><textarea id="bk-' + i + '" rows="' + Math.min(12, Math.max(4, Math.ceil(x.text.length / 34) + 2)) + '">' + esc(x.text) + '</textarea>' +
+        return '<div class="sw-m' + (on ? ' sent' : '') + '"><div class="sw-m-h"><b>@' + esc(x.h) + '</b>' + (x.obs ? '<small>' + esc(x.obs) + '</small>' : '') + '</div><textarea id="bk-' + i + '" rows="' + Math.min(16, x.text.split('\n').reduce(function (n, l) { return n + Math.max(1, Math.ceil(l.length / 30)); }, 1)) + '">' + esc(x.text) + '</textarea>' +
           '<div class="sw-m-a"><button type="button" class="sw-s ghost" data-bc="' + i + '">Copy</button><a class="sw-s ig" href="https://ig.me/m/' + esc(x.h) + '" data-bo="' + i + '">' + (on ? '✓ Sent · open again' : 'Open DM') + '</a></div></div>';
       }).join('') + '</div>' +
       '<details class="sw-ai"><summary>✨ Make them sound even more natural <small>AI rewrites all ' + n + '</small></summary><div class="sw-body"><div class="sw-row"><button type="button" class="sw-btn" id="bkAi">Rewrite with AI</button></div><p class="sw-msg" id="bkMsg"></p></div></details>' +
