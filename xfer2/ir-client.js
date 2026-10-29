@@ -17,7 +17,9 @@
   }
   function httpErr(r, b) {
     var s = +(r.headers.get('Retry-After') || ((String(b).match(/after (\d+)s/i) || [])[1]) || 0);
-    var e = new Error('The free AI said: ' + r.status); e.wait = (r.status === 402 || r.status === 429) ? Math.max(2, Math.min(35, s || 30)) : 0; e.status = r.status; return e;
+    var e = new Error('The free AI said: ' + r.status); e.status = r.status;
+    e.wait = (r.status === 402 || r.status === 429) ? Math.max(2, Math.min(35, s || 30)) : (r.status === 503 || r.status === 502 || r.status === 500) ? Math.max(4, Math.min(20, s || 8)) : 0;
+    e.busy = r.status >= 500; return e;
   }
   function sse(chunk, o, acc) {
     chunk.split('\n').forEach(function (line) {
@@ -79,21 +81,21 @@
       });
     });
   }
-  function countdown(o, secs) {
+  function countdown(o, secs, busy) {
     secs = Math.max(1, Math.ceil(secs));
     return new Promise(function (res) {
       (function tick() {
         if (secs <= 0) { res(); return; }
-        if (o.onStatus) { o.onStatus('Starting in ' + secs + 's (the free AI allows one request every 30 seconds)'); }
+        if (o.onStatus) { o.onStatus(busy ? 'The free AI is busy. Trying again in ' + secs + 's...' : 'Starting in ' + secs + 's (the free AI allows one request every 30 seconds)'); }
         secs--; setTimeout(tick, 1000);
       })();
     });
   }
   /** o: { system, user, max, onText(textSoFar), onStatus(msg) } → Promise<text> */
   function ask(o) {
-    var tries = 0;
+    var tries = 0, busyNext = false;
     function attempt(useStream) {
-      var gap = lastCall() + GAP - now(), pre = gap > 0 ? countdown(o, gap / 1000) : Promise.resolve();
+      var gap = lastCall() + GAP - now(), pre = gap > 0 ? countdown(o, gap / 1000, busyNext) : Promise.resolve(); busyNext = false;
       return pre.then(function () {
         tries++; markCall();
         if (o.onStatus) { o.onStatus('Writing...'); }
@@ -102,7 +104,7 @@
         if (!String(t || '').trim()) { throw new Error('empty'); }
         return t;
       }).catch(function (e) {
-        if (e && e.wait && tries < 4) { markCall(now() - GAP + e.wait * 1000); return attempt(useStream); }
+        if (e && e.wait && tries < 6) { busyNext = !!e.busy; markCall(now() - GAP + e.wait * 1000); return attempt(useStream); }
         if (tries < 3 && useStream) { return attempt(false); }
         return serverAI(o).catch(function () { throw new Error('The free AI is busy right now. Wait a minute and tap the button again.'); });
       });
