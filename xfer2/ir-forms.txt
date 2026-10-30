@@ -1,0 +1,192 @@
+<?php
+/**
+ * Plugin Name: IR Enquiry Forms
+ * Description: Members build branded enquiry and client onboarding forms, share /enquiry/{id}/, and every answer is emailed to them and listed in their dashboard.
+ */
+
+if ( ! defined( 'ABSPATH' ) ) { exit; }
+
+function ir_form_member() {
+	return is_user_logged_in() && ( ( function_exists( 'ir_pp_has_access' ) && ir_pp_has_access() ) || ( function_exists( 'ir_pb_has_access' ) && ir_pb_has_access() ) || current_user_can( 'manage_options' ) );
+}
+/** A member's forms, keyed by id. The first single-form version is moved over on first read. */
+function ir_forms_mine( $uid = 0 ) {
+	$uid = $uid ?: get_current_user_id();
+	$all = get_user_meta( $uid, 'ir_forms', true );
+	$all = is_array( $all ) ? $all : [];
+	$old = get_user_meta( $uid, 'ir_form', true );
+	if ( is_array( $old ) && ! empty( $old['id'] ) && ! isset( $all[ $old['id'] ] ) ) {
+		$old['type'] = $old['type'] ?? 'enquiry';
+		$all[ $old['id'] ] = $old;
+		update_user_meta( $uid, 'ir_forms', $all );
+		delete_user_meta( $uid, 'ir_form' );
+	}
+	return $all;
+}
+function ir_form_get_mine( $uid = 0 ) { $a = ir_forms_mine( $uid ); return $a ? reset( $a ) : null; }
+function ir_form_by_id( $id ) {
+	$idx = (array) get_option( 'ir_form_idx', [] );
+	$uid = (int) ( $idx[ $id ] ?? 0 );
+	if ( ! $uid ) { return null; }
+	$all = ir_forms_mine( $uid );
+	return isset( $all[ $id ] ) ? [ $uid, $all[ $id ] ] : null;
+}
+function ir_form_clean_color( $c ) { return preg_match( '/^#[0-9a-fA-F]{6}$/', (string) $c ) ? $c : '#1660E8'; }
+
+add_action( 'wp_ajax_ir_form_save', function () {
+	check_ajax_referer( 'ir_form', 'n' );
+	if ( ! ir_form_member() ) { wp_send_json( [ 'ok' => false, 'err' => 'Please log in again.' ] ); }
+	$in = json_decode( wp_unslash( $_POST['data'] ?? '' ), true );
+	if ( ! is_array( $in ) ) { wp_send_json( [ 'ok' => false, 'err' => 'Something went wrong. Try again.' ] ); }
+	$uid = get_current_user_id();
+	$all = ir_forms_mine( $uid );
+	$want = sanitize_key( (string) ( $in['id'] ?? '' ) );
+	$old = ( $want && isset( $all[ $want ] ) ) ? $all[ $want ] : null;
+	if ( ! $old && count( $all ) >= 8 ) { wp_send_json( [ 'ok' => false, 'err' => 'You can have up to 8 forms. Delete one to make a new one.' ] ); }
+	$t = function ( $k, $n = 200 ) use ( $in ) { return mb_substr( sanitize_text_field( (string) ( $in[ $k ] ?? '' ) ), 0, $n ); };
+	$qs = [];
+	foreach ( array_slice( (array) ( $in['questions'] ?? [] ), 0, 20 ) as $q ) {
+		$label = mb_substr( sanitize_text_field( (string) ( $q['label'] ?? '' ) ), 0, 200 );
+		if ( $label === '' ) { continue; }
+		$type = in_array( $q['type'] ?? '', [ 'short', 'long', 'choice' ], true ) ? $q['type'] : 'short';
+		$opts = array_values( array_filter( array_map( function ( $o ) { return mb_substr( sanitize_text_field( (string) $o ), 0, 120 ); }, array_slice( (array) ( $q['options'] ?? [] ), 0, 12 ) ) ) );
+		if ( $type === 'choice' && ! $opts ) { $type = 'short'; }
+		$qs[] = [ 'label' => $label, 'type' => $type, 'on' => ! empty( $q['on'] ), 'options' => $opts ];
+	}
+	$logo = (string) ( $in['logo'] ?? '' );
+	if ( $logo !== '' && ( strlen( $logo ) > 120000 || ! preg_match( '#^data:image/(png|jpeg);base64,[A-Za-z0-9+/=]+$#', $logo ) ) ) { $logo = $old['logo'] ?? ''; }
+	$email = sanitize_email( (string) ( $in['email'] ?? '' ) );
+	if ( ! is_email( $email ) ) { wp_send_json( [ 'ok' => false, 'err' => 'Add a valid email for your answers.' ] ); }
+	$id = $old['id'] ?? strtolower( wp_generate_password( 8, false, false ) );
+	$cur = in_array( $in['cur'] ?? '', [ 'USD', 'NGN', 'GBP', 'EUR', 'CAD', 'AUD', 'GHS', 'KES', 'ZAR', 'INR', 'AED' ], true ) ? $in['cur'] : 'USD';
+	$f = [ 'id' => $id, 'type' => ( $in['type'] ?? '' ) === 'onboarding' ? 'onboarding' : 'enquiry', 'cur' => $cur, 'biz' => $t( 'biz', 120 ), 'name' => $t( 'name', 120 ), 'email' => $email, 'color' => ir_form_clean_color( $in['color'] ?? '' ), 'logo' => $logo,
+		'title' => $t( 'title', 160 ), 'intro' => mb_substr( sanitize_textarea_field( (string) ( $in['intro'] ?? '' ) ), 0, 600 ), 'thanks' => $t( 'thanks', 300 ), 'questions' => $qs, 'updated' => time() ];
+	$all[ $id ] = $f;
+	update_user_meta( $uid, 'ir_forms', $all );
+	$idx = (array) get_option( 'ir_form_idx', [] );
+	$idx[ $id ] = $uid;
+	update_option( 'ir_form_idx', $idx, false );
+	wp_send_json( [ 'ok' => true, 'form' => $f, 'forms' => array_values( $all ) ] );
+} );
+
+add_action( 'wp_ajax_ir_form_delete', function () {
+	check_ajax_referer( 'ir_form', 'n' );
+	if ( ! ir_form_member() ) { wp_send_json( [ 'ok' => false ] ); }
+	$uid = get_current_user_id(); $id = sanitize_key( $_POST['id'] ?? '' ); $all = ir_forms_mine( $uid );
+	if ( isset( $all[ $id ] ) ) { unset( $all[ $id ] ); update_user_meta( $uid, 'ir_forms', $all ); $idx = (array) get_option( 'ir_form_idx', [] ); unset( $idx[ $id ] ); update_option( 'ir_form_idx', $idx, false ); }
+	wp_send_json( [ 'ok' => true, 'forms' => array_values( $all ) ] );
+} );
+
+add_action( 'wp_ajax_ir_form_subs', function () {
+	check_ajax_referer( 'ir_form', 'n' );
+	if ( ! ir_form_member() ) { wp_send_json( [ 'ok' => false ] ); }
+	$s = get_user_meta( get_current_user_id(), 'ir_form_subs', true );
+	wp_send_json( [ 'ok' => true, 'subs' => array_slice( is_array( $s ) ? $s : [], 0, 100 ) ] );
+} );
+
+/* Public submit: honeypot, a minimum fill time and a per-IP limit keep spam out. */
+function ir_form_submit() {
+	$id = sanitize_key( $_POST['f'] ?? '' );
+	$found = ir_form_by_id( $id );
+	if ( ! $found ) { wp_send_json( [ 'ok' => false, 'err' => 'This form is no longer available.' ] ); }
+	list( $uid, $f ) = $found;
+	if ( ! empty( $_POST['website'] ) ) { wp_send_json( [ 'ok' => true ] ); }
+	$ts = (int) ( $_POST['ts'] ?? 0 );
+	if ( ! hash_equals( wp_hash( 'irf' . $ts . $id ), (string) ( $_POST['tk'] ?? '' ) ) || time() - $ts < 3 ) { wp_send_json( [ 'ok' => false, 'err' => 'Please try again.' ] ); }
+	$ip = substr( md5( (string) ( $_SERVER['REMOTE_ADDR'] ?? '' ) ), 0, 12 );
+	$k = 'irf_ip_' . $ip; $n = (int) get_transient( $k );
+	if ( $n >= 8 ) { wp_send_json( [ 'ok' => false, 'err' => 'Too many messages. Please try again later.' ] ); }
+	set_transient( $k, $n + 1, HOUR_IN_SECONDS );
+	$p = wp_unslash( $_POST );
+	$name = mb_substr( sanitize_text_field( (string) ( $p['q_name'] ?? '' ) ), 0, 120 );
+	$email = sanitize_email( (string) ( $p['q_email'] ?? '' ) );
+	$phone = mb_substr( sanitize_text_field( (string) ( $p['q_phone'] ?? '' ) ), 0, 40 );
+	if ( $name === '' || ! is_email( $email ) ) { wp_send_json( [ 'ok' => false, 'err' => 'Please add your name and a valid email.' ] ); }
+	$a = [ [ 'Name', $name ], [ 'Email', $email ] ];
+	if ( $phone !== '' ) { $a[] = [ 'Phone', $phone ]; }
+	foreach ( $f['questions'] as $i => $q ) {
+		if ( empty( $q['on'] ) ) { continue; }
+		$v = $p[ 'q' . $i ] ?? '';
+		$v = is_array( $v ) ? implode( ', ', array_map( 'sanitize_text_field', $v ) ) : ( $q['type'] === 'long' ? sanitize_textarea_field( (string) $v ) : sanitize_text_field( (string) $v ) );
+		$a[] = [ $q['label'], mb_substr( $v, 0, 3000 ) ];
+	}
+	$subs = get_user_meta( $uid, 'ir_form_subs', true );
+	$subs = is_array( $subs ) ? $subs : [];
+	array_unshift( $subs, [ 'at' => wp_date( 'j M Y, g:i a' ), 'form' => $id, 'ft' => ( $f['type'] ?? 'enquiry' ), 'title' => $f['title'], 'name' => $name, 'email' => $email, 'a' => $a ] );
+	update_user_meta( $uid, 'ir_form_subs', array_slice( $subs, 0, 200 ) );
+	/* Email the member. Replying goes straight to the person who filled the form. */
+	$rows = '';
+	foreach ( $a as $r ) {
+		$rows .= '<tr><td style="padding:10px 0;border-top:1px solid #E6EBF5;color:#6B7A99;font-size:13px;width:38%;vertical-align:top">' . esc_html( $r[0] ) . '</td><td style="padding:10px 0;border-top:1px solid #E6EBF5;font-size:15px;color:#0A1633;white-space:pre-wrap">' . esc_html( $r[1] !== '' ? $r[1] : '-' ) . '</td></tr>';
+	}
+	$kind = ( $f['type'] ?? '' ) === 'onboarding' ? 'onboarding form' : 'enquiry form';
+	$inner = '<p style="margin:0 0 14px;font-size:16px;line-height:1.6;color:#33415F">' . esc_html( $name ) . ' just filled in your ' . $kind . ( $f['title'] ? ' "' . esc_html( $f['title'] ) . '"' : '' ) . '. Here are their answers:</p>'
+		. '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:6px 0 10px">' . $rows . '</table>'
+		. '<p style="margin:16px 0 0;font-size:15px;line-height:1.6;color:#33415F">Tip: reply within the hour. Just hit reply, and your answer goes to ' . esc_html( $email ) . '.</p>';
+	$reply = function ( $m ) use ( $email, $name ) { $m['headers'] = (array) $m['headers']; $m['headers'][] = 'Reply-To: ' . str_replace( [ "\r", "\n", '"' ], '', $name ) . ' <' . $email . '>'; return $m; };
+	add_filter( 'wp_mail', $reply );
+	if ( function_exists( 'ir_pb_mail' ) ) {
+		$label = $kind === 'onboarding form' ? 'New onboarding form' : 'New enquiry';
+		ir_pb_mail( $f['email'], $label . ' from ' . $name, $inner, [ 'kicker' => $label . ' · ' . ( $f['biz'] ?: 'Your form' ), 'title' => $label . ' from ' . $name ] );
+	} else {
+		wp_mail( $f['email'], 'New enquiry from ' . $name, $inner, [ 'Content-Type: text/html; charset=UTF-8' ] );
+	}
+	remove_filter( 'wp_mail', $reply );
+	wp_send_json( [ 'ok' => true ] );
+}
+add_action( 'wp_ajax_ir_form_submit', 'ir_form_submit' );
+add_action( 'wp_ajax_nopriv_ir_form_submit', 'ir_form_submit' );
+
+/* The public form page: /enquiry/{id}/ */
+add_action( 'init', function () {
+	$path = trim( (string) wp_parse_url( $_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH ), '/' );
+	if ( ! preg_match( '#^enquiry/([a-z0-9]{8})$#', $path, $m ) ) { return; }
+	$found = ir_form_by_id( $m[1] );
+	nocache_headers();
+	do_action( 'litespeed_control_set_nocache', 'enquiry form' );
+	if ( ! $found ) { status_header( 404 ); echo '<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1"><p style="font-family:sans-serif;padding:40px;text-align:center">This form is no longer available.</p>'; exit; }
+	status_header( 200 );
+	ir_form_render( $found[1] );
+	exit;
+}, 1 );
+
+function ir_form_render( $f ) {
+	$c = ir_form_clean_color( $f['color'] );
+	$ts = time();
+	$biz = $f['biz'] ?: $f['name'];
+	$title = $f['title'] ?: ( ( $f['type'] ?? '' ) === 'onboarding' ? 'Welcome! Let\'s get you set up' : 'Tell me about your business' );
+	$field = function ( $name, $label, $type = 'text', $req = false, $opts = [] ) {
+		$r = $req ? ' required' : '';
+		$h = '<label class="f"><span>' . esc_html( $label ) . ( $req ? ' <i>*</i>' : '' ) . '</span>';
+		if ( $type === 'long' ) { $h .= '<textarea name="' . esc_attr( $name ) . '" rows="4"' . $r . '></textarea>'; }
+		elseif ( $type === 'choice' ) { $h .= '<div class="ch">'; foreach ( $opts as $o ) { $h .= '<label class="c"><input type="radio" name="' . esc_attr( $name ) . '" value="' . esc_attr( $o ) . '"' . $r . '><span>' . esc_html( $o ) . '</span></label>'; } $h .= '</div>'; }
+		else { $h .= '<input type="' . esc_attr( $type ) . '" name="' . esc_attr( $name ) . '"' . $r . '>'; }
+		return $h . '</label>';
+	};
+	?><!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title><?php echo esc_html( $title . ' | ' . $biz ); ?></title>
+<style>:root{--c:<?php echo esc_html( $c ); ?>}*{box-sizing:border-box}body{margin:0;background:#F3F5FA;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#0A1633;-webkit-font-smoothing:antialiased}
+.hd{background:var(--c);color:#fff;padding:34px 20px 74px;text-align:center;position:relative;overflow:hidden}.hd:before{content:"";position:absolute;width:320px;height:320px;border-radius:50%;background:rgba(255,255,255,.1);top:-160px;right:-90px}.hd:after{content:"";position:absolute;width:200px;height:200px;border-radius:50%;background:rgba(255,255,255,.08);bottom:-110px;left:-60px}
+.lg{width:64px;height:64px;border-radius:18px;background:#fff;display:grid;place-items:center;margin:0 auto 14px;overflow:hidden;box-shadow:0 8px 20px rgba(0,0,0,.15)}.lg img{max-width:100%;max-height:100%}.lg b{color:var(--c);font-size:26px}
+.hd small{display:block;font-weight:700;letter-spacing:.08em;text-transform:uppercase;font-size:12px;opacity:.85}.hd h1{margin:8px auto 8px;font-size:27px;line-height:1.2;letter-spacing:-.5px;max-width:560px}.hd p{margin:0 auto;max-width:520px;line-height:1.55;opacity:.92;font-size:16px}
+.cd{max-width:600px;margin:-48px auto 30px;background:#fff;border-radius:22px;padding:22px 20px;box-shadow:0 18px 50px rgba(10,22,51,.12);position:relative}
+.f{display:grid;gap:7px;margin:0 0 16px}.f>span{font-weight:700;font-size:15px}.f i{color:var(--c);font-style:normal}
+input[type=text],input[type=email],input[type=tel],textarea{width:100%;font:inherit;font-size:16px;padding:13px 14px;border:1.5px solid #E1E6F0;border-radius:13px;background:#fff;color:#0A1633}input:focus,textarea:focus{outline:0;border-color:var(--c);box-shadow:0 0 0 4px color-mix(in srgb,var(--c) 15%,transparent)}
+.ch{display:grid;gap:8px}.c{display:flex;gap:10px;align-items:center;border:1.5px solid #E1E6F0;border-radius:13px;padding:12px 14px;cursor:pointer;font-size:15.5px}.c input{width:19px;height:19px;accent-color:var(--c);margin:0}.c:has(input:checked){border-color:var(--c);background:color-mix(in srgb,var(--c) 7%,#fff)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:12px}@media(max-width:520px){.two{grid-template-columns:1fr}}
+button{width:100%;border:0;border-radius:15px;padding:17px;background:var(--c);color:#fff;font:inherit;font-size:17px;font-weight:800;cursor:pointer;box-shadow:0 10px 24px color-mix(in srgb,var(--c) 35%,transparent)}button[disabled]{opacity:.6}
+.er{color:#E5484D;font-weight:600;margin:0 0 12px}.ok{text-align:center;padding:30px 10px}.ok div{width:64px;height:64px;border-radius:50%;background:color-mix(in srgb,var(--c) 12%,#fff);color:var(--c);display:grid;place-items:center;margin:0 auto 14px;font-size:30px}.ok h2{margin:0 0 8px}.ok p{color:#5B6B8C;line-height:1.55;margin:0}
+.ft{text-align:center;color:#8A97B4;font-size:13px;margin:0 0 30px}.hp{position:absolute;left:-9999px;height:1px;overflow:hidden}</style></head><body>
+<div class="hd"><div class="lg"><?php echo $f['logo'] ? '<img src="' . esc_attr( $f['logo'] ) . '" alt="">' : '<b>' . esc_html( mb_strtoupper( mb_substr( $biz, 0, 1 ) ) ) . '</b>'; // phpcs:ignore ?></div><small><?php echo esc_html( $biz ); ?></small><h1><?php echo esc_html( $title ); ?></h1><?php if ( $f['intro'] ) : ?><p><?php echo esc_html( $f['intro'] ); ?></p><?php endif; ?></div>
+<div class="cd" id="cd"><form id="fm" novalidate>
+<input type="hidden" name="action" value="ir_form_submit"><input type="hidden" name="f" value="<?php echo esc_attr( $f['id'] ); ?>"><input type="hidden" name="ts" value="<?php echo (int) $ts; ?>"><input type="hidden" name="tk" value="<?php echo esc_attr( wp_hash( 'irf' . $ts . $f['id'] ) ); ?>">
+<div class="hp"><label>Website<input type="text" name="website" tabindex="-1" autocomplete="off"></label></div>
+<?php echo $field( 'q_name', 'Your name', 'text', true ); // phpcs:ignore ?>
+<div class="two"><?php echo $field( 'q_email', 'Email', 'email', true ) . $field( 'q_phone', 'Phone or WhatsApp', 'tel' ); // phpcs:ignore ?></div>
+<?php foreach ( $f['questions'] as $i => $q ) { if ( ! empty( $q['on'] ) ) { echo $field( 'q' . $i, $q['label'], $q['type'] === 'short' ? 'text' : $q['type'], false, $q['options'] ); } } // phpcs:ignore ?>
+<p class="er" id="er" hidden></p><button id="go">Send</button></form></div>
+<p class="ft"><?php echo esc_html( $biz . ( $f['name'] && $f['name'] !== $biz ? ' · ' . $f['name'] : '' ) ); ?></p>
+<script>(function(){var fm=document.getElementById('fm'),er=document.getElementById('er'),go=document.getElementById('go');fm.onsubmit=function(e){e.preventDefault();er.hidden=true;
+var n=fm.q_name.value.trim(),m=fm.q_email.value.trim();if(!n||!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(m)){er.textContent='Please add your name and a valid email.';er.hidden=false;return}
+go.disabled=true;go.textContent='Sending...';fetch(<?php echo wp_json_encode( admin_url( 'admin-ajax.php' ) ); ?>,{method:'POST',body:new FormData(fm)}).then(function(r){return r.json()}).then(function(j){if(j&&j.ok){document.getElementById('cd').innerHTML='<div class="ok"><div>✓</div><h2>Sent!</h2><p>'+<?php echo wp_json_encode( esc_html( $f['thanks'] ?: 'Thank you! I will be in touch soon.' ) ); ?>+'</p></div>';window.scrollTo(0,0)}else{er.textContent=(j&&j.err)||'Something went wrong. Please try again.';er.hidden=false;go.disabled=false;go.textContent='Send'}}).catch(function(){er.textContent='Connection problem. Please try again.';er.hidden=false;go.disabled=false;go.textContent='Send'})}})();</script>
+</body></html><?php
+}
