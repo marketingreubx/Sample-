@@ -1,0 +1,580 @@
+/* Shared helpers for the members' AI tools.
+   IRAI: the free writer, called straight from the member's own device (their own allowance, no queue), streamed as it writes.
+   IRMEDIA: reads pictures and videos on the member's own device (text on screen, colours, speech). Nothing is uploaded to an AI. */
+(function (w) {
+  var d = document, C = w.IRC || {};
+  var GAP = 31000;
+
+  function now() { return Date.now(); }
+  function wait(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+  function lastCall() { try { return +localStorage.getItem('irc-last') || 0; } catch (e) { return 0; } }
+  function markCall(t) { try { localStorage.setItem('irc-last', String(t || now())); } catch (e) { } }
+
+  /* ---------- the free writer ---------- */
+  function body(o, stream) {
+    return JSON.stringify({ model: 'openai', stream: stream, reasoning_effort: 'low', max_tokens: o.max || 4000, seed: Math.floor(Math.random() * 1e6),
+      messages: [{ role: 'system', content: o.system || '' }, { role: 'user', content: o.user || '' }] });
+  }
+  function httpErr(r, b) {
+    var s = +(r.headers.get('Retry-After') || ((String(b).match(/after (\d+)s/i) || [])[1]) || 0);
+    var e = new Error('Could not finish (' + r.status + ')'); e.status = r.status;
+    e.wait = (r.status === 402 || r.status === 429) ? Math.max(2, Math.min(35, s || 30)) : (r.status === 503 || r.status === 502 || r.status === 500) ? Math.max(4, Math.min(20, s || 8)) : 0;
+    e.busy = r.status >= 500; return e;
+  }
+  function sse(chunk, o, acc) {
+    chunk.split('\n').forEach(function (line) {
+      if (line.indexOf('data:') !== 0) { return; }
+      var data = line.slice(5).trim(); if (!data || data === '[DONE]') { return; }
+      try {
+        var dl = (JSON.parse(data).choices || [])[0]; dl = dl && (dl.delta || dl.message); if (!dl) { return; }
+        if (dl.content) { acc.text += dl.content; if (o.onText) { o.onText(acc.text); } } else if (dl.reasoning || dl.reasoning_content) { if (o.onStatus) { o.onStatus('Thinking it through...'); } }
+      } catch (e) { }
+    });
+  }
+  function streamAI(o) {
+    var ctl = w.AbortController ? new AbortController() : null, last = now(), dog = null;
+    if (ctl) { dog = setInterval(function () { if (now() - last > 25000) { ctl.abort(); } }, 2000); }
+    function stop() { if (dog) { clearInterval(dog); } }
+    return fetch('https://text.pollinations.ai/openai', { method: 'POST', headers: { 'Content-Type': 'application/json' }, signal: ctl ? ctl.signal : undefined, body: body(o, true) }).then(function (r) {
+      if (!r.ok) { return r.text().then(function (b) { throw httpErr(r, b); }); }
+      var acc = { text: '' };
+      if (!r.body || !r.body.getReader) { return r.text().then(function (b) { sse(b, o, acc); return acc.text; }); }
+      var rd = r.body.getReader(), dec = new TextDecoder(), buf = '';
+      function pump() {
+        return rd.read().then(function (x) {
+          last = now();
+          if (x.done) { if (buf) { sse(buf, o, acc); } return acc.text; }
+          buf += dec.decode(x.value, { stream: true });
+          var cut = buf.lastIndexOf('\n'); if (cut < 0) { return pump(); }
+          sse(buf.slice(0, cut), o, acc); buf = buf.slice(cut + 1);
+          return pump();
+        });
+      }
+      return pump();
+    }).then(function (t) { stop(); return t; }, function (e) { stop(); throw e; });
+  }
+  function plainAI(o) {
+    var ctl = w.AbortController ? new AbortController() : null, tm = ctl ? setTimeout(function () { ctl.abort(); }, 70000) : null;
+    return fetch('https://text.pollinations.ai/openai', { method: 'POST', headers: { 'Content-Type': 'application/json' }, signal: ctl ? ctl.signal : undefined, body: body(o, false) }).then(function (r) {
+      return r.text().then(function (b) { if (tm) { clearTimeout(tm); } if (!r.ok) { throw httpErr(r, b); } var j = JSON.parse(b); return ((((j.choices || [])[0] || {}).message) || {}).content || ''; });
+    }, function (e) { if (tm) { clearTimeout(tm); } throw e; });
+  }
+  /* Last resort: the same writer through the website (used only if this device cannot reach it). */
+  function serverAI(o) {
+    if (!C.aj || !C.n) { return Promise.reject(new Error('no server')); }
+    if (o.onStatus) { o.onStatus('Writing through the website...'); }
+    var f = new FormData(); f.append('action', 'ir_tool_run'); f.append('n', C.n); f.append('tool', 'free'); f.append('sys', o.system || ''); f.append('user', o.user || '');
+    return fetch(C.aj, { method: 'POST', body: f, credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (r) {
+      if (!r || !r.ok) { throw new Error((r && r.err) || 'busy'); }
+      var job = r.job, tries = 0;
+      return new Promise(function (res, rej) {
+        (function poll() {
+          if (++tries > 80) { rej(new Error('busy')); return; }
+          setTimeout(function () {
+            var g = new FormData(); g.append('action', 'ir_tool_job'); g.append('n', C.n); g.append('job', job);
+            fetch(C.aj, { method: 'POST', body: g, credentials: 'same-origin' }).then(function (x) { return x.json(); }).then(function (j) {
+              if (j && j.wait) { poll(); return; }
+              if (j && j.ok) { res(String(j.data && j.data.text || '')); } else { rej(new Error((j && j.err) || 'busy')); }
+            }).catch(function () { poll(); });
+          }, 2500);
+        })();
+      });
+    });
+  }
+  function countdown(o, secs, busy) {
+    secs = Math.max(1, Math.ceil(secs));
+    return new Promise(function (res) {
+      (function tick() {
+        if (secs <= 0) { res(); return; }
+        if (o.onStatus) { o.onStatus(busy ? 'Almost there...' : 'Getting everything ready...'); }
+        secs--; setTimeout(tick, 1000);
+      })();
+    });
+  }
+  /** o: { system, user, max, onText(textSoFar), onStatus(msg) } → Promise<text> */
+  /* The site's own stronger model (used when the owner saved a key under Tools > Vision AI). */
+  function proAI(o) {
+    var f = new FormData(); f.append('action', 'ir_tl_ai'); f.append('n', C.n); f.append('sys', o.system || ''); f.append('user', o.user || ''); f.append('max', String(o.max || 4000));
+    if (o.onStatus) { o.onStatus('Writing...'); }
+    return fetch(C.aj, { method: 'POST', body: f, credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (j) {
+      if (!j || !j.ok || !String(j.text || '').trim()) { throw new Error('pro'); }
+      if (o.onText) { o.onText(j.text); }
+      return j.text;
+    });
+  }
+  function ask(o) {
+    if (C.pro && !o.noPro) { return proAI(o).catch(function () { return ask(Object.assign({}, o, { noPro: true })); }); }
+    var tries = 0, busyNext = false;
+    function attempt(useStream) {
+      var gap = lastCall() + GAP - now(), pre = gap > 0 ? countdown(o, gap / 1000, busyNext) : Promise.resolve(); busyNext = false;
+      return pre.then(function () {
+        tries++; markCall();
+        if (o.onStatus) { o.onStatus('Writing...'); }
+        return (useStream ? streamAI(o) : plainAI(o));
+      }).then(function (t) {
+        if (!String(t || '').trim()) { throw new Error('empty'); }
+        return t;
+      }).catch(function (e) {
+        if (e && e.wait && tries < 6) { busyNext = !!e.busy; markCall(now() - GAP + e.wait * 1000); return attempt(useStream); }
+        if (tries < 3 && useStream) { return attempt(false); }
+        return serverAI(o).catch(function () { throw new Error('That took too long to finish. Tap the button again.'); });
+      });
+    }
+    return attempt(true);
+  }
+  function json(s) {
+    s = String(s || '').trim().replace(/^```(?:json)?\s*|\s*```$/gi, '');
+    try { return JSON.parse(s); } catch (e) { }
+    var a = s.indexOf('{'), b = s.lastIndexOf('}');
+    if (a >= 0 && b > a) { try { return JSON.parse(s.slice(a, b + 1)); } catch (e) { } }
+    a = s.indexOf('['); b = s.lastIndexOf(']');
+    if (a >= 0 && b > a) { try { return JSON.parse(s.slice(a, b + 1)); } catch (e) { } }
+    return null;
+  }
+  function nodash(v) {
+    if (Array.isArray(v)) { return v.map(nodash); }
+    if (v && typeof v === 'object') { var o = {}; Object.keys(v).forEach(function (k) { o[k] = nodash(v[k]); }); return o; }
+    return typeof v === 'string' ? v.replace(/\s*[—–]\s*/g, ', ').trim() : v;
+  }
+  /* Ask for JSON; if the reply is not valid JSON, ask once more. */
+  function askJSON(o, ok) {
+    return ask(o).then(function (t) {
+      var j = json(t);
+      if (j && (!ok || ok(j))) { return nodash(j); }
+      if (o.onStatus) { o.onStatus('Tidying the answer...'); }
+      return ask({ system: o.system, user: o.user + '\n\nReply with valid JSON only, nothing before or after it.', max: o.max, onStatus: o.onStatus }).then(function (t2) {
+        var j2 = json(t2); if (j2 && (!ok || ok(j2))) { return nodash(j2); }
+        throw new Error('The AI reply was incomplete. Tap the button again.');
+      });
+    });
+  }
+  function post(action, data, nonce) {
+    var f = new FormData(); f.append('action', action); f.append('n', nonce || C.n || '');
+    Object.keys(data || {}).forEach(function (k) { f.append(k, data[k]); });
+    return fetch(C.aj, { method: 'POST', body: f, credentials: 'same-origin' }).then(function (r) { return r.json(); });
+  }
+  w.IRAI = { ask: ask, askJSON: askJSON, json: json, nodash: nodash, post: post };
+
+  /* ---------- reading pictures and videos on the device ---------- */
+  var OCR = C.ocr || '', wk = null;
+  function loadScript(src) { return new Promise(function (res, rej) { var s = d.createElement('script'); s.src = src; s.onload = res; s.onerror = function () { rej(new Error('Could not load the text reader.')); }; d.head.appendChild(s); }); }
+  function ocrWorker() {
+    if (!OCR) { return Promise.reject(new Error('The text reader is not available.')); }
+    if (wk) { return wk; }
+    wk = (w.Tesseract ? Promise.resolve() : loadScript(OCR + 'tesseract.min.js')).then(function () {
+      return Tesseract.createWorker('eng', 1, { workerPath: OCR + 'worker.min.js', corePath: OCR.replace(/\/$/, ''), langPath: OCR.replace(/\/$/, ''), gzip: false, workerBlobURL: false, logger: function () { } });
+    }).then(function (x) { return x.setParameters({ tessedit_pageseg_mode: '11', preserve_interword_spaces: '1' }).then(function () { return x; }); });
+    wk.catch(function () { wk = null; });
+    return wk;
+  }
+  function stopOcr() { if (wk) { wk.then(function (x) { try { x.terminate(); } catch (e) { } }, function () { }); wk = null; } }
+  function words(s) { return (String(s).match(/[A-Za-z0-9'’]+/g) || []); }
+  /** File or Blob (image) → canvas no wider than max px. */
+  function toCanvas(file, max) {
+    return new Promise(function (res, rej) {
+      var url = URL.createObjectURL(file), im = new Image();
+      im.onload = function () {
+        var s = Math.min(1, (max || 1400) / Math.max(im.naturalWidth, im.naturalHeight)), c = d.createElement('canvas');
+        c.width = Math.max(1, Math.round(im.naturalWidth * s)); c.height = Math.max(1, Math.round(im.naturalHeight * s));
+        c.getContext('2d', { willReadFrequently: true }).drawImage(im, 0, 0, c.width, c.height); URL.revokeObjectURL(url); res(c);
+      };
+      im.onerror = function () { URL.revokeObjectURL(url); rej(new Error('That picture could not be opened. Use a JPG or PNG.')); };
+      im.src = url;
+    });
+  }
+  /** Text on a picture, grouped into blocks with position and relative size. */
+  function readImage(c) {
+    return ocrWorker().then(function (x) { return x.recognize(c); }).then(function (r) {
+      var H = c.height, W = c.width, lines = (r.data.lines || []).filter(function (l) {
+        var t = String(l.text || '').replace(/\s+/g, ' ').trim(), letters = (t.match(/[A-Za-z0-9₦$£€%]/g) || []).length;
+        l.t = t; return l.confidence >= 50 && letters >= 2 && letters / Math.max(1, t.replace(/\s/g, '').length) >= 0.55;
+      }).sort(function (a, b) { return a.bbox.y0 - b.bbox.y0; });
+      var out = [];
+      lines.forEach(function (l) {
+        var lh = Math.max(6, l.bbox.y1 - l.bbox.y0), p = out[out.length - 1];
+        if (p && l.bbox.y0 - p.y1 < lh * 1.3 && Math.abs(lh - p.lh) < lh * 0.45) { p.t += ' ' + l.t; p.y1 = l.bbox.y1; p.x0 = Math.min(p.x0, l.bbox.x0); p.x1 = Math.max(p.x1, l.bbox.x1); }
+        else { out.push({ t: l.t, y0: l.bbox.y0, y1: l.bbox.y1, x0: l.bbox.x0, x1: l.bbox.x1, lh: lh }); }
+      });
+      var maxH = out.reduce(function (m, b) { return Math.max(m, b.lh); }, 1);
+      return out.map(function (b) {
+        var cy = (b.y0 + b.y1) / 2 / H, cx = (b.x0 + b.x1) / 2 / W;
+        return { text: b.t, size: Math.round(b.lh / maxH * 100), pos: (cy < 0.33 ? 'top' : cy > 0.66 ? 'bottom' : 'middle') + ' ' + (cx < 0.38 ? 'left' : cx > 0.62 ? 'right' : 'center'), y: Math.round(cy * 100) };
+      });
+    });
+  }
+  function hex(r, g, b) { return '#' + [r, g, b].map(function (v) { return ('0' + Math.round(v).toString(16)).slice(-2); }).join('').toUpperCase(); }
+  /** Main colours of a picture, biggest share first. */
+  function palette(c) {
+    var x = d.createElement('canvas'), W = 96, H = Math.max(1, Math.round(96 * c.height / c.width)); x.width = W; x.height = H;
+    var g = x.getContext('2d', { willReadFrequently: true }); g.drawImage(c, 0, 0, W, H);
+    var p = g.getImageData(0, 0, W, H).data, bins = {}, i, n = 0, lum = 0, sat = 0;
+    for (i = 0; i < p.length; i += 4) {
+      var r = p[i], gg = p[i + 1], b = p[i + 2], k = (r >> 5) + ',' + (gg >> 5) + ',' + (b >> 5), mx = Math.max(r, gg, b), mn = Math.min(r, gg, b);
+      bins[k] = bins[k] || { n: 0, r: 0, g: 0, b: 0 }; bins[k].n++; bins[k].r += r; bins[k].g += gg; bins[k].b += b; n++;
+      lum += 0.3 * r + 0.59 * gg + 0.11 * b; sat += mx ? (mx - mn) / mx : 0;
+    }
+    var list = Object.keys(bins).map(function (k) { var v = bins[k]; return { r: v.r / v.n, g: v.g / v.n, b: v.b / v.n, share: v.n / n }; }).sort(function (a, b) { return b.share - a.share; });
+    var picked = [];
+    list.forEach(function (c2) {
+      if (picked.length >= 6 || c2.share < 0.015) { return; }
+      if (picked.some(function (q) { return Math.abs(q.r - c2.r) + Math.abs(q.g - c2.g) + Math.abs(q.b - c2.b) < 60; })) { return; }
+      picked.push(c2);
+    });
+    return { colors: picked.map(function (q) { return { hex: hex(q.r, q.g, q.b), share: Math.round(q.share * 100) }; }), bright: Math.round(lum / n / 2.55), sat: Math.round(sat / n * 100), spread: list.filter(function (q) { return q.share > 0.004; }).length };
+  }
+
+  /* Video: watch for on-screen text, cuts and format (sampled frames, read on the device). */
+  function loadVideo(blob) {
+    return new Promise(function (res, rej) {
+      var v = d.createElement('video'), url = URL.createObjectURL(blob), done = false, tm;
+      v.muted = true; v.playsInline = true; v.setAttribute('playsinline', ''); v.setAttribute('muted', ''); v.preload = 'auto';
+      v.style.cssText = 'position:fixed;left:-9999px;top:0;width:2px;height:2px;opacity:0;pointer-events:none';
+      function fail(e) { if (done) { return; } done = true; clearTimeout(tm); try { v.remove(); URL.revokeObjectURL(url); } catch (x) { } rej(e); }
+      tm = setTimeout(function () { fail(new Error('The video would not open.')); }, 15000);
+      v.onloadeddata = function () { if (done) { return; } done = true; clearTimeout(tm); res({ v: v, url: url }); };
+      v.onerror = function () { fail(new Error('The video would not open.')); };
+      d.body.appendChild(v); v.src = url; v.load();
+    });
+  }
+  function seek(v, t) {
+    return new Promise(function (res) {
+      var done = false, tm = setTimeout(fin, 2000);
+      function fin() { if (done) { return; } done = true; clearTimeout(tm); v.removeEventListener('seeked', fin); res(); }
+      v.addEventListener('seeked', fin); v.currentTime = t;
+    });
+  }
+  function duration(v) {
+    if (isFinite(v.duration) && v.duration > 0) { return Promise.resolve(v.duration); }
+    return seek(v, 1e7).then(function () { var dd = isFinite(v.duration) && v.duration > 0 ? v.duration : v.currentTime; return seek(v, 0).then(function () { return dd; }); });
+  }
+  function sig(c) {
+    var t = d.createElement('canvas'); t.width = t.height = 24; var x = t.getContext('2d'); x.drawImage(c, 0, 0, 24, 24);
+    var p = x.getImageData(0, 0, 24, 24).data, out = new Array(576), m = 0, i;
+    for (i = 0; i < 576; i++) { out[i] = (p[i * 4] * 0.3 + p[i * 4 + 1] * 0.59 + p[i * 4 + 2] * 0.11); m += out[i]; }
+    m /= 576; var sd = 0; for (i = 0; i < 576; i++) { sd += (out[i] - m) * (out[i] - m); }
+    return { v: out, sd: Math.sqrt(sd / 576) };
+  }
+  function diff(a, b) { if (!a || !b) { return 1; } var s = 0; for (var i = 0; i < 576; i++) { s += Math.abs(a.v[i] - b.v[i]); } return s / 576 / 255; }
+  function mask(c) {
+    var m = d.createElement('canvas'); m.width = c.width; m.height = c.height; var x = m.getContext('2d', { willReadFrequently: true }), im = c.getContext('2d').getImageData(0, 0, c.width, c.height), p = im.data, i;
+    for (i = 0; i < p.length; i += 4) { var wv = p[i] > 200 && p[i + 1] > 200 && p[i + 2] > 200 ? 0 : 255; p[i] = p[i + 1] = p[i + 2] = wv; p[i + 3] = 255; }
+    x.putImageData(im, 0, 0); return m;
+  }
+  function blocks(data, h) {
+    var ls = (data.lines || []).filter(function (l) {
+      var t = String(l.text || '').replace(/\s+/g, ' ').trim(), letters = (t.match(/[A-Za-z]/g) || []).length;
+      l.t = t; return l.confidence >= 55 && letters >= 3 && letters / Math.max(1, t.replace(/\s/g, '').length) >= 0.6;
+    }).sort(function (a, b) { return a.bbox.y0 - b.bbox.y0; });
+    var out = [];
+    ls.forEach(function (l) {
+      var lh = Math.max(8, l.bbox.y1 - l.bbox.y0), last = out[out.length - 1];
+      if (last && l.bbox.y0 - last.y1 < lh * 1.4 && Math.abs(lh - last.lh) < lh * 0.6) { last.t += ' ' + l.t; last.y1 = l.bbox.y1; }
+      else { out.push({ t: l.t, y0: l.bbox.y0, y1: l.bbox.y1, lh: lh }); }
+    });
+    return out.map(function (b) { return { t: b.t, y: (b.y0 + b.y1) / 2 / h }; });
+  }
+  function letters(t) { return String(t).toLowerCase().replace(/[^a-z0-9]/g, ''); }
+  function bigrams(t) { var o = {}, i; for (i = 0; i < t.length - 1; i++) { o[t.substr(i, 2)] = (o[t.substr(i, 2)] || 0) + 1; } return o; }
+  function same(a, b) {
+    var x = letters(a), y = letters(b);
+    if (!x || !y) { return false; }
+    if (x === y || (Math.min(x.length, y.length) >= 5 && (x.indexOf(y) >= 0 || y.indexOf(x) >= 0))) { return true; }
+    var bx = bigrams(x), by = bigrams(y), inter = 0, k;
+    for (k in bx) { if (by[k]) { inter += Math.min(bx[k], by[k]); } }
+    return 2 * inter / Math.max(1, x.length + y.length - 2) >= 0.62;
+  }
+  var LOW = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || (navigator.deviceMemory && navigator.deviceMemory <= 4);
+  /** opt: { spoken, onProgress(frac, msg) } → { dur, cards:[{t,text}], kind, desc, pace, cuts, textLed } */
+  function watch(blob, opt) {
+    opt = opt || {}; var prog = opt.onProgress || function () { };
+    var FW = LOW ? 480 : 560, MAXF = LOW ? 8 : 12, frames = [];
+    return loadVideo(blob).then(function (lv) {
+      var v = lv.v;
+      function clean() { try { v.remove(); URL.revokeObjectURL(lv.url); } catch (e) { } }
+      return duration(v).then(function (dur) {
+        var cap = Math.min(dur, LOW ? 60 : 100), n = Math.max(3, Math.min(MAXF, Math.floor(cap / 1.2))), times = [], i;
+        for (i = 0; i < n; i++) { times.push(cap * (i + 0.5) / n); }
+        var vw = v.videoWidth || 360, vh = v.videoHeight || 640, FH = Math.round(FW * vh / vw);
+        var c = d.createElement('canvas'); c.width = FW; c.height = FH; var cx = c.getContext('2d', { willReadFrequently: true });
+        var prev = null, prevOcr = null, prevRes = [], step = Promise.resolve();
+        times.forEach(function (t, k) {
+          step = step.then(function () {
+            prog(k / times.length, 'Watching the video... ' + (k + 1) + ' of ' + times.length);
+            return seek(v, t).then(function () {
+              cx.drawImage(v, 0, 0, FW, FH);
+              var s = sig(c), cut = k > 0 && diff(prev, s) > 0.09, fr = { t: t, cut: cut, flat: s.sd < 22, parts: [] };
+              prev = s;
+              if (prevOcr && diff(prevOcr, s) < 0.012) { fr.parts = prevRes; frames.push(fr); return; }
+              return ocrWorker().then(function (x) { return x.recognize(s.sd > 45 ? mask(c) : c); }).then(function (r) {
+                var parts = blocks(r.data, FH); fr.parts = parts; prevOcr = s; prevRes = parts; frames.push(fr);
+              });
+            });
+          });
+        });
+        return step.then(function () { clean(); return { dur: dur, cap: cap, n: n }; }, function (e) { clean(); throw e; });
+      });
+    }).then(function (info) { stopOcr(); return summarise(frames, info, opt); }, function (e) { stopOcr(); throw e; });
+  }
+  function summarise(frames, info, opt) {
+    var events = [], spoken = String(opt.spoken || '').toLowerCase(), step = info.cap / info.n;
+    frames.forEach(function (f) {
+      f.parts.forEach(function (p) {
+        for (var k = events.length - 1; k >= 0 && k >= events.length - 4; k--) {
+          var e = events[k];
+          if (same(e.t, p.t) && Math.abs(e.y - p.y) < 0.25 && f.t - e.t1 <= step * 2.2) { e.t1 = f.t; if (words(p.t).length > words(e.t).length) { e.t = p.t; } return; }
+        }
+        events.push({ t: p.t, t0: f.t, t1: f.t, y: p.y });
+      });
+    });
+    var cards = events.filter(function (e) {
+      if (!spoken) { return true; }
+      var wd = words(e.t.toLowerCase()), hit = wd.filter(function (x) { return spoken.indexOf(x) >= 0; }).length;
+      return hit / Math.max(1, wd.length) < 0.7;
+    });
+    if (cards.length >= 8 && cards.filter(function (e) { return words(e.t).length <= 3; }).length / cards.length > 0.7) { cards = []; }
+    cards.sort(function (a, b) { return a.t0 - b.t0 || a.y - b.y; });
+    var cuts = frames.filter(function (f) { return f.cut; }).length, flat = frames.filter(function (f) { return f.flat; }).length / Math.max(1, frames.length);
+    var wps = opt.spoken ? words(opt.spoken).length / Math.max(3, info.cap) : 0, textLed = (cards.length >= 2 && wps < 0.8) || (cards.length >= 1 && wps < 0.25);
+    var rate = cuts / Math.max(1, info.cap), pace = rate > 0.45 ? 'fast cuts' : cuts <= 1 ? 'one continuous shot' : 'a few cuts';
+    var kind = textLed ? 'Text-on-screen video (the words are shown, not spoken)' : cards.length ? 'Talking or voiceover video with extra text on screen' : (opt.spoken ? 'Talking or voiceover video' : 'Video with no speech and little text');
+    var desc = kind + '. ' + Math.round(info.dur) + ' seconds, ' + pace + ', ' + (flat > 0.7 ? 'mostly a plain background' : 'filmed footage') + '.';
+    return { dur: info.dur, cards: cards.map(function (e) { return { t: Math.round(e.t0 * 10) / 10, text: e.t }; }), kind: kind, desc: desc, pace: pace, cuts: cuts, textLed: textLed };
+  }
+
+  /* Speech to text, on the device (Whisper). */
+  var WORKER = [
+    "import { pipeline, env } from 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.7.1';",
+    'env.allowLocalModels = false;',
+    "let asr = null, cur = '';",
+    'self.onmessage = async (e) => {',
+    '  const { audio, model } = e.data;',
+    '  try {',
+    "    if (!asr || cur !== model) { asr = await pipeline('automatic-speech-recognition', model, { dtype: 'q8', device: 'wasm', progress_callback: (p) => self.postMessage({ type: 'progress', p }) }); cur = model; }",
+    "    self.postMessage({ type: 'status' });",
+    "    const out = await asr(audio, { return_timestamps: true, chunk_length_s: 30, stride_length_s: 5 });",
+    "    self.postMessage({ type: 'done', out });",
+    "  } catch (err) { self.postMessage({ type: 'error', msg: String((err && err.message) || err) }); }",
+    '};'
+  ].join('\n');
+  var worker = null;
+  function decode(blob) {
+    return blob.arrayBuffer().then(function (buf) {
+      var AC = w.AudioContext || w.webkitAudioContext, ac = new AC();
+      return new Promise(function (res, rej) { ac.decodeAudioData(buf, res, rej); }).then(function (ab) {
+        var dur = Math.min(ab.duration, LOW ? 90 : 180), off = new OfflineAudioContext(1, Math.ceil(dur * 16000), 16000);
+        var src = off.createBufferSource(); src.buffer = ab; src.connect(off.destination); src.start(0);
+        return off.startRendering().then(function (r) { try { ac.close(); } catch (e) { } return { pcm: r.getChannelData(0), dur: ab.duration }; });
+      });
+    });
+  }
+  /** → { text, segs:[{t,text}], dur } (text '' when there is no speech) */
+  function transcribe(blob, onProgress) {
+    var prog = onProgress || function () { };
+    if (!w.Worker || !w.OfflineAudioContext) { return Promise.reject(new Error('This browser cannot listen to the video. Try Chrome or Safari.')); }
+    prog(0.02, 'Reading the audio...');
+    return decode(blob).catch(function () { return null; }).then(function (a) {
+      if (!a) { return { text: '', segs: [], dur: 0 }; }
+      var model = LOW ? 'Xenova/whisper-tiny.en' : 'Xenova/whisper-base.en', files = {};
+      try { worker = worker || new Worker(URL.createObjectURL(new Blob([WORKER], { type: 'text/javascript' })), { type: 'module' }); }
+      catch (e) { throw new Error('This browser cannot listen to the video. Try Chrome or Safari.'); }
+      prog(0.05, 'Getting the listener ready...');
+      return new Promise(function (res, rej) {
+        worker.onmessage = function (e) {
+          var m = e.data;
+          if (m.type === 'progress' && m.p && m.p.status === 'progress' && m.p.total) {
+            files[m.p.file] = [m.p.loaded, m.p.total];
+            var l = 0, t = 0; for (var k in files) { l += files[k][0]; t += files[k][1]; }
+            prog(0.05 + 0.5 * (l / t), 'Getting the listener ready: ' + Math.round(l / 1048576) + ' of ' + Math.round(t / 1048576) + ' MB (first time only)');
+          } else if (m.type === 'status') { prog(0.6, 'Listening to the video...'); }
+          else if (m.type === 'done') { res({ out: m.out, dur: a.dur }); }
+          else if (m.type === 'error') { rej(new Error('The listener stopped: ' + m.msg)); }
+        };
+        worker.onerror = function (e) { rej(new Error((e && e.message) || 'The listener stopped.')); };
+        worker.postMessage({ audio: a.pcm, model: model }, [a.pcm.buffer]);
+      });
+    }).then(function (r) {
+      if (r && r.out === undefined) { return r; }
+      if (LOW && worker) { try { worker.terminate(); } catch (e) { } worker = null; }
+      var ch = (r.out && r.out.chunks) || [], segs = ch.map(function (c) { return { t: c.timestamp ? Math.round((c.timestamp[0] || 0) * 10) / 10 : null, text: String(c.text || '').trim() }; }).filter(function (s) { return s.text && !/^\[.*\]$|^\(.*\)$/.test(s.text); });
+      var text = segs.length ? segs.map(function (s) { return s.text; }).join(' ') : String((r.out && r.out.text) || '').trim();
+      if (/^\[.*\]$|^\(.*\)$/.test(text)) { text = ''; }
+      return { text: text, segs: segs, dur: r.dur };
+    });
+  }
+
+  /* Picture to words, on the device (Florence-2). Describes the actual image so the writer is not guessing. */
+  var SEE = [
+    "import { Florence2ForConditionalGeneration, AutoProcessor, RawImage, env } from 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.7.1';",
+    'env.allowLocalModels = false;',
+    "const ID = 'onnx-community/Florence-2-base-ft';",
+    'let M = null, P = null;',
+    'self.onmessage = async (e) => {',
+    '  const { blob, tasks } = e.data;',
+    '  try {',
+    '    if (!M) {',
+    '      let gpu = false;',
+    "      try { const a = self.navigator && navigator.gpu ? await navigator.gpu.requestAdapter() : null; gpu = !!(a && a.features && a.features.has('shader-f16')); } catch (x) { gpu = false; }",
+    "      const cb = (p) => self.postMessage({ type: 'progress', p });",
+    "      const dtype = gpu ? { embed_tokens: 'fp16', vision_encoder: 'fp16', encoder_model: 'q4', decoder_model_merged: 'q4' } : { embed_tokens: 'q8', vision_encoder: 'q8', encoder_model: 'q8', decoder_model_merged: 'q8' };",
+    "      M = await Florence2ForConditionalGeneration.from_pretrained(ID, { dtype, device: gpu ? 'webgpu' : 'wasm', progress_callback: cb });",
+    '      P = await AutoProcessor.from_pretrained(ID);',
+    '    }',
+    "    self.postMessage({ type: 'status' });",
+    '    const img = await RawImage.fromBlob(blob);',
+    '    const out = {};',
+    '    for (const t of tasks) {',
+    '      const inputs = await P(img, t);',
+    "      const ids = await M.generate({ ...inputs, max_new_tokens: t === '<MORE_DETAILED_CAPTION>' ? 320 : 160, num_beams: 1 });",
+    '      const txt = P.batch_decode(ids, { skip_special_tokens: false })[0];',
+    '      const r = P.post_process_generation(txt, t, img.size);',
+    '      out[t] = r[t];',
+    '    }',
+    "    self.postMessage({ type: 'done', out });",
+    "  } catch (err) { self.postMessage({ type: 'error', msg: String((err && err.message) || err) }); }",
+    '};'
+  ].join('\n');
+  var seer = null;
+  /** → { caption, objects } describing the picture (caption '' if the device cannot run it). */
+  function see(blob, onProgress) {
+    var prog = onProgress || function () { };
+    if (!w.Worker) { return Promise.reject(new Error('This browser cannot look at pictures. Try Chrome or Safari.')); }
+    try { seer = seer || new Worker(URL.createObjectURL(new Blob([SEE], { type: 'text/javascript' })), { type: 'module' }); }
+    catch (e) { return Promise.reject(new Error('This browser cannot look at pictures. Try Chrome or Safari.')); }
+    var files = {};
+    prog(0.03, 'Getting the picture reader ready...');
+    return new Promise(function (res, rej) {
+      seer.onmessage = function (e) {
+        var m = e.data;
+        if (m.type === 'progress' && m.p && m.p.status === 'progress' && m.p.total) {
+          files[m.p.file] = [m.p.loaded, m.p.total];
+          var l = 0, t = 0; for (var k in files) { l += files[k][0]; t += files[k][1]; }
+          prog(0.03 + 0.6 * (l / t), 'Getting the picture reader ready: ' + Math.round(l / 1048576) + ' of ' + Math.round(t / 1048576) + ' MB (first time only, then it is saved)');
+        } else if (m.type === 'status') { prog(0.7, 'Looking closely at the picture...'); }
+        else if (m.type === 'done') { res({ caption: String(m.out['<MORE_DETAILED_CAPTION>'] || '').trim(), objects: String(m.out['<DENSE_REGION_CAPTION>'] && m.out['<DENSE_REGION_CAPTION>'].labels ? m.out['<DENSE_REGION_CAPTION>'].labels.join(', ') : '') }); }
+        else if (m.type === 'error') { try { seer.terminate(); } catch (x) { } seer = null; rej(new Error('The picture reader stopped: ' + m.msg)); }
+      };
+      seer.onerror = function (e) { try { seer.terminate(); } catch (x) { } seer = null; rej(new Error((e && e.message) || 'The picture reader stopped.')); };
+      seer.postMessage({ blob: blob, tasks: ['<MORE_DETAILED_CAPTION>', '<DENSE_REGION_CAPTION>'] });
+    });
+  }
+
+  /* Exact pose, measured on the device (MediaPipe pose landmarks), turned into plain words for the image prompt. */
+  var POSE_P = null;
+  function poseModel() {
+    if (POSE_P) { return POSE_P; }
+    var V = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14';
+    var model = (C.rsc || (location.origin + '/wp-content/uploads/ir-rsc/')) + 'pose_landmarker_full.task';
+    POSE_P = import(V + '/vision_bundle.mjs').then(function (m) {
+      return m.FilesetResolver.forVisionTasks(V + '/wasm').then(function (fs) {
+        return m.PoseLandmarker.createFromOptions(fs, { baseOptions: { modelAssetPath: model, delegate: 'CPU' }, runningMode: 'IMAGE', numPoses: 3, minPoseDetectionConfidence: 0.4, minPosePresenceConfidence: 0.4 });
+      });
+    });
+    POSE_P.catch(function () { POSE_P = null; });
+    return POSE_P;
+  }
+  function deg(a) { return a * 180 / Math.PI; }
+  function dist(a, b) { return Math.hypot(a.x - b.x, a.y - b.y); }
+  function angleAt(a, b, c) { var v1 = { x: a.x - b.x, y: a.y - b.y }, v2 = { x: c.x - b.x, y: c.y - b.y }; var d = (v1.x * v2.x + v1.y * v2.y) / ((Math.hypot(v1.x, v1.y) * Math.hypot(v2.x, v2.y)) || 1); return deg(Math.acos(Math.max(-1, Math.min(1, d)))); }
+  /** 33 landmarks (x, y 0-1 of the picture, y down; z depth; visibility) → a precise pose description. Sides are the viewer's left and right. */
+  function poseWords(L, ar) {
+    var ok = function (i) { return L[i] && (L[i].visibility == null || L[i].visibility > 0.5); };
+    var P = function (i) { return { x: L[i].x * ar, y: L[i].y, z: L[i].z * ar }; };
+    var out = [], nose = P(0), eR = P(2), eL = P(5), sR = P(11), sL = P(12);
+    /* MediaPipe: 11 = person's left shoulder. Name things by where they appear: A = on the viewer's left. */
+    var sA = sR.x < sL.x ? sR : sL, sB = sR.x < sL.x ? sL : sR, swapped = sR.x >= sL.x;
+    var sw = Math.max(0.01, dist(sA, sB)), mid = { x: (sA.x + sB.x) / 2, y: (sA.y + sB.y) / 2 };
+    var hasHips = ok(23) && ok(24), hipMid = hasHips ? { x: (P(23).x + P(24).x) / 2, y: (P(23).y + P(24).y) / 2 } : null;
+    /* body size that does not shrink when the person turns side-on */
+    var B = Math.max(sw, hasHips ? dist(mid, hipMid) * 0.8 : 0, ok(2) && ok(5) ? dist(eR, eL) * 2.8 : 0);
+    /* framing */
+    var frame = ok(27) || ok(28) ? 'full body, head to feet' : ok(25) || ok(26) ? 'from the head down to the knees' : hasHips ? 'waist-up' : ok(11) && ok(12) ? 'head and shoulders, chest up' : 'close-up of the face';
+    var cx = mid.x / ar, pos = cx < 0.38 ? 'on the left side of the frame' : cx > 0.62 ? 'on the right side of the frame' : 'in the centre of the frame';
+    out.push('Framing: ' + frame + ', the person stands ' + pos + '.');
+    /* facing */
+    var dz = (L[11].z - L[12].z) * ar, turn = '';
+    var ratio = hasHips ? sw / Math.max(0.01, dist(mid, hipMid)) : null;
+    var amt = Math.abs(dz) / (sw + Math.abs(dz));
+    var lvl = amt < 0.15 ? 0 : amt < 0.4 ? 1 : 2;
+    if (ratio != null && ratio < 0.35) { lvl = 2; }
+    if (lvl === 0) { turn = 'Body faces the camera straight on'; }
+    else { var towardRight = dz > 0; turn = 'Body is turned ' + (lvl === 1 ? 'about 30 to 45 degrees, a three-quarter angle,' : 'almost side-on, in profile,') + ' facing toward the viewer\'s ' + (towardRight ? 'right' : 'left'); }
+    var sh = deg(Math.atan2(sB.y - sA.y, sB.x - sA.x));
+    out.push(turn + (Math.abs(sh) > 5 ? ', with the shoulder on the viewer\'s ' + (sh > 0 ? 'left' : 'right') + ' raised higher' : ', shoulders level') + '.');
+    /* head */
+    if (ok(0) && ok(2) && ok(5)) {
+      var eA = eR.x < eL.x ? eR : eL, eB = eR.x < eL.x ? eL : eR, ed = Math.max(0.005, dist(eA, eB)), em = { x: (eA.x + eB.x) / 2, y: (eA.y + eB.y) / 2 };
+      var tilt = deg(Math.atan2(eB.y - eA.y, eB.x - eA.x)), yaw = (nose.x - em.x) / ed, pitch = (nose.y - em.y) / ed;
+      var h = [];
+      if (Math.abs(tilt) > 6) { h.push('tilted about ' + Math.round(Math.abs(tilt)) + ' degrees toward the viewer\'s ' + (tilt > 0 ? 'right' : 'left') + ' shoulder'); }
+      if (Math.abs(yaw) > 0.25) { h.push('face turned ' + (Math.abs(yaw) > 0.6 ? 'strongly' : 'slightly') + ' toward the viewer\'s ' + (yaw > 0 ? 'right' : 'left')); } else { h.push('face looking straight at the camera'); }
+      if (pitch < 0.35) { h.push('chin lifted up'); } else if (pitch > 1.0) { h.push('chin dipped down'); }
+      out.push('Head: ' + h.join(', ') + '.');
+    }
+    /* arms: describe the arm on the viewer's left first */
+    var arms = [[11, 13, 15, 23], [12, 14, 16, 24]];
+    if (swapped) { arms.reverse(); }
+    arms.forEach(function (a, i) {
+      var side = 'The arm on the viewer\'s ' + (i === 0 ? 'left' : 'right');
+      if (!ok(a[0]) || !ok(a[1])) { out.push(side + ' is out of the frame.'); return; }
+      var S = P(a[0]), E = P(a[1]), W = ok(a[2]) ? P(a[2]) : null, d = [];
+      var upper = E.y < S.y - 0.02 ? 'the elbow raised above the shoulder' : Math.abs(E.x - S.x) > B * 0.3 ? 'the elbow held out away from the body' : 'the upper arm hanging down by the side';
+      d.push(upper);
+      if (W) {
+        var bend = angleAt(S, E, W);
+        d.push(bend > 150 ? 'the arm straight' : bend > 100 ? 'the elbow slightly bent' : bend > 55 ? 'the elbow bent at about ' + Math.round(bend / 10) * 10 + ' degrees' : 'the elbow sharply folded');
+        var where, toFace = dist(W, nose);
+        if (ok(0) && toFace < B * 0.45) { where = W.y < (eR.y + eL.y) / 2 - B * 0.05 ? 'the hand up at the forehead or hair' : W.y > nose.y + B * 0.12 ? 'the hand at the chin and jaw' : 'the hand resting on the cheek'; }
+        else if (W.y < nose.y - B * 0.3) { where = 'the hand raised high above the head'; }
+        else if (ok(0) && toFace < B * 0.8 && W.y < mid.y) { where = 'the hand raised beside the face'; }
+        else if (hasHips && dist(W, P(a[3])) < B * 0.4 && bend < 140) { where = 'the hand resting on the hip, elbow pointing out'; }
+        else if (bend >= 140 && W.y > mid.y) { where = 'the hand hanging relaxed by the side'; }
+        else if ((i === 0 && W.x > mid.x + B * 0.15) || (i === 1 && W.x < mid.x - B * 0.15)) { where = 'the forearm across the body, the hand on the other side of the chest'; }
+        else if (W.y > mid.y && (!hipMid || W.y < hipMid.y) && Math.abs(W.x - mid.x) < B * 0.6) { where = 'the hand held in front of the chest, as if holding something'; }
+        else if (hipMid && W.y > hipMid.y) { where = 'the hand down by the thigh'; }
+        else { where = 'the hand at about chest height to the side'; }
+        d.push(where);
+      } else { d.push('the hand out of the frame'); }
+      out.push(side + ': ' + d.join(', ') + '.');
+    });
+    /* legs */
+    if (ok(25) && ok(26) && hasHips) {
+      var kA = P(25), kB = P(26), hipY = hipMid.y, kneeY = (kA.y + kB.y) / 2, leg = B;
+      if (kneeY - hipY < leg * 0.35) { out.push('Legs: sitting, the knees roughly level with the hips.'); }
+      else {
+        var lg = [];
+        if (ok(27) && ok(28)) {
+          var aA = P(27), aB = P(28), cross = (kA.x - kB.x) * (aA.x - aB.x) < 0;
+          lg.push(cross ? 'standing with the legs crossed at the ankles' : Math.abs(aA.x - aB.x) > B * 1.1 ? 'standing with the feet wide apart' : 'standing with the feet close together');
+          var bA = angleAt(P(23), kA, aA), bB = angleAt(P(24), kB, aB);
+          if (Math.min(bA, bB) < 150) { lg.push('one knee bent'); }
+        } else { lg.push('standing'); }
+        out.push('Legs: ' + lg.join(', ') + '.');
+      }
+    }
+    return out.join(' ');
+  }
+  /** canvas → { people, text } ('' when no person is found or the model cannot load). */
+  function pose(c) {
+    return poseModel().then(function (pl) {
+      var r = pl.detect(c), all = (r && r.landmarks) || [];
+      if (!all.length) { return { people: 0, text: '' }; }
+      var big = all.slice().sort(function (a, b) { var s = function (L) { return Math.abs(L[11].x - L[12].x); }; return s(b) - s(a); });
+      return { people: all.length, text: poseWords(big[0], c.width / c.height) };
+    }).catch(function () { return { people: 0, text: '' }; });
+  }
+  function vttToSegs(v) {
+    var out = [];
+    String(v || '').replace(/\r/g, '').split(/\n\n+/).forEach(function (b) {
+      var m = b.match(/(\d{1,2}:)?(\d{1,2}):(\d{2})[.,](\d{1,3})\s*-->/); if (!m) { return; }
+      var t = (m[1] ? parseInt(m[1], 10) * 3600 : 0) + parseInt(m[2], 10) * 60 + parseInt(m[3], 10);
+      var text = b.split('\n').filter(function (l) { return l.indexOf('-->') < 0 && !/^\d+$/.test(l.trim()) && !/^WEBVTT/.test(l); }).join(' ').replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
+      var p = out[out.length - 1];
+      if (!text) { return; }
+      if (p && (text.indexOf(p.text) === 0)) { p.text = text; return; }
+      if (p && p.text === text) { return; }
+      out.push({ t: t, text: text });
+    });
+    return out;
+  }
+  w.IRMEDIA = { toCanvas: toCanvas, readImage: readImage, palette: palette, see: see, pose: pose, poseWords: poseWords, watch: watch, transcribe: transcribe, vttToSegs: vttToSegs, stopOcr: stopOcr, low: LOW, ocrReady: !!OCR };
+})(window);
