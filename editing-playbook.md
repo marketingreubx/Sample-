@@ -214,6 +214,26 @@ Lengths: 23s, 24s, 51s, 51s.
   (sans like Inter/Poppins; serif like Instrument Serif/Playfair).
 - Scene descriptions came from a video-analysis tool for 3 of the 4 reels. I did not hear any audio.
 
+## B7. Lessons from the first Style B build (home-workout reel, 58s from 89s)
+Reference scripts: `editing-engine/style-b-example/`.
+- **Where cards go:** never over the face. Her head sits low in frame, so cards (calendar, checklist, result pill) live in the
+  free band above her head (y 40-450 of 1920), over the background. Check head position before placing anything.
+- **2-up split:** the speaker crop must follow the face on both axes. Detect the face on the finished video frames
+  (Haar, with sanity filters), take the median per window, crop 960x886 around it, put captions below the chin.
+  Face detections from the raw footage were unreliable (false positives on the sweatshirt print).
+- **ffmpeg memory:** do not `split` a long stream into branches that are only used in short windows; the unused branches buffer
+  every frame and the process gets OOM-killed. Pre-render each window as its own opaque clip, then overlay the clips with `enable`.
+- **Motion graphics:** one HTML page per layer (front graphics, wipes), animations driven by Web Animations API time,
+  4 parallel Chromium workers; 955 active frames of 1080x1920 took 37s. Render only frames where something is visible
+  and hard-link a blank PNG for the rest. Keep `filter` effects on an inner wrapper because animating `filter` replaces CSS filters.
+- **Transitions:** a white card wipe (and a light-sweep) timed so the cut lands under the sweep midpoint, used on the full-bleed
+  photo entries; 2-up splits use a drop-in card instead. Whoosh 0.2s before the cut.
+- **Depth text (text behind the speaker):** `rembg` `u2net_human_seg` gives a good person mask (0.4-0.7s per frame), but any
+  static object touching the head (here a wall clock) is merged into the mask. If the head overlaps the object, skip the effect
+  or build a clean background plate. In this build "MOVE" sits above her head in front of the clock instead.
+- **Honest checklist wording:** use her real words on screen ("Not struggling with a lot of things"), not a paraphrase.
+- **Not verified:** moving stock footage, and how the audio sounds (loudness measured -13.6 LUFS, peak -1.0 dBFS).
+
 ---
 
 # Environment recipes (this cloud container; they do not carry over automatically)
