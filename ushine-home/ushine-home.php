@@ -27,8 +27,8 @@ function ushine_is_home_template(): bool
 }
 
 add_filter('template_include', static function ($template) {
-    if (ushine_is_home_template() && file_exists(USHINE_HOME_DIR . 'template-v4.php')) {
-        return USHINE_HOME_DIR . 'template-v4.php';
+    if (ushine_is_home_template() && file_exists(USHINE_HOME_DIR . 'template-v5.php')) {
+        return USHINE_HOME_DIR . 'template-v5.php';
     }
     return $template;
 }, 99);
@@ -45,8 +45,8 @@ add_action('wp_enqueue_scripts', static function () {
         [],
         null
     );
-    wp_enqueue_style('ushine-home', $url . 'home-v4.css', ['ushine-fonts'], (string) filemtime(USHINE_HOME_DIR . 'home-v4.css'));
-    wp_enqueue_script('ushine-home', $url . 'home-v4.js', [], (string) filemtime(USHINE_HOME_DIR . 'home-v4.js'), ['in_footer' => true, 'strategy' => 'defer']);
+    wp_enqueue_style('ushine-home', $url . 'home-v5.css', ['ushine-fonts'], (string) filemtime(USHINE_HOME_DIR . 'home-v5.css'));
+    wp_enqueue_script('ushine-home', $url . 'home-v5.js', [], (string) filemtime(USHINE_HOME_DIR . 'home-v5.js'), ['in_footer' => true, 'strategy' => 'defer']);
 
     if (function_exists('WC')) {
         wp_enqueue_script('wc-add-to-cart');
