@@ -3,6 +3,11 @@
 Studied from 9 references (7 × @ricoincarnati, @benkimball.ai, @jumoke_xo) plus Reubx's own Cold DM Playbook reel.
 Use this for every talking-head / tutorial edit.
 
+**Style names used in this file**
+- **Base style** (sections 1-9): Enrico / Ben Kimball / Jumoke. Split-screen B-roll, yellow-highlight screenshots, jump cuts.
+- **Style A** (below): "Floating-card editorial", @itsmegkilgore + @_anthonygallo. Calm, one-word captions, white UI cards.
+- **Style B** (below): "Showcase motion edit", @edita.visuals. Dense motion graphics and B-roll, branded presentation frame.
+
 ## 1. Hook (first 0–2.5s)
 - Big title over the speaker's chest, centred, two lines, heavy bold uppercase sans with a soft shadow:
   line 1 white, line 2 **yellow (#FFD600)**, optional small white line in brackets under it
@@ -63,14 +68,14 @@ Use this for every talking-head / tutorial edit.
 
 ---
 
-# Style B: "Floating-card editorial" (studied from @itsmegkilgore ×5 and @_anthonygallo)
+# Style A: "Floating-card editorial" (studied from @itsmegkilgore ×5 and @_anthonygallo)
 
 Studied from 6 references: five reels by @itsmegkilgore (Reels Editing Engine launch: feature list, "dream out
 loud", community, last-chance, laundry joke) and one 16:9 course promo by @_anthonygallo. The owner loves this style.
-It is calmer and more premium than Style A (Enrico / Ben Kimball): the speaker barely moves, and the visual interest
+It is calmer and more premium than the Base style (Enrico / Ben Kimball): the speaker barely moves, and the visual interest
 comes from typography and floating UI cards, not from camera tricks.
 
-## B1. Camera and framing
+## A1. Camera and framing
 - One locked-off medium shot, eye level, the speaker centred and sitting low. **No punch-in zooms, no shake.**
   Cuts are rare and only change the angle:
   - a handheld selfie close-up for the hook and the CTA (the energy change signals "now listen")
@@ -79,7 +84,7 @@ comes from typography and floating UI cards, not from camera tricks.
 - Warm, natural indoor light kept as shot. Grade is only a light lift: no teal/orange, no crushed blacks, no vignette.
   Skin must stay true.
 
-## B2. Captions: one word at a time, three typefaces
+## A2. Captions: one word at a time, three typefaces
 - **One word (sometimes 2-3) on screen at a time**, centred on the chest or just under the chin, about 55-62% down the
   frame. Never over the mouth. Each word is on screen for about 0.25-0.4s, so the text drives the pace.
 - Base word: clean **white sans (Helvetica/Inter style), medium-bold, lowercase**, no outline, a very soft drop shadow.
@@ -92,13 +97,13 @@ comes from typography and floating UI cards, not from camera tricks.
 - Long thoughts can stack vertically as a word column (but / don't / just / build / an / offer / *build*), with the last
   word in yellow serif italic.
 
-## B3. Hook (0-3s)
+## A3. Hook (0-3s)
 - A header block over the chest: small handwritten yellow line + big white sans line + handwritten sub-line, e.g.
   `15 ways` / `Claude edits my reels,` / `and not my creative voice.`
 - Or a curiosity line in the same type system: "send this to a *dreamer*", with the sub-line "it's time to say it out loud".
 - A small card or thumbnail pops in the corner right away so the eye has something to explore.
 
-## B4. Floating UI cards (the signature move)
+## A4. Floating UI cards (the signature move)
 - Every spoken beat of a "list" reel gets a **white rounded card with a soft shadow** that pops in above or beside the
   head, mocking the thing being named, then leaves when the next beat starts (each lasts 1.5-3s):
   - Visual editor window / script card with a struck-through word and a scissors icon ("I can click any word and it cuts it")
@@ -110,36 +115,104 @@ comes from typography and floating UI cards, not from camera tricks.
 - Emoji stickers (🤯 🚀) are allowed as accents. Cards are drawn in the brand colours and fonts.
 - The speaker never gets covered: cards live in the top third and the top corners.
 
-## B5. Motion, transitions, ending
+## A5. Motion, transitions, ending
 - Words and cards **pop (scale 85%→105%→100% in 0.15s) or fade in with a slight blur**, then fade out. Nothing just appears.
 - Hard cuts only, plus one handheld angle change into the CTA. No whooshes between every shot.
 - **End card:** a plain black frame with serif italic text ("Doors close tonight / 7:00 pm central") and one
   handwritten line below ("P.S. thanks for changing…"). A CTA keyword is said and shown ("comment ENGINE").
 - Length: feature/launch reels 30-65s; story reels 100s+ only when the story is the product.
 
-## B6. Premium SaaS-promo variant (Anthony Gallo, 16:9)
+## A6. Premium SaaS-promo variant (Anthony Gallo, 16:9)
 - Light lavender/white backgrounds with soft gradients; clean motion-graphic cards: video timeline, an "Edit!" prompt
   bar, a "Content engine" brain-icon card, a "Plan. Script." flowchart, a leaderboard, a "30-day refund policy" badge.
 - Big sans headlines with **gradient text** (blue→purple→orange) on one key phrase.
 - Captions are white bold with a soft shadow in the lower third; the host is cut in between full-screen graphics.
 
-## B7. Sound (what could be confirmed)
+## A7. Sound (what could be confirmed)
 - The reels' audio is the speaker's own voice, close-mic'd and clean, with a quiet music bed and short UI sounds.
   The one reel with a mixed sound list used stock "Whoosh", "Typing", "Camera shutter", "Mouse click", "Pop",
   "Item pickup", "Ka-ching", "Coin collect". Keep every effect short and low.
 - I could not hear the audio in this session; the above comes from the sound metadata and the visuals. Treat the
   loudness and music level as -14 LUFS with the bed about 20-25 dB under the voice.
 
-## B8. When to choose which style
-- **Style A** (Enrico / Ben Kimball): news, hot takes and tutorials where the proof is screenshots; higher energy.
-- **Style B** (this section): product/feature lists, launches, personal-brand and story reels; calmer, premium.
-- For Reubx's esthetician-agency content: Style B cards map well to a content calendar card, a DM-reply card,
+## A8. When to choose which style
+- **Base style** (Enrico / Ben Kimball): news, hot takes and tutorials where the proof is screenshots; higher energy.
+- **Style A** (this section): product/feature lists, launches, personal-brand and story reels; calmer, premium.
+- For Reubx's esthetician-agency content: Style A cards map well to a content calendar card, a DM-reply card,
   a pricing card, a before/after card and a booking-link pill.
 
-## B9. Limits of this study
+## A9. Limits of this study
 - Frames were sampled at about 200px wide, so font names are best matches (Inter/Helvetica sans, Instrument Serif or
   Playfair italic, a marker font like Caveat), not confirmed.
 - I analysed scene structure for 3 of the 6 reels with a video-analysis tool; the other 3 were studied from frames only.
+
+---
+
+# Style B: "Showcase motion edit" (studied from @edita.visuals x4)
+
+Studied from 4 reels by @edita.visuals: a mortgage/insurance lawyer ("when your home is paid off"), a woman explaining
+a content blueprint ("welcome to the Attention Economy"), a herbalism podcast clip, and a tech-CEO interview.
+Their caption on every post: "I didn't touch a single keyframe. Every movement, every transition, every sound -
+Claude Opus 5.5." So this is code-generated motion graphics, sold as an editing service (comment CLAUDE for a guide).
+Lengths: 23s, 24s, 51s, 51s.
+
+## B0. Two layers: do not confuse them
+1. **The showcase frame** (a presentation wrapper for demo/portfolio reels, not for ordinary posts):
+   - Pale pearly-white/grey canvas with a faint large pastel shape behind.
+   - Dark pill at top centre ("Opus 5.5" with an orange asterisk icon); a tiny light-grey handle top right.
+   - The edited video sits in a rounded **phone-shaped card** (about 45% of the width) with a soft shadow.
+   - A smaller card overlaps it on the left: either the **raw clip in desaturated black-and-white** (pill label "Raw footage")
+     or a thin **line-art storyboard sketch** of the speaker (pill label "Storyboard") that changes as scenes change.
+   - A constant lower-third under the card: `Follow & comment "CLAUDE" for the full guide`, dark-grey sans, keyword in orange-red.
+2. **The edit inside the card.** This is the real craft, and what to use on a client's own reel (full-screen, no frame).
+
+## B1. The edit inside the card
+- **B-roll cut-away on almost every key noun**, 1-3s each. Examples: supplement shelves, pills, lavender, herb jars,
+  a mortar and pestle, a field. Also stock/archive clips, logo tiles (Google, Replit), a monitor/TV mock.
+- **Two-up split inside the card:** B-roll on top, the speaker below, with a thin white gap and rounded corners.
+- **Compositing on the person:** paper sheets flying around him on "lawsuit"; a torn-paper reveal with a gavel on "a lawsuit";
+  a polaroid with red tape landing on his chest; scan brackets around a house photo on "paid off".
+- **Depth text:** large outlined or serif text sits behind the speaker ("The Attention Economy"); a serif name
+  lower-third ("Amjad Masad" / "CEO of Replit").
+- **UI motion graphics:** a slider with a knob and progress bar ("my time"), a checkbox list that ticks in row by row
+  ("liability", "fire policy"), emoji answer chips ("Yes or No?" / "I agree"), a "Question" form card on lavender,
+  a "Blueprint" glass card with bullets (Content / Distribution / Sales) over black bokeh, a big counter ("1,599B+") over a logo grid.
+- **Captions in the card:** 1-4 small lowercase white words centred on the torso, never over the mouth. Key words switch
+  to a bold accent colour. Punchlines become big keyword blocks in caps or serif ("PAID OFF", "A PARTY", "A LAWSUIT",
+  "AT LEAST", "EXPENSIVE", "THE REALITY OF HERBALISM").
+- **Accent colour follows the footage:** blue in the navy-suit reel, purple in the lavender reel, orange/terracotta in the warm podcast reel.
+
+## B2. Motion principles (inferred from frames and scene descriptions; I could not watch the motion)
+- The base shot is static; graphics do the moving, plus a slow push-in on text/graphic scenes.
+- Elements enter with a spring overshoot and blur-to-sharp in about 0.3-0.5s and leave quickly.
+- Scene swaps use a white or lavender card wipe, a slide in from the right, or a light sweep. Dark scenes use soft bokeh/particles.
+- Rhythm: speaker -> graphic -> B-roll -> speaker, a new visual every 1-4s.
+
+## B3. Colour and sound
+- Clean, polished, a little more saturated than real life with a soft bloom; skin stays natural. The raw side panel is desaturated for contrast.
+- Sound could not be heard. The captions claim every sound is designed, and one scene note mentions the music swelling
+  slightly mid-reel. Apply the Base style sound rules (whoosh on swaps, pop on cards, quiet bed).
+
+## B4. When to use Style B
+- Explainers, podcast and interview clips, education with many concepts. It needs a lot of B-roll and graphics.
+- For Reubx: esthetician education reels, and **portfolio/demo reels** to sell the $3k service: raw clip on the left,
+  finished edit on the right, with the CTA under the card (comment keyword).
+
+## B5. How to build it in this container (verified)
+- Motion graphics: write HTML/CSS animations, render them with Playwright + the pre-installed Chromium
+  (`pip install playwright`, executable `/opt/pw-browsers/chromium`, args `--no-sandbox`). Pause with
+  `document.getAnimations().forEach(a=>{a.pause();a.currentTime=t})`, then `screenshot(omit_background=True)` per frame.
+- Test result: 54 frames at 1080x1920 took about 22s (about 0.4s per frame); a transparent PNG sequence packs into
+  `qtrle` / `argb` .mov and overlays cleanly with ffmpeg. So render only the windows where graphics appear (a 60s reel at
+  full frame would take over 10 minutes).
+- Known limit: `backdrop-filter` does not blur on a transparent capture. Use solid or near-solid fills for glass cards.
+- B-roll: stock photos with a slow push-in are verified (see the environment recipes). Moving stock clips are NOT verified;
+  ask the owner for real footage or screen recordings where it matters.
+
+## B6. Limits of this study
+- Frames were small (about 190px wide, 15 per reel), so transitions between frames are inferred and font names are best guesses
+  (sans like Inter/Poppins; serif like Instrument Serif/Playfair).
+- Scene descriptions came from a video-analysis tool for 3 of the 4 reels. I did not hear any audio.
 
 ---
 
