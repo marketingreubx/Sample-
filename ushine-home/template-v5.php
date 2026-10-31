@@ -81,7 +81,6 @@ if (!function_exists('ushine_card_v5')) {
 $products = function_exists('wc_get_products') ? wc_get_products([
     'status' => 'publish', 'include' => [788, 790, 763, 783], 'orderby' => 'include', 'limit' => 4,
 ]) : [];
-$feature = function_exists('wc_get_product') ? wc_get_product(1060) : null;
 
 // Every category, each with a photo that shows what is inside it.
 $category_photos = [
@@ -231,20 +230,17 @@ $nav = [['Shop all', $shop_url], ['Face', $cat_link('face-products')], ['Body', 
     </div>
   </section>
 
-  <!-- Feature banner -->
-  <?php if ($feature) : ?>
-  <section class="u5-feature-wrap">
-    <a class="u5-feature" href="<?php echo esc_url(get_permalink(1060)); ?>">
-      <?php echo $img(715, 'full', ['class' => 'u5-feature__img', 'alt' => 'Model applying cream from a jar']); ?>
-      <span class="u5-feature__copy">
-        <span class="u5-feature__tag">Complete routine</span>
-        <strong>The Hyperpigmentation Set</strong>
-        <em>Niacinamide serum, depigment cream, moisturiser and daily SPF, working together to fade dark spots and even your tone.</em>
-        <span class="u5-feature__buy"><span class="u5-feature__price"><?php echo ushine_price_html($feature); ?></span><span class="u4-btn">Shop the set</span></span>
-      </span>
-    </a>
+  <!-- Brand banner -->
+  <section class="u5-banner-wrap">
+    <div class="u5-banner">
+      <?php echo $img(715, 'full', ['class' => 'u5-banner__img', 'alt' => '']); ?>
+      <div class="u5-banner__copy">
+        <h2>Beautiful skin starts <em>here.</em></h2>
+        <p>Treatments for dark spots, breakouts and uneven tone, made for melanin-rich skin and backed by real customer results.</p>
+        <a class="u4-btn" href="<?php echo esc_url($shop_url); ?>">Explore the collection</a>
+      </div>
+    </div>
   </section>
-  <?php endif; ?>
 
   <!-- Bestsellers -->
   <section class="u4-sec u4-shop">
