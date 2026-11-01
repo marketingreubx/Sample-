@@ -1,5 +1,8 @@
 # Reubx Short-Form Editing Playbook
 
+> **Fast path:** type `/style-a-list`, `/style-a-story`, `/style-a-skit`, `/style-b-loud`, `/style-b-editorial` or `/style-b-showcase` with a video. The engine in `editing-engine/reubx/` does the edit; only a short `plan.json` is written per video.
+
+
 Only two registered styles. Everything taught before @itsmegkilgore (the Enrico / Ben Kimball / Jumoke
 "Base style", the TikTok and IG links before it) has been **deleted on the owner's instruction**: never use it.
 
