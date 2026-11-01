@@ -28,15 +28,16 @@ def dot(name, d, bg, col="#fff", sw=2.6):
     return f'<div style="width:{d}px;height:{d}px;border-radius:50%;background:{bg};display:grid;place-items:center;flex:none">{icon(name, int(d*.56), col, sw)}</div>'
 from PIL import ImageFont
 _FM = {}
-def fit(text, size, font="/root/.fonts/Montserrat-Black.ttf", maxw=960, ls=-3, slant=0.22):
+def fit(text, size, font="/root/.fonts/Montserrat-Black.ttf", maxw=1000, ls=1, slant=0.62):
     t = re.sub(r"<[^>]+>", "", text).replace("&amp;", "&")
     longest = max(t.split("\n"), key=len) if "\n" in t else t
     while size > 40:
         f = _FM.setdefault((font, size), ImageFont.truetype(font, size))
-        w_ = f.getlength(longest) + ls * len(longest) + slant * size + 40
+        w_ = f.getlength(longest) + ls * len(longest) + slant * size + 30
         if w_ <= maxw: return size
         size -= 4
     return size
+KB = lambda big: "".join(f'<span class="kbl">{ln}</span>' for ln in big.split("<br>"))
 clean = lambda s: re.sub(r"[.,;:!?]+$", "", s)
 
 def build_items():
@@ -48,21 +49,21 @@ def build_items():
         add(html, f"left:0;top:{int(yc - h/2)}px;width:1080px;height:{h}px;display:flex;align-items:center;justify-content:center", kind, t0, t1, dur, "spring", None, None, out)
     def block(lead, big, size, t0_lead, t0_big, t1, small=None, extra=""):
         c = shot_chin(t0_big); y = c + 95
-        size = fit(big.replace("<br>", "\n"), size, maxw=980 - (190 if extra else 0))
+        size = fit(big.replace("<br>", "\n"), size, maxw=1000 - (190 if extra else 0))
         lsz = fit(lead, 52, "/root/.fonts/Poppins-SemiBold.ttf", 1000, 0, 0) if lead else 52
         BUSY.append((t0_lead - 0.05, t1))
-        if lead: row(f'<div class="lead" style="font-size:{lsz}px">{lead}</div>', y, t0_lead, t1, "up", 360, 90); y += 60
-        y += size * 0.62 * (2.0 if "<br>" in big else 1)
-        row(f'<div class="kbw"><div class="kb" style="font-size:{size}px">{big}</div></div>{extra}', y, t0_big, t1, "slam", 420, int(size * (2.5 if "<br>" in big else 1.4)))
-        if small: row(f'<div class="lead" style="font-size:44px;letter-spacing:4px">{small}</div>', y + size * 0.62 + 30, t0_big + 0.12, t1, "up", 360, 80)
+        if lead: row(f'<div class="lead" style="font-size:{lsz}px">{lead}</div>', y, t0_lead, t1, "up", 360, 90); y += 80
+        y += size * 0.62 * (2.0 if "<br>" in big else 1) + (6 if "<br>" in big else 0)
+        row(f'<div class="kbw" style="font-size:{size}px">{KB(big)}</div>{extra}', y, t0_big, t1, "slam", 420, int(size * (2.8 if "<br>" in big else 1.6)))
+        if small: row(f'<div class="lead" style="font-size:44px;letter-spacing:4px">{small}</div>', y + size * 0.62 + 62, t0_big + 0.12, t1, "up", 360, 80)
     def count(vals, size, yc, t0, t1, step=0.05, lead=None, small=None):
         BUSY.append((t0 - 0.35, t1))
         if lead: row(f'<div class="lead">{lead}</div>', yc - size * 0.62 - 50, t0 - 0.3, t1, "up", 360, 90)
         for k, v in enumerate(vals):
             a = t0 + k * step; b = t0 + (k + 1) * step if k + 1 < len(vals) else t1
             kind = "pop" if k == 0 else "fade"
-            row(f'<div class="kbw"><div class="kb" style="font-size:{size}px">{v}</div></div>', yc, a, b, kind, 300 if k == 0 else 1, int(size * 1.4), 0 if k + 1 < len(vals) else 140)
-        if small: row(f'<div class="lead" style="font-size:44px;letter-spacing:4px">{small}</div>', yc + size * 0.62 + 30, t0 + 0.2, t1, "up", 360, 80)
+            row(f'<div class="kbw" style="font-size:{size}px">{KB(v)}</div>', yc, a, b, kind, 300 if k == 0 else 1, int(size * 1.4), 0 if k + 1 < len(vals) else 140)
+        if small: row(f'<div class="lead" style="font-size:44px;letter-spacing:4px">{small}</div>', yc + size * 0.62 + 62, t0 + 0.2, t1, "up", 360, 80)
     def glass(inner, left, top, w, h, t0, t1, kind="pop", radius=40):
         add(f'<div class="glass" style="width:{w}px;height:{h}px;border-radius:{radius}px">{inner}</div>', f"left:{left}px;top:{top}px;width:{w}px;height:{h}px", kind, t0, t1, 460, "spring", None, None, 150)
     def full(inner, bg, t0, t1):
@@ -130,7 +131,7 @@ def build_items():
     base = int(shot_chin(51) + 110)
     for t, x, k in tags:
         add(f'<div class="glass" style="padding:20px 34px;border-radius:50px"><span class="gl" style="color:#fff">{t}</span></div>', f"left:{x}px;top:{base + (k % 3) * 120}px", "pop", k0 + k * 0.28, k1, 420, "spring", None, None, 140)
-    block("", f'RANK {icon("trending-up", 120, "#9cc2ff", 3)}', 170, t_of(181), t_of(181), wins[4]["a"] - 0.05)
+    block("", f'RANK {icon("trending-up", 120, "#fff", 3)}', 170, t_of(181), t_of(181), wins[4]["a"] - 0.05)
     # skill installed toggle + 'it writes for you'
     g0, g1 = t_of(196) - 0.05, t_of(199) + 0.0; top = int(shot_chin(58) + 120); BUSY.append((g0, g1))
     glass(f'<div style="display:flex;align-items:center;gap:20px;height:100%;padding:0 30px">{dot("pen-line", 64, BLUE)}<div style="flex:1"><div class="gl">Caption Writer</div><div class="gs">Claude skill</div></div>'
@@ -140,7 +141,7 @@ def build_items():
         "wipe", g0 + 0.4, g1, 300, "spring", None, [{"transform": "translateX(0)"}, {"transform": "translateX(50px)"}], 150)
     block("and then", "IT WRITES FOR YOU", 116, t_of(199), t_of(202), cut_before(205) - 0.04)
     # ================= 4. skill 2
-    block("#2 · second one is the", "VIRAL SCRIPT ENGINE", 104, t_of(205), t_of(209), t_of(214) - 0.08)
+    block("#2 · second one is the", "VIRAL SCRIPT<br>ENGINE", 116, t_of(205), t_of(209), t_of(214) - 0.08)
     i0, i1 = t_of(214) - 0.05, te_of(224) + 0.25
     lines = [("HOOK", 0.9), ("PROBLEM", 1.3), ("SOLUTION", 1.7), ("CTA", 2.1)]
     lh = "".join(f'<div class="sline" data-d="{d}"><span class="tag">{t}</span><span class="bar" style="width:{300 + (k*53)%180}px"></span></div>' for k, (t, d) in enumerate(lines))

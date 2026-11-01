@@ -6,7 +6,7 @@ sfx = []; S = lambda t, f, v: sfx.append((max(t, 0), f, v))
 seen = set()
 for it in L["front"]:
     h = it["html"]; t = it["t0"]
-    if 'class="kb"' in h and it["kind"] == "slam": S(t, f"{SFXD}/pop.wav", 0.16)
+    if 'class="kbw"' in h and it["kind"] == "slam": S(t, f"{SFXD}/pop.wav", 0.16)
     elif 'class="glass"' in h: S(t, f"{SFXD}/pop.wav", 0.10)
     elif it["kind"] == "right": S(t - 0.15, f"{SFXD}/whoosh.wav", 0.18)
 for x in wins:

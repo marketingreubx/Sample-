@@ -7,8 +7,8 @@ PINK, CORAL, INK, GREEN, RED = "#ff5a93", "#ff8a5b", "#15151f", "#22c07a", "#ff4
 CSS = """
 html,body{margin:0;width:1080px;height:1920px;background:transparent;overflow:hidden}
 .lead{font-family:'Poppins';font-weight:600;font-size:52px;color:#fff;white-space:nowrap;text-shadow:0 3px 14px rgba(0,0,0,.6),0 1px 3px rgba(0,0,0,.6)}
-.kbw{filter:drop-shadow(0 8px 22px rgba(30,90,255,.55)) drop-shadow(0 3px 3px rgba(0,0,0,.55))}
-.kb{font-family:'Montserrat';font-weight:900;font-style:italic;letter-spacing:-3px;line-height:.95;text-align:center;white-space:nowrap;background:linear-gradient(180deg,#d7e6ff 0%,#9cc2ff 35%,#3d7bff 100%);-webkit-background-clip:text;background-clip:text;color:transparent;padding:0 20px}
+.kbw{display:flex;flex-direction:column;align-items:center;gap:12px}
+.kbl{display:inline-flex;align-items:center;gap:.18em;font-family:'Montserrat';font-weight:900;font-style:italic;color:#fff;letter-spacing:1px;line-height:1;white-space:nowrap;background:#2F6BFF;padding:.13em .3em .15em;border-radius:.16em;box-shadow:0 14px 34px rgba(0,0,0,.38),inset 0 -.06em 0 rgba(0,0,0,.18);text-shadow:0 2px 0 rgba(0,20,90,.35)}
 .glass{background:linear-gradient(180deg,rgba(40,60,120,.82),rgba(14,22,48,.86));border:2px solid rgba(255,255,255,.32);box-shadow:0 20px 50px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.35);box-sizing:border-box}
 .gl{font-family:'Poppins';font-weight:500;font-size:40px;color:#fff;white-space:nowrap}
 .gl b{font-weight:800;color:#9cc2ff}

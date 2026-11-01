@@ -148,6 +148,8 @@ reel, CTA keyword under the card.
 - **Accent colour follows the footage**: blue for the navy-suit lawyer, purple for lavender, warm terracotta for the
   podcast. Pick it from the wardrobe or set.
 
+- **Keyword-block contrast (owner feedback):** never put light-blue gradient text on a similar-coloured background (navy shirt). Use **white heavy italic text on a solid accent box** (e.g. #2F6BFF, radius 0.16em, padding .13em .3em, soft dark shadow), normal letter-spacing (no negative tracking), 12px between stacked lines, ~35px between the lead-in line and the box. Long names go on two lines rather than shrinking. Pick the accent to contrast with the wardrobe, not to match it.
+
 ## B3. Motion, transitions, colour, sound
 - Elements enter with spring overshoot + blur-to-sharp in 0.3-0.5s and leave fast. Scene swaps by white/lavender card
   wipe, slide from the right, or light sweep; the cut lands under the wipe's midpoint. Whoosh 0.2s before each swap,
