@@ -101,6 +101,18 @@ and **small, realistic UI cards** that illustrate each spoken beat. It feels pre
 Light lavender/white gradients, clean motion-graphic cards (timeline, "Edit!" prompt bar, flowchart, leaderboard,
 refund badge), big sans headlines with gradient text on one phrase. Use only for landscape promos.
 
+## A7. Lessons from the first Style A build (home-workout reel)
+Reference scripts: `editing-engine/style-a-example/`.
+- Render **all text in the HTML layer** (one-word captions, serif accents, handwritten lines, cards): fonts, shadows and the
+  pop/blur animation then match exactly. ~2,160 frames of 1080x1920 took ~70s with 4 workers.
+- Keep the caption **at one height per shot** (chin of that shot + 120px); per-word heights make the words jump.
+  Words swap instantly (no fade-out) so two never overlap.
+- Tight shots: put the face low (crop y = face centre - 0.56 x crop height) so there is room above the head for cards.
+- Concat of per-shot clips must be **frame-exact** (`-frames:v` from rounded cumulative times) or the picture drifts
+  against the audio (it drifted 0.5s once).
+- Join mixed-font words with a margin, not `&nbsp;` (the space inherits the 16px body size).
+- Lucide icons, no emoji, no whooshes. AAC can add ~1.5 dB of peak: limit the WAV to -2.4 dBFS before encoding.
+
 ---
 
 # Style B: "Motion Pop" (@edita.visuals)
