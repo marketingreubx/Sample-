@@ -176,6 +176,22 @@ It needs a lot of B-roll and graphics; plan a visual for every key noun before b
 
 ---
 
+# The premium bar (owner feedback after the first Style B build)
+
+The owner wants the edit to match the references **exactly**: same kind of camera moves, effects, motion and sound design.
+What was wrong in the first Style B build, and must not happen again:
+- **No real camera animation.** References use keyframed zooms: smooth eased punch-ins on key words, slow push-ins, zoom-out
+  reveals, zoom/whip transitions with motion blur. Hard crop switches are not enough.
+- **Motion graphics looked AI-generated:** everything popped in the same way, generic UI cards, flat colours, default springs,
+  no motion blur, no depth, no texture. Premium means a consistent design system, custom easing, staggered reveals, masks,
+  parallax/3D tilt, light sweeps, real glass blur, graphics that interact with the speaker (tracked, behind the head).
+- **Sound effects sounded wrong:** a handful of generic whoosh/pop/ding files, not matched to the motion. References use layered,
+  subtle sound design matched to each move's length (swooshes, risers, soft UI ticks, low hits on punchlines, music dips).
+- To match exactly, study the references **in motion with audio** (uploaded files, frame-by-frame), not from still frames,
+  and use a proper SFX library.
+
+---
+
 # Environment recipes (this cloud container; they do not carry over automatically)
 - Instagram/TikTok CDN, Apify storage and Higgsfield CloudFront downloads are blocked from the shell. To study a reel:
   `apify/instagram-scraper` for a fresh `videoUrl`, then `tiger19935/video-frame-extractor` (mode `count`, 16 frames,
