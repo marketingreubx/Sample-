@@ -3,6 +3,7 @@ import json, re
 import numpy as np
 from PIL import ImageFont
 from gfx import icon, dot, FONTDIR
+from core import uri
 
 RED, GREEN, INK, GREY = "#ff4b55", "#22c07a", "#0e1630", "#8a90a6"
 _FM = {}
@@ -193,7 +194,7 @@ def build(job, plan, cut, wins_out):
                     f'<div class="row" data-d="0.75" style="flex-direction:column;align-items:stretch;gap:28px;padding:40px"><div style="display:flex;align-items:center;gap:16px">{icon(c.get("to_icon", "file-text"), 52, "#3d7bff", 2.2)}<span class="wn">{c["to"]}</span></div>{ln}'
                     f'<div data-d="{0.9 + len(lines) * 0.35:.2f}" style="align-self:flex-start;display:flex;align-items:center;gap:12px;font:600 30px Poppins;color:#fff;background:{GREEN};padding:16px 28px;border-radius:40px">{icon(c.get("done_icon", "check"), 32, "#fff", 2.6)} {c.get("done", "done")}</div></div>')
         elif c["type"] == "browser":
-            img = f"file://{job.broll}/{c['img']}" if c.get("img") else ""
+            img = uri(job.broll + "/" + c["img"]) if c.get("img") else ""
             tiles = "".join(f'<div style="flex:1;height:200px;border-radius:22px;background:{col};display:flex;align-items:flex-end;padding:18px;box-sizing:border-box;color:#fff;font:600 24px Poppins">{t}</div>' for col, t in zip(("var(--acc)", "#ff8a5b", GREEN), c.get("tiles", ["", "", ""])))
             body = (head + '<div style="position:relative;height:1000px">'
                     '<div data-d="0.3" style="position:absolute;inset:0;border-radius:32px;background:#fff;overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,.45)"><div style="height:70px;background:#eef1f8;display:flex;align-items:center;gap:12px;padding:0 26px"><i style="width:18px;height:18px;border-radius:50%;background:#c9cfdd"></i><i style="width:18px;height:18px;border-radius:50%;background:#c9cfdd"></i><span style="margin-left:20px;font:500 24px Poppins;color:#8a90a6">' + c.get("url", "yourbrand.com") + '</span></div>'

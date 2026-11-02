@@ -39,7 +39,7 @@ def render(video, work, style, plan, transcript):
     fam = "a" if style.startswith("a") else "b"
     pages = []
     for name, look, acc, acc2 in (LOOKS_A if fam == "a" else LOOKS_B):
-        html = gfx.page([], acc, acc2, look).replace("<body>", f"<body style=\"background:url('file://{bg}') center/cover\">")
+        html = gfx.page([], acc, acc2, look).replace("<body>", f"<body style=\"background:url('{gfx.uri(bg)}') center/cover\">")
         if fam == "b":
             body = (f'<div style="position:absolute;left:0;right:0;top:1180px;display:flex;justify-content:center"><div class="stack">'
                     f'<div class="ln s-lead" style="font-size:46px;margin:0 0 -2px 18px">{lead}</div><div class="ln"><span class="s-glow"><span class="s-main" style="font-size:130px">{big[:16]}</span></span></div>'
@@ -63,7 +63,7 @@ async def _shoot(paths, work):
         b = await (p.chromium.launch(executable_path=gfx.CHROMIUM, args=["--no-sandbox"]) if gfx.CHROMIUM else p.chromium.launch(args=["--no-sandbox"]))
         pg = await b.new_page(viewport={"width": 1080, "height": 1920})
         for k, path in enumerate(paths):
-            await pg.goto("file://" + path); await pg.evaluate("document.fonts.ready"); await pg.wait_for_timeout(250)
+            await pg.goto(gfx.uri(path)); await pg.evaluate("document.fonts.ready"); await pg.wait_for_timeout(250)
             o = os.path.join(work, f"look_{k}.jpg"); await pg.screenshot(path=o, type="jpeg", quality=80); outs.append(o)
         await b.close()
     return outs

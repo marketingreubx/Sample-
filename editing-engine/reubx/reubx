@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+# Reubx launcher (macOS / Linux / Windows Git-Bash). Installs itself on first use.
+#   reubx install                                   one-time setup (Python, ffmpeg, Chromium, fonts, speech model)
+#   reubx prep   <video> --work <dir>                transcript for the plan
+#   reubx render <video> --work <dir> --style <s>    full edit (a-list a-story a-skit b-loud b-editorial b-showcase)
+#   reubx auto   <video> --work <dir> --style <s>    automatic plan (no AI step) + render
+#   reubx studio --folder <dir> [--auto]             browser studio on http://localhost:8765
+#   reubx watch  --folder <dir> [...]                Claude's watch loop
+H="$(cd "$(dirname "$0")" && pwd)"
+case "$(uname -s)" in MINGW*|MSYS*|CYGWIN*) PY="$H/.venv/Scripts/python.exe" ;; *) PY="$H/.venv/bin/python" ;; esac
+if [ "$1" = "install" ] || [ ! -x "$PY" ] || [ ! -f "$H/cache/music.wav" ]; then bash "$H/install.sh" || exit 1; [ "$1" = "install" ] && exit 0; fi
+export PATH="$H/bin:$HOME/.local/bin:$PATH" PYTHONIOENCODING=utf-8
+cmd="$1"; shift
+case "$cmd" in
+  prep|render) exec "$PY" "$H/run.py" "$cmd" "$@" ;;
+  auto) exec "$PY" "$H/run.py" auto "$@" ;;
+  studio) exec "$PY" "$H/studio/server.py" "$@" ;;
+  watch) exec "$PY" "$H/studio/watch.py" "$@" ;;
+  *) sed -n '2,9p' "$0"; exit 1 ;;
+esac

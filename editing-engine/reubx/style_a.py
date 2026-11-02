@@ -3,6 +3,7 @@ small realistic white UI cards above the head, black typed end card. Builds the 
 import json, re
 import numpy as np
 from gfx import icon, dot
+from core import uri
 
 INK, YEL, GREEN, RED, GREY = "#17171c", "#F3E37C", "#22c07a", "#ff4b55", "#8a8a98"
 FUNC = {"a", "the", "to", "of", "your", "my", "and", "in", "for", "so", "i", "it's", "is", "be", "if", "can", "you", "on", "at"}
@@ -45,9 +46,9 @@ def build(job, plan, cut, wins_out):
     # ---- hook header (above the head)
     if plan.get("header"):
         h = plan["header"]; a, b = h["w"]; he = te_of(b) + 0.12; SKIP.update(ids(a, b))
-        if h.get("top"): text(hand(h["top"], 66, YEL), 215, t_of(a), he, "rise", rot=-2); EV.append((t_of(a), "swish", 0.25, 0.25))
-        if h.get("main"): text(sans(h["main"], 100), 322, t_of(a) + 0.5, he, "rise", 500, sw=len(h["main"]) * 56 + 200); EV.append((t_of(a) + 0.5, "pop", None, 0.25))
-        if h.get("sub"): text(hand(h["sub"], 60), 425, t_of(a) + 1.0, he, "rise", rot=-1)
+        if h.get("top"): text(hand(h["top"], max(44, min(66, int(1500 / max(len(h["top"]), 1)))), YEL), 215, t_of(a), he, "rise", rot=-2); EV.append((t_of(a), "swish", 0.25, 0.25))
+        if h.get("main"): text(sans(h["main"], max(56, min(100, int(1900 / max(len(h["main"]), 1))))), 322, t_of(a) + 0.5, he, "rise", 500, sw=len(h["main"]) * 56 + 200); EV.append((t_of(a) + 0.5, "pop", None, 0.25))
+        if h.get("sub"): text(hand(h["sub"], max(42, min(60, int(1500 / max(len(h["sub"]), 1))))), 425, t_of(a) + 1.0, he, "rise", rot=-1)
     # ---- handwritten story lines (key phrase in yellow)
     for s in plan.get("story", []):
         a_i, b_i = s["w"]; ii = ids(a_i, b_i); SKIP.update(ii)
@@ -90,7 +91,7 @@ def build(job, plan, cut, wins_out):
             card(f'<div style="padding:26px 30px;display:flex;flex-direction:column;gap:18px"><div style="display:flex;align-items:center;gap:12px">{icon("calendar-days", 34, INK, 2.2)}{lab(c.get("title", "This week"), 30)}'
                  f'<span style="margin-left:auto">{lab(c.get("badge", ""), 24, PINK)}</span></div><div style="display:flex;gap:12px">{days}</div></div>', 250, 110, 580, 330, t0, t1)
         elif ty == "app":
-            thumb = f'<div style="width:180px;height:220px;border-radius:20px;background:url(file://{job.broll}/{c["img"]}) center/cover;display:grid;place-items:center"><div style="width:64px;height:64px;border-radius:50%;background:rgba(255,255,255,.92);display:grid;place-items:center">{icon("play", 30, INK, 2.4, INK)}</div></div>' if c.get("img") else ""
+            thumb = f'<div style="width:180px;height:220px;border-radius:20px;background:url({uri(job.broll + '/' + c['img'])}) center/cover;display:grid;place-items:center"><div style="width:64px;height:64px;border-radius:50%;background:rgba(255,255,255,.92);display:grid;place-items:center">{icon("play", 30, INK, 2.4, INK)}</div></div>' if c.get("img") else ""
             lines = "".join(f'<div style="display:flex;align-items:center;gap:8px">{icon(ic, 26, GREY, 2.2)}{lab(t, 24, GREY, 500)}</div>' for ic, t in c.get("lines", []))
             btn = f'<div style="margin-top:6px;height:52px;border-radius:26px;background:{INK};display:flex;align-items:center;justify-content:center;gap:10px;color:#fff;font:600 24px Poppins">{icon("play", 20, "#fff", 2.4, "#fff")}{c["button"]}</div>' if c.get("button") else ""
             card(f'<div style="padding:22px;display:flex;gap:20px;height:100%;box-sizing:border-box;align-items:center">{thumb}<div style="flex:1;display:flex;flex-direction:column;gap:12px">{lab(c["title"])}{lines}{btn}</div></div>', 250, 110, 580, 264, t0, t1)
@@ -111,7 +112,7 @@ def build(job, plan, cut, wins_out):
                  f'<div style="flex:1"><div style="display:flex">{lab(c.get("kicker", "REMINDER"), 24, GREY, 500)}<span style="margin-left:auto">{lab("now", 22, GREY, 500)}</span></div>{lab(c["title"], 30)}<div>{lab(c.get("sub", ""), 24, GREY, 500)}</div></div></div>', 170, 80, 740, 160, t0, t1)
         elif ty == "photo":
             left = 70 if c.get("side", "left") == "left" else 680; rot = -6 if left == 70 else 5
-            card(f'<div style="padding:14px 14px 0;height:100%;box-sizing:border-box;display:flex;flex-direction:column"><div style="flex:1;border-radius:14px;background:url(file://{job.broll}/{c["img"]}) center/cover"></div>'
+            card(f'<div style="padding:14px 14px 0;height:100%;box-sizing:border-box;display:flex;flex-direction:column"><div style="flex:1;border-radius:14px;background:url({uri(job.broll + '/' + c['img'])}) center/cover"></div>'
                  f'<div class="hand" style="font-size:34px;color:{INK};text-align:center;padding:8px 0 10px;text-shadow:none">{c.get("caption", "")}</div></div>', left, 90, 330, 360, t0, t1, rot)
         elif ty == "stat":
             pct = float(c.get("pct", 0.8))

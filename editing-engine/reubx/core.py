@@ -8,6 +8,14 @@ CACHE = f"{HERE}/cache"
 W, H, FPS = 1080, 1920, 30
 
 
+def uri(p):
+    from pathlib import Path
+    return Path(p).resolve().as_uri()
+
+
+def fwd(p): return str(p).replace("\\", "/")
+
+
 def sh(cmd, cap=False):
     return subprocess.run(cmd, check=True, capture_output=cap, text=True)
 
@@ -112,7 +120,7 @@ class Job:
             d = sg["e"] - sg["s"]; o = self.p(f"vseg{k:03d}.wav"); parts.append(o)
             ff(["-ss", f"{sg['s']:.3f}", "-t", f"{d:.3f}", "-i", self.p("raw48.wav"), "-af",
                 f"afade=t=in:d=0.008,afade=t=out:st={max(d - 0.012, 0):.3f}:d=0.012", "-ar", "48000", "-ac", "1", o])
-        open(self.p("vlist.txt"), "w").write("".join(f"file '{x}'\n" for x in parts))
+        open(self.p("vlist.txt"), "w").write("".join(f"file '{fwd(x)}'\n" for x in parts))
         ff(["-f", "concat", "-safe", "0", "-i", self.p("vlist.txt"), "-c:a", "pcm_s16le", self.p("voice_cut_raw.wav")])
         for x in parts: os.remove(x)
         m = sh(["ffmpeg", "-hide_banner", "-i", self.p("voice_cut_raw.wav"), "-af", "volumedetect", "-f", "null", "-"], True).stderr
@@ -158,7 +166,7 @@ class Job:
             ff(["-ss", f"{s0:.3f}", "-t", f"{b - a + 0.2:.3f}", "-i", self.video, "-vf",
                 f"scale=2160:3840:flags=lanczos,zoompan=z='{z}':x='{x}':y='{y}':d=1:s={W}x{H}:fps={FPS},{grade},setsar=1",
                 "-an", "-frames:v", str(n), "-c:v", "libx264", "-preset", "veryfast", "-crf", "15", "-pix_fmt", "yuv420p", out])
-        open(self.p("shots.txt"), "w").write("".join(f"file '{x}'\n" for x in parts))
+        open(self.p("shots.txt"), "w").write("".join(f"file '{fwd(x)}'\n" for x in parts))
         ff(["-f", "concat", "-safe", "0", "-i", self.p("shots.txt"), "-c", "copy", self.p("base.mp4")])
         for x in parts: os.remove(x)
         json.dump(shots, open(self.p("shots.json"), "w"))
@@ -200,8 +208,12 @@ class Job:
         for k, t in enumerate(ts): ff(["-ss", f"{t:.2f}", "-i", out, "-frames:v", "1", "-vf", "scale=270:480", self.p(f"qa{k:02d}.png")])
         ff(["-i", self.p("qa%02d.png"), "-vf", "tile=8x2", self.p("contact_sheet.png")])
         for k in range(16): os.remove(self.p(f"qa{k:02d}.png"))
-        rep = {"recall_final": round(rec(hyp), 4), "recall_raw_cut": round(rec(raw), 4), "max_audio_gap_s": round(gap, 4), "lufs": float(I), "peak_dbfs": float(PK)}
-        rep["pass"] = rep["recall_final"] >= rep["recall_raw_cut"] - max(0.02, 2.5 / max(len(ref), 1)) and gap < 0.05 and abs(float(I) + 14) < 1 and float(PK) <= -1
+        def missing(h):    # words truly absent (deletions), not words merely heard differently under music
+            ops = difflib.SequenceMatcher(a=ref, b=h, autojunk=False).get_opcodes()
+            return sum(i2 - i1 for t, i1, i2, j1, j2 in ops if t == "delete") + sum(max(0, (i2 - i1) - (j2 - j1)) for t, i1, i2, j1, j2 in ops if t == "replace")
+        miss = max(0, missing(hyp) - missing(raw))
+        rep = {"recall_final": round(rec(hyp), 4), "recall_raw_cut": round(rec(raw), 4), "words_missing": miss, "max_audio_gap_s": round(gap, 4), "lufs": float(I), "peak_dbfs": float(PK)}
+        rep["pass"] = miss <= max(1, int(0.02 * len(ref))) and gap < 0.05 and abs(float(I) + 14) < 1 and float(PK) <= -1
         json.dump(rep, open(self.p("qa.json"), "w"), indent=1)
         return rep
 

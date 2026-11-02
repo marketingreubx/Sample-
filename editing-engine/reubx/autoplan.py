@@ -54,9 +54,12 @@ def autoplan(words, style="b-loud", look=None):
             accent += cand[: max(1, len(s) // 6)]
         plan["accent"] = accent
         first = sents[0]
-        if len(first) >= 4:
-            txt = [clean(words[i]["w"]) for i in first]
-            plan["header"] = {"w": [first[0], first[-1]], "main": " ".join(txt[: min(5, len(txt))]).lower()}
+        hook = []
+        for i in first:                          # short hook phrase: up to 5 words, stop at the first comma
+            hook.append(i)
+            if len(hook) >= 5 or words[i]["w"][-1:] in ",.?!": break
+        if len(hook) >= 3:
+            plan["header"] = {"w": [hook[0], hook[-1]], "main": " ".join(clean(words[i]["w"]) for i in hook).lower()}
         if cta: plan["end"] = {"text": f"Comment {cta['keyword']}.", "sub": "and I'll send it to you"}
     else:
         blocks, counts, lastb = [], [], -9

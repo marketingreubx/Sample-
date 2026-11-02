@@ -2,6 +2,7 @@
 """Reubx editing engine CLI.
   python3 run.py prep   <video> --work <dir>     transcribe + analyse; prints the numbered transcript used to write plan.json
   python3 run.py render <video> --work <dir> --style <a-list|a-story|a-skit|b-loud|b-editorial|b-showcase> [--out file.mp4]
+  python3 run.py auto   <video> --work <dir> --style <style>     automatic plan (no AI step) + render
 Plan: <work>/plan.json (schema in PLANS.md). B-roll images: <work>/broll/. Re-renders after a correction reuse cached steps."""
 import argparse, hashlib, json, os, sys, time
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -82,7 +83,14 @@ def render(job, style, out):
 
 
 if __name__ == "__main__":
-    ap = argparse.ArgumentParser(); ap.add_argument("cmd", choices=["prep", "render"]); ap.add_argument("video")
+    ap = argparse.ArgumentParser(); ap.add_argument("cmd", choices=["prep", "render", "auto"]); ap.add_argument("video")
     ap.add_argument("--work", required=True); ap.add_argument("--style", default="b-loud"); ap.add_argument("--out")
     a = ap.parse_args(); job = Job(a.video, a.work)
-    prep(job) if a.cmd == "prep" else render(job, a.style, a.out or job.p(f"final_{a.style}.mp4"))
+    if a.cmd == "prep": prep(job)
+    elif a.cmd == "render": render(job, a.style, a.out or job.p(f"final_{a.style}.mp4"))
+    else:   # auto: transcript + automatic plan (no AI step) + render
+        if not os.path.exists(job.p("transcript.json")): prep(job)
+        if not os.path.exists(job.p("plan.json")):
+            from autoplan import autoplan
+            json.dump(autoplan(json.load(open(job.p("transcript.json"))), a.style), open(job.p("plan.json"), "w"), indent=1)
+        render(job, a.style, a.out or job.p(f"final_{a.style}.mp4"))

@@ -1,19 +1,16 @@
-# Reubx Studio (local)
+# Reubx — install once, everything included
 
-A browser editing studio that runs on your own computer, like the "Claude edits my videos in my style" app.
+1. Install **Claude Code** on your laptop (Mac or Windows).
+2. Unzip **reubx.zip** into your skills folder: Mac `~/.claude/skills/`, Windows `C:\Users\<you>\.claude\skills\`.
+3. In Claude Code type `/reubx install` (or just use any command below; the first one installs automatically).
+   It sets up its own Python 3.12, ffmpeg, Chromium, 16 fonts, the speech model and icons. No admin password,
+   no Homebrew needed (it uses Homebrew/winget if you already have them). One time, a few minutes.
 
-**Install once**
-1. Install Claude Code, Python 3.10+ and ffmpeg (Mac: `brew install ffmpeg`, Windows: `winget install ffmpeg`).
-2. Either open Claude Code in this repo, or unzip `reubx-studio.zip` into `~/.claude/skills/` so it works from any folder.
+**Commands**
+- `/reubx studio ~/Videos/reels` (or `/reubx-studio ...`): browser studio at http://localhost:8765, watches the folder,
+  auto-edits new videos; change fonts, colours, looks, sound, zooms, cut words, send notes to Claude.
+- `/reubx b-loud ~/Videos/raw.mov` (or `/style-b-loud ...`): full edit with Claude's plan. Styles: a-list, a-story, a-skit, b-loud, b-editorial, b-showcase.
+- `/reubx auto a-story ~/Videos/raw.mov`: fastest, no AI tokens (automatic plan).
 
-**Use**
-- In Claude Code type: `/reubx-studio ~/Videos/reels` (any folder with your raw videos).
-- Open http://localhost:8765. Drop raw videos into the folder; each one is transcribed and gets an automatic first edit
-  (tick "auto-edit new videos" to render them straight away). Edited files appear in `<folder>/edited/`.
-- **Look** tab: pick the style (Calm Cards a-*, Motion Pop b-*), generate 5 looks from your own footage, "Use this look".
-- **Text** tab: caption / keyword / accent / lead / handwritten fonts, colours, caption size.
-- **Sound & camera**: music volume, sound-effect intensity, zoom punch-in strength.
-- **Script**: click words to cut, double-click to fix spelling, alt-click to add a zoom.
-- **Notes**: type any correction ("make the $700K bigger", "use a laptop B-roll here"). Claude, still running in the
-  terminal, picks it up, edits the plan and re-renders.
-- Press **Save & render** after changes. Re-renders reuse the cached cut and camera, so they are faster.
+Every edit: retakes and silences cut, voice cleaned (noise, hum, EQ, de-ess, compression), -14 LUFS, eased zooms,
+sound design, captions always readable, no overlapping graphics. Outputs go to `<folder>/edited/`.

@@ -3,7 +3,7 @@ blur-to-sharp, custom easing, staggered children, light sweeps on cards, grain o
 import asyncio, json, os, re, shutil, subprocess, time
 from multiprocessing import Process
 import numpy as np
-from core import W, H, FPS, HERE, CACHE, ff
+from core import W, H, FPS, HERE, CACHE, ff, uri, fwd
 
 ICD = f"{CACHE}/lucide/package/icons"
 FONTDIR = f"{CACHE}/fonts"
@@ -28,7 +28,7 @@ def font_faces():
     for fam, faces in FONTS.items():
         for f, wgt, sty in faces:
             p = os.path.join(FONTDIR, f)
-            if os.path.exists(p): out.append(f"@font-face{{font-family:'{fam}';src:url('file://{p}');font-weight:{wgt};font-style:{sty}}}")
+            if os.path.exists(p): out.append(f"@font-face{{font-family:'{fam}';src:url('{uri(p)}');font-weight:{wgt};font-style:{sty}}}")
     return "\n".join(out)
 
 
@@ -142,7 +142,7 @@ async def _worker(html, frames, outdir):
     async with async_playwright() as p:
         b = await (p.chromium.launch(executable_path=CHROMIUM, args=["--no-sandbox"]) if CHROMIUM else p.chromium.launch(args=["--no-sandbox"]))
         pg = await b.new_page(viewport={"width": W, "height": H}, device_scale_factor=1)
-        await pg.goto("file://" + html); await pg.evaluate("document.fonts.ready"); await pg.wait_for_timeout(400)
+        await pg.goto(uri(html)); await pg.evaluate("document.fonts.ready"); await pg.wait_for_timeout(400)
         for k in frames:
             await pg.evaluate("t=>document.getAnimations().forEach(a=>{a.pause();a.currentTime=t})", k * 1000 / FPS)
             await pg.screenshot(path=f"{outdir}/f{k:05d}.png", omit_background=True)
@@ -196,7 +196,7 @@ def compose(work, T, wins, layers, out, end=0.0):
     base = f"{work}/base.mp4"
     if end:
         ff(["-f", "lavfi", "-i", f"color=c=black:s={W}x{H}:r={FPS}", "-frames:v", str(round(end * FPS) + 15), "-c:v", "libx264", "-preset", "veryfast", "-crf", "15", "-pix_fmt", "yuv420p", f"{work}/black.mp4"])
-        open(f"{work}/ext.txt", "w").write(f"file '{base}'\nfile '{work}/black.mp4'\n")
+        open(f"{work}/ext.txt", "w").write(f"file '{fwd(base)}'\nfile '{fwd(work)}/black.mp4'\n")
         ff(["-f", "concat", "-safe", "0", "-i", f"{work}/ext.txt", "-c", "copy", f"{work}/base_ext.mp4"]); base = f"{work}/base_ext.mp4"
     clips = []
     for i, x in enumerate(wins):
