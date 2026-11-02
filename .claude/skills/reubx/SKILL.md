@@ -7,7 +7,7 @@ description: Reubx all-in-one video editor. Installs itself (Python, ffmpeg, Chr
 Be brief; the engine already contains the styles, cuts, audio clean-up and sound design. Do not re-study references.
 Use no connectors except apify, and only for B-roll photos in style b-*.
 
-**ENGINE** = the first that exists: `~/.claude/skills/reubx/engine` · `<repo>/editing-engine/reubx`.
+**ENGINE** = the `engine/` folder inside this skill's own directory (next to this SKILL.md); in the Reubx repo it is `editing-engine/reubx/`.
 **L** (launcher) = `ENGINE/reubx` on macOS / Linux / Git-Bash, `ENGINE\reubx.cmd` on Windows.
 The first call of L installs everything automatically (uv -> private Python 3.12, packages, ffmpeg via Homebrew / winget /
 bundled build, Chromium, 16 fonts, speech model). It needs internet and takes a few minutes once. Run it in the background and wait.
@@ -15,8 +15,8 @@ bundled build, Chromium, 16 fonts, speech model). It needs internet and takes a 
 | User says | Do |
 |---|---|
 | `/reubx install` | `L install` |
-| `/reubx studio <folder>` (or `/reubx-studio <folder>`) | Studio below |
-| `/reubx <style> <video>` (or `/style-<style> <video>`) | Edit one video below |
+| `/reubx studio <folder>` | Studio below |
+| `/reubx <style> <video>` (e.g. `/reubx kilgore-story raw.mov`) | Edit one video below |
 | `/reubx auto <style> <video or folder>` | Fastest, no AI tokens: `L auto "<video>" --work "<dir>/_reubx/<name>" --style <style> --out "<dir>/edited/<name>_<style>.mp4"` for each video |
 
 Styles — one per reference reel (best match), plus the generic six:
