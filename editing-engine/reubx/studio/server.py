@@ -9,7 +9,8 @@ from urllib.parse import urlparse, parse_qs, unquote
 ENGINE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ENGINE); sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 VIDEO_EXT = (".mp4", ".mov", ".m4v", ".mkv", ".webm")
-STYLES = ["a-list", "a-story", "a-skit", "b-loud", "b-editorial", "b-showcase"]
+PRESETS = json.load(open(os.path.join(ENGINE, "presets.json")))
+STYLES = [k for k in PRESETS if not k.startswith("_")] + ["a-list", "a-story", "a-skit", "b-loud", "b-editorial", "b-showcase"]
 
 ap = argparse.ArgumentParser(); ap.add_argument("--folder", required=True); ap.add_argument("--port", type=int, default=8765); ap.add_argument("--auto", action="store_true")
 A = ap.parse_args()
@@ -29,7 +30,7 @@ def jsave(p, obj):
 
 
 def settings():
-    return jload(SET_P, {"style": "b-loud", "look": {}, "auto": A.auto, "ai_layer": True})
+    return jload(SET_P, {"style": "edita-lawyer", "look": {}, "auto": A.auto, "ai_layer": True})
 
 
 def job_id(name): return re.sub(r"[^A-Za-z0-9_-]+", "_", os.path.splitext(name)[0])[:60]
@@ -53,7 +54,7 @@ def prepare(name):
     import run
     job = Job(os.path.join(FOLDER, name), d); run.prep(job); words = json.load(open(os.path.join(d, "transcript.json")))
     if not os.path.exists(os.path.join(d, "plan.json")):
-        st = settings(); plan = autoplan(words, st["style"], st.get("look", {})); plan["ai"] = False
+        st = settings(); plan = autoplan(words, PRESETS.get(st["style"], {}).get("base", st["style"]), st.get("look", {})); plan["ai"] = False; plan["style"] = st["style"]
         jsave(os.path.join(d, "plan.json"), plan)
     set_status(jid, "ready", name=name)
     if settings().get("auto"): RQ.put(jid)

@@ -120,6 +120,31 @@ def build(job, plan, cut, wins_out):
                     f'<circle cx="75" cy="75" r="58" stroke="{PINK}" stroke-width="20" fill="none" stroke-linecap="round" stroke-dasharray="364" stroke-dashoffset="{364 * (1 - pct):.0f}" transform="rotate(-90 75 75)"/></svg>')
             card(f'<div style="padding:22px 30px;display:flex;align-items:center;gap:26px;height:100%;box-sizing:border-box">{ring}<div>{lab(c.get("label", ""), 24, GREY, 500)}<div>{lab(c.get("value", ""), 46)}</div>'
                  f'<div>{lab(c.get("sub", ""), 22, PINK)}</div></div></div>', 290, 120, 500, 200, t0, t1)
+        elif ty == "comments":      # social-proof scatter: tilted comment screenshots (names blacked out)
+            spots = [(60, 230, -6), (700, 260, 5), (40, 1330, 4), (690, 1390, -5), (330, 1560, 3), (90, 640, -3), (720, 700, 4)]
+            for k, txt in enumerate(c.get("texts", ["This is amazing!!", "So grateful for this", "Best decision ever", "I love these updates", "Changed everything for me"])[:len(spots)]):
+                x, y, r = spots[k]; tk = t0 + 0.12 * k
+                add(f'<div class="card" style="width:330px;padding:16px 18px;border-radius:14px;transform:rotate({r}deg);box-sizing:border-box">'
+                    f'<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px"><div style="width:34px;height:34px;border-radius:50%;background:#d9dbe3"></div>'
+                    f'<div style="width:120px;height:14px;background:#111;border-radius:2px"></div></div>{lab(txt, 22, INK, 500)}</div>', f"left:{x}px;top:{y}px;width:330px", "pop", tk, t1, out="blur", outd=200)
+                EV.append((tk, "pop", None, 0.12))
+        elif ty == "chat":          # iMessage-style bubble(s) for a punchline message
+            for k, (who, txt) in enumerate(c.get("messages", [["me", c.get("text", "")]])):
+                me = who == "me"; tk = t0 + 0.45 * k
+                add(f'<div style="max-width:720px;padding:22px 30px;border-radius:38px;{"border-bottom-right-radius:10px;background:#1f8bff;color:#fff" if me else "border-bottom-left-radius:10px;background:#e9e9ef;color:#111"};'
+                    f'font:500 38px var(--f-cap);box-shadow:0 16px 40px rgba(0,0,0,.25)">{txt}</div>',
+                    f"{'right' if me else 'left'}:70px;top:{c.get('y', 1180) + 150 * k}px", "glide", tk, t1, out="blur", outd=200)
+                EV.append((tk, "pop", None, 0.25))
+        elif ty == "sticker":       # emoji / icon sticker with a little wobble
+            inner = f'<div style="font-size:{c.get("size", 150)}px;line-height:1;filter:drop-shadow(0 10px 18px rgba(0,0,0,.35))">{c["emoji"]}</div>' if c.get("emoji") else dot(c.get("icon", "sparkles"), c.get("size", 150), PINK)
+            add(inner, f"left:{c.get('x', 780)}px;top:{c.get('y', 300)}px", "pop", t0, t1, dur=520, ease="back", out="blur", outd=200)
+            EV.append((t0, "pop", None, 0.3))
+        elif ty == "pip":           # picture-in-picture phone frame with handwritten label + arrow
+            add(f'<div style="width:300px;height:534px;border-radius:34px;border:8px solid #fff;background:url({uri(job.broll + "/" + c["img"])}) center/cover;box-shadow:0 24px 60px rgba(0,0,0,.45);box-sizing:border-box"></div>',
+                "left:50px;top:1180px;width:300px;height:534px", "glide", t0, t1, out="blur", outd=200)
+            add(f'<div style="display:flex;align-items:flex-end;gap:6px;transform:rotate(-6deg)"><span class="hand" style="font-size:52px;color:#fff">{c.get("label", "me one month ago")}</span>{icon("corner-left-down", 64, "#fff", 2.2)}</div>',
+                "left:120px;top:1060px", "rise", t0 + 0.25, t1)
+            EV.append((t0, "swish", 0.3, 0.3))
         else:  # list
             rows = "".join(f'<div style="display:flex;align-items:center;gap:14px">{dot(ic, 44, PINK, "#fff", 2.6)}{lab(t, 30)}</div>' for ic, t in c.get("rows", []))
             card(f'<div style="padding:28px 32px;display:flex;flex-direction:column;gap:16px">{lab(c.get("title", ""), 26, GREY)}{rows}</div>', 200, 90, 680, 110 + 64 * len(c.get("rows", [])), t0, t1)

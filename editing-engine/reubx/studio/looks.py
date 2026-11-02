@@ -36,7 +36,7 @@ def render(video, work, style, plan, transcript):
     subprocess.run(["ffmpeg", "-v", "error", "-y", "-ss", f"{dur * 0.35:.2f}", "-i", video, "-frames:v", "1", "-vf",
                     "scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920", bg], check=True)
     lead, big, cap = sample_text(plan, transcript)
-    fam = "a" if style.startswith("a") else "b"
+    fam = "a" if style.startswith(("a", "kilgore")) else "b"
     pages = []
     for name, look, acc, acc2 in (LOOKS_A if fam == "a" else LOOKS_B):
         html = gfx.page([], acc, acc2, look).replace("<body>", f"<body style=\"background:url('{gfx.uri(bg)}') center/cover\">")

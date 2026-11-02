@@ -1,0 +1,62 @@
+{
+ "_doc": "One preset per reference reel. base = engine style; look = fonts/colours/sound/zoom defaults (plan.look overrides); plan = default plan keys; guide = what the plan should contain to match the reel.",
+ "kilgore-list": {
+  "ref": "@itsmegkilgore DewrbKMRjlE — '15 ways Claude edits my reels'", "base": "a-list",
+  "look": {"font_cap": "Inter", "font_accent": "Instrument Serif", "font_hand": "Gochi", "accent_text": "#F3E37C", "cap_size": 70, "music": 0.12, "sfx": 0.8, "zoom": 0.06},
+  "plan": {"accent_color": "#d63a3a"},
+  "guide": "Wide locked shot, almost no cuts. Stacked hook header (handwritten yellow line + white sans line + handwritten sub). One white UI card per list item above the head (app/list/notification/stat/photo), 1.5-3 s each. One word at a time, ~1 in 4 yellow serif accents. Selfie-style tight hook and CTA (start_tight, last shot tight). End card typed."
+ },
+ "kilgore-story": {
+  "ref": "@itsmegkilgore Dee_frcPZhP — 'say it out loud'", "base": "a-story",
+  "look": {"font_cap": "Inter", "font_accent": "Instrument Serif", "font_hand": "Gochi", "accent_text": "#F3E37C", "cap_size": 66, "music": 0.1, "sfx": 0.5, "zoom": 0.05},
+  "guide": "Curiosity header ('send this to a dreamer' + handwritten 'it's time to say it out loud' + 'just wait for the ending'). Emotional passages as handwritten white lines with the key phrase in yellow (story). A pip card ('me one month ago') when an old clip/photo is referenced. Very few cuts, gentle zooms, black typed end card."
+ },
+ "kilgore-community": {
+  "ref": "@itsmegkilgore Dej25RgxvOD — 'half a million from one launch / build the room'", "base": "a-story",
+  "look": {"font_cap": "Inter", "font_accent": "Instrument Serif", "font_hand": "Gochi", "accent_text": "#F3E37C", "cap_size": 70, "music": 0.11, "sfx": 0.7, "zoom": 0.06},
+  "guide": "Big yellow serif numbers ($27,000), one-word captions with yellow serif accents, a comments scatter card whenever community/people/DMs are mentioned, a tilted reaction photo card top-left on surprising lines, stickers (🤯) on the emotional payoff, handwritten lines for the lesson at the end."
+ },
+ "kilgore-skit": {
+  "ref": "@itsmegkilgore De15Uy2x_tU — 'I taught my laptop to do my laundry'", "base": "a-skit",
+  "look": {"font_cap": "Inter", "font_accent": "Instrument Serif", "font_hand": "Gochi", "accent_text": "#F3E37C", "cap_size": 74, "music": 0.12, "sfx": 1.0, "zoom": 0.1},
+  "plan": {"start_tight": true},
+  "guide": "Tight selfie hook, then cuts every 2-4 s alternating wide/tight, punch-in on every beat. Handwritten yellow instruction lines ('Then you're gonna need to add this connector.'). A chat card (iMessage bubble) for the punchline message. One word at a time. Short tight close ('Next, I'm gonna teach Claude to do the dishes')."
+ },
+ "kilgore-flip": {
+  "ref": "@itsmegkilgore DezH_DVRfIL — 'If you use AI you'll look generic... just kidding'", "base": "a-list",
+  "look": {"font_cap": "Inter", "font_accent": "Instrument Serif", "font_hand": "Gochi", "accent_text": "#F3E37C", "cap_size": 70, "music": 0.12, "sfx": 0.9, "zoom": 0.08},
+  "plan": {"start_tight": true},
+  "guide": "Provocative tight hook line, then a hard flip ('Just kidding.') with a 😜 sticker and handwritten yellow 'Just kidding.'. Feature beats get white UI cards (brand kit = app/list cards with colour dots). Accent words like 'free' in yellow serif. Handwritten aside above the head ('wayyy more being given after launch ends!!'). Black typed end card."
+ },
+ "gallo-promo": {
+  "ref": "@_anthonygallo De-C1zEgXrw — premium SaaS course promo", "base": "b-editorial",
+  "look": {"font_main": "Bricolage Grotesque", "font_lead": "Manrope", "font_cap": "Manrope", "font_accent": "Bricolage Grotesque", "text": "#ffffff",
+           "grad": "linear-gradient(90deg,#7aa2ff 0%,#b48cff 50%,#ff9a62 100%)", "music": 0.14, "sfx": 0.9, "zoom": 0.08},
+  "plan": {"accent": "#8b7cff", "accent2": "#c9b6ff", "gradient_text": true},
+  "guide": "Light lavender full-screen cards (dark:false) with clean product UI: steps/flow/browser/list cards, one key phrase per headline in a blue-purple-orange gradient (gradient_text). Host cut between cards; white bold captions. A refund/guarantee badge pill near the end."
+ },
+ "edita-lawyer": {
+  "ref": "@edita.visuals DewlyZSNcme — 'when your home is paid off'", "base": "b-loud",
+  "look": {"font_main": "Montserrat", "font_lead": "Poppins", "font_cap": "Poppins", "grad": "linear-gradient(180deg,#fff 0%,#fff 48%,#d3ebff 70%,#8fcaff 100%)", "music": 0.13, "sfx": 1.0, "zoom": 0.1},
+  "plan": {"accent": "#2F6BFF", "accent2": "#9cc2ff"},
+  "guide": "Reference stack keyword blocks (lead 'You throw' / main 'A PARTY' / tail 'somebody') on every punchline; light-blue glass progress bar; dark check/cross pills with a click cursor; a 'Yes or No?' answer card; polaroid card with a red tag ('NOT CARRY'); emoji answer chips; a 'STRONGLY RECOMMEND' pill at the end. B-roll sparse."
+ },
+ "edita-interview": {
+  "ref": "@edita.visuals DeSeu64RwaW — Replit CEO interview", "base": "b-editorial",
+  "look": {"font_main": "Instrument Serif", "font_lead": "Poppins", "font_cap": "Poppins", "font_accent": "Instrument Serif", "music": 0.12, "sfx": 0.7, "zoom": 0.05},
+  "plan": {"accent": "#d6f35a", "accent2": "#ecffa3"},
+  "guide": "Lime serif italic keywords with a small light lead and tail ('I would say just' / 'go ahead' / 'build the product'). Archive/vintage B-roll (desaturated) on every reference to the past; retro window cards ('TACIT KNOWLEDGE NOT FOUND' warning dialog, media-player style); quote card for the key line. Calm camera."
+ },
+ "edita-blueprint": {
+  "ref": "@edita.visuals De1uB_sJ8M8 — 'welcome to the Attention Economy'", "base": "b-showcase",
+  "look": {"font_main": "Montserrat", "font_lead": "Poppins", "font_cap": "Poppins", "music": 0.12, "sfx": 0.8, "zoom": 0.06},
+  "plan": {"accent": "#2F6BFF", "accent2": "#9cc2ff"},
+  "guide": "Showcase frame (raw clip beside the edit). Text-card interstitials with slow zoom: light card with blue list text (steps, dark:false) and a dark purple 'Blueprint' list card (Content / Distribution / Sales). Keyword blocks sparse, captions small."
+ },
+ "edita-podcast": {
+  "ref": "@edita.visuals DemWl0OtTd8 — herbalism podcast", "base": "b-editorial",
+  "look": {"font_main": "Instrument Serif", "font_lead": "Poppins", "font_cap": "Poppins", "font_accent": "Instrument Serif", "music": 0.15, "sfx": 0.6, "zoom": 0.05},
+  "plan": {"accent": "#e0894f", "accent2": "#f6c39a"},
+  "guide": "Warm terracotta serif keywords. Rapid B-roll montage: one full-screen photo per list item (each herb/product ~1 s), split screens for 'the point is' lines, a quote card for 'the magic and the reality of ...'. Music swells slightly mid-reel."
+ }
+}

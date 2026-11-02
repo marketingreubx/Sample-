@@ -86,7 +86,7 @@ def build(job, plan, cut, wins_out):
         BUSY.append((x["a"], x["b"], "win"))
     wins_out.extend(wins); WINS_REF.extend(wins)
     # ---------------- keyword blocks
-    ED = ' ed' if editorial else ''
+    ED = (' ed' if editorial else '') + (' gt' if plan.get('gradient_text') else '')
     def stack_html(lead, mains, tail, size, lsz, d_lead, d_main, d_tail, hide_main=False):
         """Reference typography: small italic lead hugging the top-left of a heavy italic main word, tail hugging bottom-right."""
         out = f'<div class="stack{ED}">'
@@ -142,6 +142,19 @@ def build(job, plan, cut, wins_out):
         i0, i1 = p["w"]; t0, t1 = t_of(i0), te_of(i1) + 0.2; BUSY.append((t0, t1, "ui", int(chin_at(t0) + 140 + 130)))
         glass(f'<div style="display:flex;align-items:center;gap:20px;height:100%;padding:0 34px">{dot(p.get("icon", "sparkles"), 70, p.get("color", "var(--acc)"))}<span class="gl">{p["text"]}</span></div>',
               140, int(chin_at(t0) + 140), 800, 130, t0, t1)
+        if p.get("cursor"):          # hand cursor glides in and clicks the pill
+            top = int(chin_at(t0) + 140)
+            add(f'<div style="filter:drop-shadow(0 6px 10px rgba(0,0,0,.4))">{icon("pointer", 70, "#fff", 1.8, "#111")}</div>', f"left:760px;top:{top + 70}px", "wipe", t0 + 0.25, t1,
+                dur=700, ease="quint", kf=[{"transform": "translate(220px,260px)", "opacity": 0}, {"transform": "translate(0,0)", "opacity": 1, "offset": 0.7}, {"transform": "scale(.85)", "opacity": 1}])
+            EV.append((t0 + 0.9, "tick", None, 0.45))
+    for pz in plan.get("polaroids", []):   # pinned polaroid with a red tag, beside the speaker
+        G["id"] = "pol%d" % len(L["front"])
+        i0, i1 = pz["w"]; t0, t1 = t_of(i0), te_of(i1) + 0.2; top = int(chin_at(t0) + 60); BUSY.append((t0, t1, "ui", top + 470))
+        add(f'<div style="width:420px;padding:18px 18px 0;background:#fff;box-shadow:0 26px 60px rgba(0,0,0,.4);transform:rotate(-4deg);box-sizing:border-box">'
+            f'<div style="height:300px;background:url({uri(job.broll + "/" + pz["img"])}) center/cover"></div><div style="font:italic 500 30px var(--f-lead);color:#222;padding:14px 4px 18px">{pz.get("caption", "")}</div></div>'
+            + (f'<div style="position:absolute;left:70px;top:-26px;background:#ff3b3b;color:#fff;font:700 30px var(--f-lead);padding:8px 22px;border-radius:12px;box-shadow:0 8px 18px rgba(0,0,0,.3)">{pz["tag"]}</div>' if pz.get("tag") else ""),
+            f"left:{pz.get('x', 560)}px;top:{top}px;width:420px", "drop", t0, t1, out="blur", outd=200)
+        EV += [(t0, "whoosh", 0.35, 0.3), (t0 + 0.35, "pop", None, 0.25)]
     for c in plan.get("chips", []):
         G["id"] = "chip%d" % len(L["front"])
         i0, i1 = c["w"]; t0, t1 = t_of(i0), te_of(i1) + 0.2; top = int(chin_at(t0) + 120); BUSY.append((t0, t1, "ui", top + 146))
@@ -168,9 +181,9 @@ def build(job, plan, cut, wins_out):
         EV.append((t0 + 0.42, "tick", None, 0.35))
     G["id"] = None
     # ---------------- full-frame interstitial cards
-    def full(inner, dark, t0, t1):
+    def full(inner, dark, t0, t1, bg=None):
         BUSY.append((t0, t1, "card", dark))
-        bg = "linear-gradient(165deg,#070f2b 0%,#14306f 55%,var(--acc) 130%)" if dark else "linear-gradient(170deg,#f7f8fc 0%,#e7ecf8 100%)"
+        bg = bg or ("linear-gradient(165deg,#070f2b 0%,#14306f 55%,var(--acc) 130%)" if dark else "linear-gradient(170deg,#f7f8fc 0%,#e7ecf8 100%)")
         add(f'<div style="width:1080px;height:1920px;background:{bg};position:relative;overflow:hidden">'
             f'<div style="position:absolute;inset:0;background:radial-gradient(900px 700px at 85% 8%,rgba(255,255,255,{.18 if dark else .9}),transparent 60%)"></div>{inner}<div class="grain"></div></div>',
             "left:0;top:0;width:1080px;height:1920px", "slide", t0, t1, out="slide", outd=420)
@@ -204,9 +217,29 @@ def build(job, plan, cut, wins_out):
                     f'<div style="position:absolute;left:48px;top:90px;color:#fff;font:800 66px Poppins;line-height:1.05">{c.get("brand", "Your Brand")}<div style="font:500 30px Poppins;opacity:.9;margin-top:14px">{c.get("tagline", "")}</div>'
                     f'<div style="margin-top:26px;display:inline-block;padding:16px 34px;border-radius:40px;background:var(--acc);font:600 28px Poppins">{c.get("button", "Get started")}</div></div></div>'
                     f'<div style="padding:40px;display:flex;gap:24px">{tiles}</div></div></div>')
+        elif c["type"] == "answer":     # playful 'Yes or No?' question card with answer chips
+            chips = "".join(f'<div class="chip-e" data-d="{0.5 + k * 0.25:.2f}">{e} <span>{t}</span></div>' for k, (e, t) in enumerate(c.get("chips", [["🤔", "Yes or No?"]])))
+            q = c.get("question", "Yes <small>or</small> <sup>No?</sup>")
+            body = (head + f'<div data-d="0.2" style="font:italic 600 120px var(--f-lead);color:{fg};line-height:1.05">{q}</div>'
+                    f'<div style="display:flex;flex-direction:column;gap:22px;align-items:flex-start">{chips}</div>')
+        elif c["type"] == "retro":      # vintage photo collage + Windows-style warning dialog
+            imgs = c.get("imgs", [])
+            col = "".join(f'<div data-d="{0.1 + k * 0.12:.2f}" style="position:absolute;left:{(60, 520, 120, 560)[k % 4]}px;top:{(80, 160, 860, 980)[k % 4]}px;width:420px;height:560px;'
+                          f'background:url({uri(job.broll + "/" + im)}) center/cover;filter:grayscale(.6) contrast(1.1) sepia(.2);border:10px solid #f2efe6;transform:rotate({(-4, 3, 2, -3)[k % 4]}deg)"></div>' for k, im in enumerate(imgs[:4]))
+            dlg = (f'<div data-d="0.6" style="position:absolute;left:150px;top:640px;width:600px;background:#ece9d8;border:3px solid #0a246a;box-shadow:0 30px 70px rgba(0,0,0,.55);font-family:Tahoma,Verdana,sans-serif">'
+                   f'<div style="background:linear-gradient(180deg,#0a5ad8,#0839a8);color:#fff;font:700 26px Tahoma,sans-serif;padding:10px 16px">{c.get("window", "Warning")}</div>'
+                   f'<div style="display:flex;gap:24px;align-items:center;padding:34px 30px">{icon("triangle-alert", 90, "#c79a00", 2, "#ffd84a")}'
+                   f'<div style="font:800 50px Tahoma,Arial,sans-serif;color:#111;line-height:1.05">{c.get("title", "")}</div></div>'
+                   f'<div style="text-align:center;padding:0 0 26px"><span style="display:inline-block;border:2px solid #333;padding:8px 46px;font:24px Tahoma,sans-serif;background:#f4f3ee">OK</span></div></div>')
+            BUSY.append((t0, t1, "card", True))
+            add(f'<div style="width:1080px;height:1920px;background:linear-gradient(170deg,#0d1b3d,#16306a);position:relative;overflow:hidden">{col}{dlg}<div class="grain"></div></div>',
+                "left:0;top:0;width:1080px;height:1920px", "slide", t0, t1, out="slide", outd=420)
+            EV += [(t0 - 0.12, "whoosh", 0.62, 0.5), (t0 + 0.6, "tick", None, 0.5)]
+            continue
         else:  # quote
             body = head + f'<div class="kser" data-d="0.3" style="font-size:120px;white-space:normal;color:{fg};text-align:left">{c.get("quote", "")}</div>'
-        full(f'<div style="position:absolute;left:90px;right:90px;top:140px;bottom:240px;display:flex;flex-direction:column;justify-content:center;gap:30px">{body}</div>', dark, t0, t1)
+        full(f'<div style="position:absolute;left:90px;right:90px;top:140px;bottom:240px;display:flex;flex-direction:column;justify-content:center;gap:30px">{body}</div>', dark, t0, t1,
+             c.get("bg") or ("linear-gradient(170deg,#f4f9ff 0%,#cfe6ff 55%,#7fbfff 100%)" if c["type"] == "answer" else None))
         if c["type"] == "browser": EV.append((t0 + 1.6, "shimmer", 0.7, 0.3))
     # ---------------- CTA comment box
     if plan.get("cta"):

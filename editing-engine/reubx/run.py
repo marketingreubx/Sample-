@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Reubx editing engine CLI.
   python3 run.py prep   <video> --work <dir>     transcribe + analyse; prints the numbered transcript used to write plan.json
-  python3 run.py render <video> --work <dir> --style <a-list|a-story|a-skit|b-loud|b-editorial|b-showcase> [--out file.mp4]
+  python3 run.py render <video> --work <dir> --style <a-list|a-story|a-skit|b-loud|b-editorial|b-showcase|any preset in presets.json> [--out file.mp4]
   python3 run.py auto   <video> --work <dir> --style <style>     automatic plan (no AI step) + render
 Plan: <work>/plan.json (schema in PLANS.md). B-roll images: <work>/broll/. Re-renders after a correction reuse cached steps."""
 import argparse, hashlib, json, os, sys, time
@@ -52,9 +52,21 @@ def showcase(job, edited, out, cta):
         "-filter_complex", fc, "-map", "[v]", "-map", "1:a", "-shortest", "-c:v", "libx264", "-preset", "medium", "-crf", "18", "-c:a", "copy", out])
 
 
+PRESETS = json.load(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "presets.json")))
+
+
+def resolve(style, plan):
+    """Preset name (e.g. kilgore-story, edita-lawyer) -> engine style + preset look/plan defaults (plan.json values win)."""
+    p = PRESETS.get(style)
+    if not p or style.startswith("_"): return style, plan
+    for k, v in p.get("plan", {}).items(): plan.setdefault(k, v)
+    plan["look"] = dict(p.get("look", {}), **plan.get("look", {})); plan["preset"] = style
+    return p["base"], plan
+
+
 def render(job, style, out):
-    t = time.time(); fam = style[0]
-    plan = json.load(open(job.p("plan.json"))); plan["style"] = style
+    t = time.time()
+    plan = json.load(open(job.p("plan.json"))); style, plan = resolve(style, plan); fam = style[0]; plan["style"] = style
     st = json.load(open(job.p("state.json"))) if os.path.exists(job.p("state.json")) else {}
     kc = h([plan.get("fix"), plan.get("remove")]); kb = h([kc, plan.get("shots"), plan.get("punch"), plan.get("start_tight"), fam])
     if st.get("cut") != kc or not os.path.exists(job.p("voice.wav")):
@@ -92,5 +104,5 @@ if __name__ == "__main__":
         if not os.path.exists(job.p("transcript.json")): prep(job)
         if not os.path.exists(job.p("plan.json")):
             from autoplan import autoplan
-            json.dump(autoplan(json.load(open(job.p("transcript.json"))), a.style), open(job.p("plan.json"), "w"), indent=1)
+            json.dump(autoplan(json.load(open(job.p("transcript.json"))), PRESETS.get(a.style, {}).get("base", a.style)), open(job.p("plan.json"), "w"), indent=1)
         render(job, a.style, a.out or job.p(f"final_{a.style}.mp4"))

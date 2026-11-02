@@ -42,7 +42,7 @@ input[type=range]{width:100%}input[type=color]{width:46px;height:32px;border:non
   <div class="tabs"><div data-t="look" class="on">Look</div><div data-t="text">Text</div><div data-t="fx">Sound &amp; camera</div><div data-t="script">Script</div><div data-t="notes">Notes</div></div>
   <div class="pane on" id="look">
    <label>Editing style</label><select id="style"></select>
-   <div class="hint">Calm Cards = a-*, Motion Pop = b-*</div>
+   <div class="hint">kilgore-* = Calm Cards references · gallo-promo · edita-* = Motion Pop references · a-*/b-* = generic</div>
    <label>Looks</label><button id="bLooks">Generate 5 looks from this video</button><div class="looks" id="looks"></div>
   </div>
   <div class="pane" id="text">
@@ -93,7 +93,7 @@ function load(which){view=which; const v=S.videos.find(v=>v.id==cur); if(!v)retu
 $('bRaw').onclick=()=>load('raw'); $('bEdit').onclick=()=>load('edit');
 function fill(){const p=J.plan||{}, lk=p.look||{}; $('style').value=p.style||S.settings.style;
   [['font_cap','Poppins'],['font_main','Montserrat'],['font_accent','Instrument Serif'],['font_lead','Poppins'],['font_hand','Gochi']].forEach(([k,d])=>$(k).value=lk[k]||d);
-  $('c_text').value=lk.text||'#ffffff'; $('c_acc').value=lk.accent_text||'#F3E37C'; $('c_brand').value=(p.style||'').startsWith('a')?(p.accent_color||'#ff5a93'):(p.accent||'#2F6BFF');
+  $('c_text').value=lk.text||'#ffffff'; $('c_acc').value=lk.accent_text||'#F3E37C'; $('c_brand').value=((p.style||'').startsWith('a')||(p.style||'').startsWith('kilgore'))?(p.accent_color||'#ff5a93'):(p.accent||'#2F6BFF');
   const g=(lk.grad||'').match(/#[0-9a-fA-F]{6}(?=[^#]*$)/); $('c_grad').value=g?g[0]:'#8fcaff';
   $('cap_size').value=lk.cap_size||66; $('music').value=lk.music??0.14; $('sfx').value=String(lk.sfx??1); $('zoom').value=lk.zoom??0.11; labels(); words(); $('looks').innerHTML=''}
 function labels(){$('capv').textContent=$('cap_size').value+'px'; $('musv').textContent=Math.round($('music').value*100)+'%'; $('zv').textContent='+'+Math.round($('zoom').value*100)+'%';
@@ -108,13 +108,13 @@ function words(){const rm=removedSet(), pu=new Set(J.plan.punch||[]), fx=J.plan.
       const s=removedSet(); if(e.shiftKey&&lastShift!=null){const [a,b]=[Math.min(lastShift,i),Math.max(lastShift,i)]; const on=!s.has(i); for(let k=a;k<=b;k++) on?s.add(k):s.delete(k)} else s.has(i)?s.delete(i):s.add(i);
       lastShift=i; J.plan.remove=toRanges(s); words()};
     el.ondblclick=()=>{const t=prompt('Correct this word (empty = hide it in captions)', el.textContent); if(t===null)return; J.plan.fix=J.plan.fix||{}; J.plan.fix[i]=t; words()}})}
-function patch(){const st=$('style').value, isA=st.startsWith('a'), lk={font_cap:$('font_cap').value,font_main:$('font_main').value,font_accent:$('font_accent').value,font_lead:$('font_lead').value,font_hand:$('font_hand').value,
+function patch(){const st=$('style').value, isA=st.startsWith('a')||st.startsWith('kilgore'), lk={font_cap:$('font_cap').value,font_main:$('font_main').value,font_accent:$('font_accent').value,font_lead:$('font_lead').value,font_hand:$('font_hand').value,
   text:$('c_text').value,accent_text:$('c_acc').value,cap_size:+$('cap_size').value,music:+$('music').value,sfx:+$('sfx').value,zoom:+$('zoom').value,grad:`linear-gradient(180deg,#fff 0%,#fff 48%,${$('c_grad').value}55 70%,${$('c_grad').value} 100%)`};
   const p={style:st,look:lk,remove:J.plan.remove||[],fix:J.plan.fix||{},punch:J.plan.punch||[]}; if(isA)p.accent_color=$('c_brand').value; else {p.accent=$('c_brand').value;p.accent2=$('c_grad').value}; return p}
 $('bRender').onclick=async()=>{if(!cur)return; J.plan=await api(`/api/job/${cur}/plan`,patch()); await api(`/api/job/${cur}/render`,{}); refresh()};
 $('bLooks').onclick=async()=>{if(!cur)return; await api(`/api/job/${cur}/plan`,{style:$('style').value}); $('looks').innerHTML='<div class="hint">Rendering looks…</div>';
   const r=await api(`/api/job/${cur}/looks`,{}); $('looks').innerHTML=r.looks.map((l,k)=>`<div class="look"><img src="/file?p=${encodeURIComponent(l.img)}&t=${Date.now()}"><div>${l.name}</div><button onclick='useLook(${JSON.stringify(l.look)})'>Use this look</button></div>`).join('')};
-window.useLook=async lk=>{const isA=$('style').value.startsWith('a'); const p={look:lk}; if(isA)p.accent_color=lk.accent; else {p.accent=lk.accent;p.accent2=lk.accent2}
+window.useLook=async lk=>{const v=$('style').value, isA=v.startsWith('a')||v.startsWith('kilgore'); const p={look:lk}; if(isA)p.accent_color=lk.accent; else {p.accent=lk.accent;p.accent2=lk.accent2}
   J.plan=await api(`/api/job/${cur}/plan`,p); fill()};
 $('bNote').onclick=async()=>{if(!cur||!$('noteText').value.trim())return; await api(`/api/job/${cur}/note`,{text:$('noteText').value}); $('noteText').value=''; refresh()};
 $('auto').onchange=()=>api('/api/settings',{auto:$('auto').checked});

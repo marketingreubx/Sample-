@@ -80,6 +80,8 @@ html,body{margin:0;width:1080px;height:1920px;background:transparent;overflow:hi
 .ed .s-lead,.ed .s-tail{font-style:normal;font-weight:300}
 .ed .s-glow{filter:drop-shadow(0 3px 12px rgba(0,0,0,.55))}
 .ed .s-main{font-family:var(--f-accent);font-weight:400;letter-spacing:-.01em;line-height:.9;background:none;color:var(--acc);-webkit-background-clip:border-box;padding:0 .06em}
+.gt .s-main{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.chip-e small{font-size:.6em}
 .glass-l{position:relative;overflow:hidden;background:linear-gradient(135deg,rgba(140,205,255,.92),rgba(60,140,255,.78));border:1.5px solid rgba(255,255,255,.55);box-shadow:0 24px 60px rgba(10,40,120,.35),inset 0 1px 0 rgba(255,255,255,.6);box-sizing:border-box}
 .chip-e{display:inline-flex;align-items:center;gap:14px;padding:14px 28px 14px 18px;border-radius:60px;background:#fff;box-shadow:0 14px 30px rgba(0,0,0,.25);font:italic 500 40px Poppins;color:var(--acc)}
 .sheen{position:absolute;top:-20%;bottom:-20%;width:38%;left:-45%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.55),transparent);pointer-events:none}

@@ -25,6 +25,27 @@ Write the plan in one pass from the transcript. Do not re-study references; ever
 | `punch` | word numbers that get an eased camera punch-in (+11%, 0.2 s in, hold, 0.35 s out). The 5-9 strongest words: names, numbers, the claim, the payoff. |
 | `start_tight` | `true` to open on the tight framing (good for a direct hook). |
 
+## Reference presets — one per reference reel (use these names as the style)
+| preset | reference | engine style | what the plan should contain |
+|---|---|---|---|
+| `kilgore-list` | @itsmegkilgore DewrbKMRjlE — '15 ways Claude edits my reels' | a-list | Wide locked shot, almost no cuts. Stacked hook header (handwritten yellow line + white sans line + handwritten sub). One white UI card per list item above the head (app/list/notification/stat/photo), 1.5-3 s each. One word at a time, ~1 in 4 yellow serif accents. Selfie-style tight hook and CTA (start_tight, last shot tight). End card typed. |
+| `kilgore-story` | @itsmegkilgore Dee_frcPZhP — 'say it out loud' | a-story | Curiosity header ('send this to a dreamer' + handwritten 'it's time to say it out loud' + 'just wait for the ending'). Emotional passages as handwritten white lines with the key phrase in yellow (story). A pip card ('me one month ago') when an old clip/photo is referenced. Very few cuts, gentle zooms, black typed end card. |
+| `kilgore-community` | @itsmegkilgore Dej25RgxvOD — 'half a million from one launch / build the room' | a-story | Big yellow serif numbers ($27,000), one-word captions with yellow serif accents, a comments scatter card whenever community/people/DMs are mentioned, a tilted reaction photo card top-left on surprising lines, stickers (🤯) on the emotional payoff, handwritten lines for the lesson at the end. |
+| `kilgore-skit` | @itsmegkilgore De15Uy2x_tU — 'I taught my laptop to do my laundry' | a-skit | Tight selfie hook, then cuts every 2-4 s alternating wide/tight, punch-in on every beat. Handwritten yellow instruction lines ('Then you're gonna need to add this connector.'). A chat card (iMessage bubble) for the punchline message. One word at a time. Short tight close ('Next, I'm gonna teach Claude to do the dishes'). |
+| `kilgore-flip` | @itsmegkilgore DezH_DVRfIL — 'If you use AI you'll look generic... just kidding' | a-list | Provocative tight hook line, then a hard flip ('Just kidding.') with a 😜 sticker and handwritten yellow 'Just kidding.'. Feature beats get white UI cards (brand kit = app/list cards with colour dots). Accent words like 'free' in yellow serif. Handwritten aside above the head ('wayyy more being given after launch ends!!'). Black typed end card. |
+| `gallo-promo` | @_anthonygallo De-C1zEgXrw — premium SaaS course promo | b-editorial | Light lavender full-screen cards (dark:false) with clean product UI: steps/flow/browser/list cards, one key phrase per headline in a blue-purple-orange gradient (gradient_text). Host cut between cards; white bold captions. A refund/guarantee badge pill near the end. |
+| `edita-lawyer` | @edita.visuals DewlyZSNcme — 'when your home is paid off' | b-loud | Reference stack keyword blocks (lead 'You throw' / main 'A PARTY' / tail 'somebody') on every punchline; light-blue glass progress bar; dark check/cross pills with a click cursor; a 'Yes or No?' answer card; polaroid card with a red tag ('NOT CARRY'); emoji answer chips; a 'STRONGLY RECOMMEND' pill at the end. B-roll sparse. |
+| `edita-interview` | @edita.visuals DeSeu64RwaW — Replit CEO interview | b-editorial | Lime serif italic keywords with a small light lead and tail ('I would say just' / 'go ahead' / 'build the product'). Archive/vintage B-roll (desaturated) on every reference to the past; retro window cards ('TACIT KNOWLEDGE NOT FOUND' warning dialog, media-player style); quote card for the key line. Calm camera. |
+| `edita-blueprint` | @edita.visuals De1uB_sJ8M8 — 'welcome to the Attention Economy' | b-showcase | Showcase frame (raw clip beside the edit). Text-card interstitials with slow zoom: light card with blue list text (steps, dark:false) and a dark purple 'Blueprint' list card (Content / Distribution / Sales). Keyword blocks sparse, captions small. |
+| `edita-podcast` | @edita.visuals DemWl0OtTd8 — herbalism podcast | b-editorial | Warm terracotta serif keywords. Rapid B-roll montage: one full-screen photo per list item (each herb/product ~1 s), split screens for 'the point is' lines, a quote card for 'the magic and the reality of ...'. Music swells slightly mid-reel. |
+
+Extra elements used by the presets:
+- Style A `cards` types: `comments` {texts:[...]} (tilted comment screenshots, names blacked out) · `chat` {messages:[["me"|"them","text"]], y} (iMessage bubbles) ·
+  `sticker` {emoji:"🤯" or icon, x, y, size} · `pip` {img, label:"me one month ago"} (phone-frame picture-in-picture with handwritten label + arrow).
+- Style B: `pills[].cursor: true` (hand cursor clicks the pill) · `polaroids` [{w, img, caption, tag:"NOT CARRY", x}] (pinned polaroid with red tag) ·
+  `cards` types `answer` {question, chips:[["🙂","I agree"]]} (light-blue "Yes or No?" card) and `retro` {imgs:[...], title, window} (vintage collage + warning dialog) ·
+  `gradient_text: true` (multicolour gradient headline, Gallo).
+
 ## Style A — "Calm Cards" (`a-list`, `a-story`, `a-skit`)
 | key | shape |
 |---|---|

@@ -19,8 +19,21 @@ bundled build, Chromium, 16 fonts, speech model). It needs internet and takes a 
 | `/reubx <style> <video>` (or `/style-<style> <video>`) | Edit one video below |
 | `/reubx auto <style> <video or folder>` | Fastest, no AI tokens: `L auto "<video>" --work "<dir>/_reubx/<name>" --style <style> --out "<dir>/edited/<name>_<style>.mp4"` for each video |
 
-Styles: **a-list** (X ways / features) · **a-story** (lesson / emotional) · **a-skit** (joke / demo) — Calm Cards;
-**b-loud** · **b-editorial** · **b-showcase** (portfolio frame) — Motion Pop. Unknown → ask once which style, suggest b-loud.
+Styles — one per reference reel (best match), plus the generic six:
+| style | edits like |
+|---|---|
+| `kilgore-list` | Kilgore "15 ways" feature list: wide calm shot, one-word captions, a UI card per item |
+| `kilgore-story` | Kilgore "say it out loud": handwritten story lines, picture-in-picture, typed end card |
+| `kilgore-community` | Kilgore "build the room": big yellow numbers, comment scatter, reaction photo, 🤯 sticker |
+| `kilgore-skit` | Kilgore laundry skit: tight hook, fast cuts + zooms, handwritten steps, chat bubble punchline |
+| `kilgore-flip` | Kilgore "just kidding": provocative hook flipped, feature cards, handwritten asides |
+| `gallo-promo` | Anthony Gallo SaaS promo: light lavender product cards, gradient headlines |
+| `edita-lawyer` | edita "home paid off": italic keyword stacks, glass bar, cursor-click pills, Yes/No card, polaroid |
+| `edita-interview` | edita interview: lime serif keywords, archive B-roll, retro warning windows, quote card |
+| `edita-blueprint` | edita blueprint: showcase frame, blue/purple text cards |
+| `edita-podcast` | edita podcast: warm serif keywords, rapid B-roll montage, quote card |
+Generic: `a-list` `a-story` `a-skit` (Calm Cards) · `b-loud` `b-editorial` `b-showcase` (Motion Pop). Unknown → ask once, suggest the closest preset.
+Each preset's fonts, colours, sound and zoom are built in; its "what to include" guide is in `ENGINE/PLANS.md` (Reference presets).
 
 ## Edit one video
 1. `W="<video folder>/_reubx/<video name>"`; `L prep "<video>" --work "$W"`; read only the printed transcript + retake hints.
