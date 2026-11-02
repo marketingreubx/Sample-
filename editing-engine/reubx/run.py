@@ -7,6 +7,7 @@ import argparse, hashlib, json, os, sys, time
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from core import Job, retake_hints, ff, W, H
 import gfx
+from gfx import FONTDIR
 
 GRADE = {"a": "eq=brightness=0.025:contrast=1.05:saturation=1.05:gamma=1.03,colorbalance=rm=0.02:bm=-0.012,unsharp=5:5:0.45",
          "b": "eq=brightness=0.03:contrast=1.06:saturation=1.07:gamma=1.04,unsharp=5:5:0.5"}
@@ -33,9 +34,9 @@ def showcase(job, edited, out, cta):
     bg = Image.new("RGB", (W, H), (242, 242, 245))
     blob = Image.new("L", (W, H), 0); ImageDraw.Draw(blob).ellipse([200, 350, 1100, 1300], fill=110)
     bg = Image.composite(Image.new("RGB", (W, H), (226, 220, 245)), bg, blob.filter(ImageFilter.GaussianBlur(160))); d = ImageDraw.Draw(bg)
-    fp = ImageFont.truetype("/root/.fonts/Poppins-SemiBold.ttf", 40); fb = ImageFont.truetype("/root/.fonts/Poppins-Bold.ttf", 46)
+    fp = ImageFont.truetype(FONTDIR + "/Poppins-SemiBold.ttf", 40); fb = ImageFont.truetype(FONTDIR + "/Poppins-Bold.ttf", 46)
     d.rounded_rectangle([390, 200, 690, 270], 35, fill=(28, 28, 32))
-    d.text((540, 235), "Edited by Reubx", font=ImageFont.truetype("/root/.fonts/Poppins-SemiBold.ttf", 28), fill="white", anchor="mm")
+    d.text((540, 235), "Edited by Reubx", font=ImageFont.truetype(FONTDIR + "/Poppins-SemiBold.ttf", 28), fill="white", anchor="mm")
     a, _, b = cta.partition(" for ")
     d.text((540, 1500), a, font=fb, fill=(40, 40, 46), anchor="mm")
     if b: d.text((540, 1562), "for " + b, font=fp, fill=(40, 40, 46), anchor="mm")
@@ -68,10 +69,11 @@ def render(job, style, out):
         import style_b; L, EV = style_b.build(job, plan, cut, wins); END = 0.0; acc, acc2 = plan.get("accent", "#2F6BFF"), plan.get("accent2", "#9cc2ff")
     total = cut["T"] + END
     for name, items in L.items():
-        if items: gfx.render(items, name, total, job.dir, acc, acc2)
+        if items: gfx.render(items, name, total, job.dir, acc, acc2, look=plan.get("look"))
     if wins: gfx.broll_clips(job.dir, wins, job.broll)
     gfx.compose(job.dir, cut["T"], wins, [n for n, v in L.items() if v], job.p("video_only.mp4"), END)
-    job.audio(total, EV)
+    lk = plan.get("look", {}); sg = float(lk.get("sfx", 1.0))
+    job.audio(total, [(t, k, d, g * sg) for t, k, d, g in EV] if sg > 0 else [], float(lk.get("music", 0.14)))
     final = out if style != "b-showcase" else job.p("edit_inner.mp4")
     job.mux(job.p("video_only.mp4"), final)
     if style == "b-showcase": showcase(job, final, out, plan.get("showcase_cta", 'Follow & comment "CLAUDE" for the full guide'))

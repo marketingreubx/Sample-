@@ -2,13 +2,13 @@
 import json, re
 import numpy as np
 from PIL import ImageFont
-from gfx import icon, dot
+from gfx import icon, dot, FONTDIR
 
 RED, GREEN, INK, GREY = "#ff4b55", "#22c07a", "#0e1630", "#8a90a6"
 _FM = {}
 
 
-def fit(text, size, font="/root/.fonts/Montserrat-Black.ttf", maxw=1000, ls=1, extra=0.62):
+def fit(text, size, font=FONTDIR + "/Montserrat-Black.ttf", maxw=1000, ls=1, extra=0.62):
     t = re.sub(r"<[^>]+>", "", text).replace("&amp;", "&")
     longest = max(t.split("\n"), key=len)
     while size > 40:
@@ -101,7 +101,7 @@ def build(job, plan, cut, wins_out):
         return lsz, h
     def block(lead, big, size, tl, tb, t1, small=None, xbadge=False):
         mains = big.split("<br>")
-        font = "/root/.fonts/InstrumentSerif-Italic.ttf" if editorial else "/root/.fonts/Montserrat-ExtraBold.ttf"
+        font = FONTDIR + "/InstrumentSerif-Italic.ttf" if editorial else FONTDIR + "/Montserrat-ExtraBold.ttf"
         size = fit("\n".join(mains), int(size * (1.15 if editorial else 1.0)), font, 820 - (170 if xbadge else 0), 0 if editorial else -1, 0.25)
         lsz, hh = stack_geo(lead, mains, small, size)
         t0 = tl if lead else tb; BUSY.append((t0 - 0.05, t1, "blk"))
@@ -120,7 +120,7 @@ def build(job, plan, cut, wins_out):
     for c in plan.get("counts", []):
         G["id"] = "cnt%d" % len(L["front"])
         i0, i1 = c["w"]; t0, t1 = t_of(i0), te_of(i1) + 0.2
-        font = "/root/.fonts/InstrumentSerif-Italic.ttf" if editorial else "/root/.fonts/Montserrat-ExtraBold.ttf"
+        font = FONTDIR + "/InstrumentSerif-Italic.ttf" if editorial else FONTDIR + "/Montserrat-ExtraBold.ttf"
         size = fit(c["to"], 200, font, 820, -1, 0.25); lead, tail = c.get("lead", ""), c.get("small") or c.get("tail")
         lsz, hh = stack_geo(lead, [c["to"]], tail, size); top = chin_at(t0) + 70; yc = top + hh / 2; tl = t0 - 0.3
         BUSY.append((tl - 0.05, t1, "blk"))

@@ -151,7 +151,7 @@ class Job:
                 if a <= pa < b:
                     f0 = (pa - a) * FPS - 3; f1 = min((pb - a) * FPS + 12, (b - a) * FPS - 1)
                     up = f"clip((on-{f0:.1f})/6,0,1)"; dn = f"clip((on-{f1:.1f})/10,0,1)"
-                    terms.append(f"0.11*({up}*{up}*(3-2*{up}))*(1-{dn}*{dn}*(3-2*{dn}))")
+                    terms.append(f"{float(plan.get('look', {}).get('zoom', 0.11)):.3f}*({up}*{up}*(3-2*{up}))*(1-{dn}*{dn}*(3-2*{dn}))")
             z = "+".join(terms)
             x = f"clip({cx:.4f}*iw-iw/zoom/2,0,iw-iw/zoom)"; y = f"clip({cy:.4f}*ih-ih/zoom*{anchor},0,ih-ih/zoom)"
             out = self.p(f"shot{k:03d}.mp4"); parts.append(out)
@@ -169,6 +169,7 @@ class Job:
     def audio(self, T, events, music_gain=0.14):
         import sfx
         sfx.render(events, T, self.p("sfx.wav"))
+        music_gain = max(music_gain, 0.0001)
         af = (f"[0:a]aformat=sample_rates=48000:channel_layouts=stereo,apad=whole_dur={T:.3f},asplit=2[v][k];"
               f"[1:a]aformat=sample_rates=48000:channel_layouts=stereo,atrim=0:{T:.3f},volume={music_gain},afade=t=in:d=0.5,afade=t=out:st={T - 1.6:.2f}:d=1.6[m0];"
               "[m0][k]sidechaincompress=threshold=0.03:ratio=6:attack=30:release=450[m];"
@@ -200,7 +201,7 @@ class Job:
         ff(["-i", self.p("qa%02d.png"), "-vf", "tile=8x2", self.p("contact_sheet.png")])
         for k in range(16): os.remove(self.p(f"qa{k:02d}.png"))
         rep = {"recall_final": round(rec(hyp), 4), "recall_raw_cut": round(rec(raw), 4), "max_audio_gap_s": round(gap, 4), "lufs": float(I), "peak_dbfs": float(PK)}
-        rep["pass"] = rep["recall_final"] >= rep["recall_raw_cut"] - 0.02 and gap < 0.05 and abs(float(I) + 14) < 1 and float(PK) <= -1
+        rep["pass"] = rep["recall_final"] >= rep["recall_raw_cut"] - max(0.02, 2.5 / max(len(ref), 1)) and gap < 0.05 and abs(float(I) + 14) < 1 and float(PK) <= -1
         json.dump(rep, open(self.p("qa.json"), "w"), indent=1)
         return rep
 

@@ -6,6 +6,30 @@ import numpy as np
 from core import W, H, FPS, HERE, CACHE, ff
 
 ICD = f"{CACHE}/lucide/package/icons"
+FONTDIR = f"{CACHE}/fonts"
+# family -> [(file, weight, style)]  (variable fonts use a weight range)
+FONTS = {
+    "Poppins": [("Poppins-Light.ttf", "300", "normal"), ("Poppins-SemiBold.ttf", "600", "normal"), ("Poppins-Bold.ttf", "700", "normal"), ("Poppins-ExtraBold.ttf", "800", "normal"),
+                ("Poppins-LightItalic.ttf", "300", "italic"), ("Poppins-Italic.ttf", "400", "italic"), ("Poppins-MediumItalic.ttf", "500", "italic")],
+    "Montserrat": [("Montserrat-ExtraBold.ttf", "800", "normal"), ("Montserrat-Black.ttf", "900", "normal"), ("Montserrat-Italic-VF.ttf", "100 900", "italic")],
+    "Instrument Serif": [("InstrumentSerif-Italic.ttf", "400", "italic"), ("InstrumentSerif-Italic.ttf", "400", "normal")],
+    "Gochi": [("GochiHand-Regular.ttf", "400", "normal")], "Caveat": [("Caveat-VF.ttf", "400 700", "normal")], "Reenie Beanie": [("ReenieBeanie.ttf", "400", "normal")],
+    "Inter": [("Inter-VF.ttf", "100 900", "normal")], "DM Sans": [("DMSans-VF.ttf", "100 1000", "normal")], "Manrope": [("Manrope-VF.ttf", "200 800", "normal")],
+    "Bricolage Grotesque": [("BricolageGrotesque-VF.ttf", "200 800", "normal")],
+    "Playfair Display": [("PlayfairDisplay-Italic-VF.ttf", "400 900", "italic"), ("PlayfairDisplay-Italic-VF.ttf", "400 900", "normal")],
+    "DM Serif Display": [("DMSerifDisplay-Italic.ttf", "400", "italic"), ("DMSerifDisplay-Italic.ttf", "400", "normal")],
+    "Cormorant Garamond": [("CormorantGaramond-Italic-VF.ttf", "300 700", "italic"), ("CormorantGaramond-Italic-VF.ttf", "300 700", "normal")],
+    "Anton": [("Anton-Regular.ttf", "400 900", "normal")], "Archivo Black": [("ArchivoBlack-Regular.ttf", "400 900", "normal")],
+}
+
+
+def font_faces():
+    out = []
+    for fam, faces in FONTS.items():
+        for f, wgt, sty in faces:
+            p = os.path.join(FONTDIR, f)
+            if os.path.exists(p): out.append(f"@font-face{{font-family:'{fam}';src:url('file://{p}');font-weight:{wgt};font-style:{sty}}}")
+    return "\n".join(out)
 
 
 def icon(name, size, color="#fff", sw=2.2, fill="none"):
@@ -22,17 +46,16 @@ GRAIN = ("url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' 
          "baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)' opacity='.5'/></svg>\")")
 
 CSS = """
-@font-face{font-family:'Gochi';src:url('file:///root/.fonts/GochiHand-Regular.ttf')}
 html,body{margin:0;width:1080px;height:1920px;background:transparent;overflow:hidden}
 :root{--acc:#2F6BFF;--acc2:#9cc2ff;--grad:linear-gradient(180deg,#fff 0%,#fff 48%,#d3ebff 70%,#8fcaff 100%)}
-.sans{font-family:'Poppins';font-weight:600;color:#fff;white-space:nowrap;letter-spacing:-.5px;text-shadow:0 3px 14px rgba(0,0,0,.55),0 1px 3px rgba(0,0,0,.65)}
-.serif{font-family:'Instrument Serif';font-style:italic;font-weight:400;color:#F3E37C;white-space:nowrap;text-shadow:0 3px 14px rgba(0,0,0,.5),0 1px 3px rgba(0,0,0,.6)}
-.hand{font-family:'Gochi';white-space:nowrap;letter-spacing:2px;text-shadow:0 2px 10px rgba(0,0,0,.6),0 1px 2px rgba(0,0,0,.7)}
+.sans{font-family:var(--f-cap);font-weight:600;color:var(--c-text);white-space:nowrap;letter-spacing:-.5px;text-shadow:0 3px 14px rgba(0,0,0,.55),0 1px 3px rgba(0,0,0,.65)}
+.serif{font-family:var(--f-accent);font-style:italic;font-weight:400;color:var(--c-accent);white-space:nowrap;text-shadow:0 3px 14px rgba(0,0,0,.5),0 1px 3px rgba(0,0,0,.6)}
+.hand{font-family:var(--f-hand);white-space:nowrap;letter-spacing:2px;text-shadow:0 2px 10px rgba(0,0,0,.6),0 1px 2px rgba(0,0,0,.7)}
 .lead{font-family:'Poppins';font-weight:600;font-size:52px;color:#fff;white-space:nowrap;text-shadow:0 3px 14px rgba(0,0,0,.6),0 1px 3px rgba(0,0,0,.6)}
 .kbw{display:flex;flex-direction:column;align-items:center;gap:12px}
 .kbl{position:relative;overflow:hidden;display:inline-flex;align-items:center;gap:.18em;font-family:'Montserrat';font-weight:900;font-style:italic;color:#fff;letter-spacing:1px;line-height:1;white-space:nowrap;background:var(--acc);padding:.13em .3em .15em;border-radius:.16em;box-shadow:0 14px 34px rgba(0,0,0,.38),inset 0 -.06em 0 rgba(0,0,0,.18);text-shadow:0 2px 0 rgba(0,0,0,.25)}
 .kser{font-family:'Instrument Serif';font-style:italic;color:#fff;line-height:.95;text-align:center;white-space:nowrap;text-shadow:0 4px 20px rgba(0,0,0,.55)}
-.cap{font-family:'Poppins';font-weight:600;font-size:66px;color:#fff;white-space:nowrap;letter-spacing:-1px;text-shadow:0 1px 2px rgba(0,0,0,.8),0 3px 14px rgba(0,0,0,.7)}
+.cap{font-family:var(--f-cap);font-weight:600;font-size:var(--cap-size);color:var(--c-text);white-space:nowrap;letter-spacing:-1px;text-shadow:0 1px 2px rgba(0,0,0,.8),0 3px 14px rgba(0,0,0,.7)}
 .scrim{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);background:radial-gradient(closest-side,rgba(0,0,0,.8),rgba(0,0,0,.5) 45%,rgba(0,0,0,0) 100%);filter:blur(16px);z-index:-1;pointer-events:none}
 .card{position:relative;background:#fff;border-radius:30px;box-shadow:0 26px 60px rgba(15,12,40,.30),0 2px 6px rgba(0,0,0,.08);overflow:hidden}
 .glass{position:relative;overflow:hidden;background:linear-gradient(180deg,rgba(255,255,255,.20),rgba(255,255,255,.06)),rgba(12,16,32,.78);border:1.5px solid rgba(255,255,255,.28);box-shadow:0 24px 60px rgba(0,0,0,.38),inset 0 1px 0 rgba(255,255,255,.35);box-sizing:border-box}
@@ -50,13 +73,13 @@ html,body{margin:0;width:1080px;height:1920px;background:transparent;overflow:hi
 .grain{position:absolute;inset:0;opacity:.07;mix-blend-mode:overlay;background-image:""" + GRAIN + """}
 .stack{display:inline-grid;justify-items:center;line-height:1}
 .ln{white-space:nowrap}
-.s-lead,.s-tail{font-family:'Poppins';font-weight:500;font-style:italic;color:#fff;white-space:nowrap;text-shadow:0 1px 2px rgba(0,0,0,.75),0 3px 12px rgba(0,0,0,.65)}
+.s-lead,.s-tail{font-family:var(--f-lead);font-weight:500;font-style:italic;color:#fff;white-space:nowrap;text-shadow:0 1px 2px rgba(0,0,0,.75),0 3px 12px rgba(0,0,0,.65)}
 .s-lead{justify-self:start}.s-tail{justify-self:end}
 .s-glow{display:inline-block;filter:drop-shadow(0 2px 2px rgba(0,8,30,.6)) drop-shadow(0 6px 16px rgba(0,8,30,.7)) drop-shadow(0 0 20px rgba(90,175,255,.35))}
-.s-main{display:inline-block;font-family:'Montserrat';font-weight:800;font-style:italic;letter-spacing:-.01em;line-height:.92;white-space:nowrap;padding:0 .08em .04em;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.s-main{display:inline-block;font-family:var(--f-main);font-weight:800;font-style:italic;letter-spacing:-.01em;line-height:.92;white-space:nowrap;padding:0 .08em .04em;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
 .ed .s-lead,.ed .s-tail{font-style:normal;font-weight:300}
 .ed .s-glow{filter:drop-shadow(0 3px 12px rgba(0,0,0,.55))}
-.ed .s-main{font-family:'Instrument Serif';font-weight:400;letter-spacing:-.01em;line-height:.9;background:none;color:var(--acc);-webkit-background-clip:border-box;padding:0 .06em}
+.ed .s-main{font-family:var(--f-accent);font-weight:400;letter-spacing:-.01em;line-height:.9;background:none;color:var(--acc);-webkit-background-clip:border-box;padding:0 .06em}
 .glass-l{position:relative;overflow:hidden;background:linear-gradient(135deg,rgba(140,205,255,.92),rgba(60,140,255,.78));border:1.5px solid rgba(255,255,255,.55);box-shadow:0 24px 60px rgba(10,40,120,.35),inset 0 1px 0 rgba(255,255,255,.6);box-sizing:border-box}
 .chip-e{display:inline-flex;align-items:center;gap:14px;padding:14px 28px 14px 18px;border-radius:60px;background:#fff;box-shadow:0 14px 30px rgba(0,0,0,.25);font:italic 500 40px Poppins;color:var(--acc)}
 .sheen{position:absolute;top:-20%;bottom:-20%;width:38%;left:-45%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.55),transparent);pointer-events:none}
@@ -97,15 +120,27 @@ for(const it of ITEMS){
 """
 
 
-def page(items, acc="#2F6BFF", acc2="#9cc2ff"):
-    css = CSS.replace("--acc:#2F6BFF;--acc2:#9cc2ff", f"--acc:{acc};--acc2:{acc2}")
-    return f"<!doctype html><html><head><meta charset='utf-8'><style>{css}</style></head><body><script>const ITEMS={json.dumps(items)};{JS}</script></body></html>"
+LOOK_DEFAULT = {"font_cap": "Poppins", "font_accent": "Instrument Serif", "font_hand": "Gochi", "font_main": "Montserrat", "font_lead": "Poppins",
+                "text": "#ffffff", "accent_text": "#F3E37C", "cap_size": 66, "grad": "linear-gradient(180deg,#fff 0%,#fff 48%,#d3ebff 70%,#8fcaff 100%)"}
+
+
+def page(items, acc="#2F6BFF", acc2="#9cc2ff", look=None):
+    lk = dict(LOOK_DEFAULT, **(look or {}))
+    q = lambda f: f"'{f}'"
+    root = (f":root{{--acc:{acc};--acc2:{acc2};--grad:{lk['grad']};--f-cap:{q(lk['font_cap'])},'Poppins',sans-serif;--f-accent:{q(lk['font_accent'])},serif;"
+            f"--f-hand:{q(lk['font_hand'])},'Gochi',cursive;--f-main:{q(lk['font_main'])},'Montserrat',sans-serif;--f-lead:{q(lk['font_lead'])},'Poppins',sans-serif;"
+            f"--c-text:{lk['text']};--c-accent:{lk['accent_text']};--cap-size:{int(lk['cap_size'])}px}}")
+    css = re.sub(r":root\{[^}]*\}", root, CSS, count=1)
+    return f"<!doctype html><html><head><meta charset='utf-8'><style>{font_faces()}\n{css}</style></head><body><script>const ITEMS={json.dumps(items)};{JS}</script></body></html>"
+
+
+CHROMIUM = "/opt/pw-browsers/chromium" if os.path.exists("/opt/pw-browsers/chromium") else None
 
 
 async def _worker(html, frames, outdir):
     from playwright.async_api import async_playwright
     async with async_playwright() as p:
-        b = await p.chromium.launch(executable_path="/opt/pw-browsers/chromium", args=["--no-sandbox"])
+        b = await (p.chromium.launch(executable_path=CHROMIUM, args=["--no-sandbox"]) if CHROMIUM else p.chromium.launch(args=["--no-sandbox"]))
         pg = await b.new_page(viewport={"width": W, "height": H}, device_scale_factor=1)
         await pg.goto("file://" + html); await pg.evaluate("document.fonts.ready"); await pg.wait_for_timeout(400)
         for k in frames:
@@ -117,9 +152,9 @@ async def _worker(html, frames, outdir):
 def _run(*a): asyncio.run(_worker(*a))
 
 
-def render(items, name, total, work, acc, acc2, nproc=4):
+def render(items, name, total, work, acc, acc2, nproc=4, look=None):
     outdir = f"{work}/seq_{name}"; shutil.rmtree(outdir, ignore_errors=True); os.makedirs(outdir)
-    N = round(total * FPS); html = f"{work}/layer_{name}.html"; open(html, "w").write(page(items, acc, acc2))
+    N = round(total * FPS); html = f"{work}/layer_{name}.html"; open(html, "w").write(page(items, acc, acc2, look))
     act = set()
     for it in items:
         a = int((it["t0"] - 0.04) * FPS); b = int((it["t1"] + 0.3) * FPS) + 1

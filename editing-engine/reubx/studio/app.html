@@ -1,0 +1,123 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Reubx Studio</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+:root{--bg:#0f1014;--pan:#17181e;--pan2:#1e2028;--line:#2a2c36;--tx:#e9eaf0;--mut:#8b8fa3;--acc:#7c8cff;--ok:#2fd18b;--warn:#ffb020;--bad:#ff5c6c}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--tx);font:14px/1.45 -apple-system,BlinkMacSystemFont,"Inter","Segoe UI",sans-serif;height:100vh;display:flex;flex-direction:column}
+header{display:flex;align-items:center;gap:14px;padding:12px 18px;border-bottom:1px solid var(--line);background:var(--pan)}
+header b{font-size:16px;letter-spacing:.2px}header .path{color:var(--mut);font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
+main{flex:1;display:grid;grid-template-columns:260px 1fr 420px;min-height:0}
+.list{border-right:1px solid var(--line);overflow:auto;padding:10px}
+.vid{padding:10px 12px;border-radius:10px;cursor:pointer;margin-bottom:6px;background:var(--pan)}.vid:hover{background:var(--pan2)}.vid.sel{outline:2px solid var(--acc)}
+.vid .n{font-weight:600;word-break:break-all}.chip{display:inline-block;font-size:11px;padding:2px 8px;border-radius:20px;background:var(--pan2);color:var(--mut);margin-top:4px}
+.chip.done{background:#123d2c;color:var(--ok)}.chip.rendering,.chip.queued,.chip.transcribing{background:#3d3112;color:var(--warn)}.chip.failed{background:#3d1218;color:var(--bad)}
+.stage{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:16px;min-height:0;overflow:auto}
+.phone{height:min(72vh,760px);aspect-ratio:9/16;border-radius:34px;background:#000;border:8px solid #26272f;overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,.5)}
+.phone video{width:100%;height:100%;object-fit:cover;display:block}
+.bar{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+button{background:var(--pan2);color:var(--tx);border:1px solid var(--line);border-radius:10px;padding:8px 14px;font:inherit;cursor:pointer}button:hover{border-color:var(--acc)}
+button.pri{background:var(--acc);border-color:var(--acc);color:#fff;font-weight:600}
+.side{border-left:1px solid var(--line);display:flex;flex-direction:column;min-height:0;background:var(--pan)}
+.tabs{display:flex;border-bottom:1px solid var(--line)}.tabs div{flex:1;text-align:center;padding:11px 4px;cursor:pointer;color:var(--mut);font-size:13px}.tabs div.on{color:var(--tx);box-shadow:inset 0 -2px 0 var(--acc)}
+.pane{padding:16px;overflow:auto;flex:1;display:none}.pane.on{display:block}
+label{display:block;color:var(--mut);font-size:12px;margin:14px 0 6px}select,input[type=text],textarea{width:100%;background:var(--pan2);color:var(--tx);border:1px solid var(--line);border-radius:9px;padding:8px 10px;font:inherit}
+input[type=range]{width:100%}input[type=color]{width:46px;height:32px;border:none;background:none;padding:0}
+.row{display:flex;gap:10px;align-items:center}.row>*{flex:1}
+.looks{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}.look{background:var(--pan2);border-radius:12px;padding:8px;text-align:center}.look img{width:100%;border-radius:8px;display:block;margin-bottom:6px}
+.words{line-height:2.1}.w{padding:2px 3px;border-radius:5px;cursor:pointer}.w:hover{background:var(--pan2)}.w.cut{text-decoration:line-through;color:var(--bad);opacity:.6}.w.punch{background:#2b2f5e;color:#c9cfff}.w.fixed{color:var(--ok)}
+.note{background:var(--pan2);border-radius:10px;padding:10px;margin-top:8px}.note small{color:var(--mut)}
+.hint{color:var(--mut);font-size:12px;margin-top:6px}.log{white-space:pre-wrap;font:11px/1.4 ui-monospace,Menlo,monospace;color:var(--mut);max-height:160px;overflow:auto;background:#0b0c10;border-radius:8px;padding:8px;width:min(560px,100%)}
+.fontprev{font-size:22px;margin-top:6px}
+</style></head><body>
+<header><b>Reubx Studio</b><span class="path" id="path"></span>
+<label style="margin:0;display:flex;gap:6px;align-items:center;color:var(--tx)"><input type="checkbox" id="auto"> auto-edit new videos</label></header>
+<main>
+ <div class="list" id="list"></div>
+ <div class="stage">
+  <div class="phone"><video id="player" controls playsinline></video></div>
+  <div class="bar"><button id="bRaw">Raw</button><button id="bEdit">Edited</button><button class="pri" id="bRender">Save &amp; render</button></div>
+  <div id="stat" class="hint"></div><div class="log" id="log" style="display:none"></div>
+ </div>
+ <div class="side">
+  <div class="tabs"><div data-t="look" class="on">Look</div><div data-t="text">Text</div><div data-t="fx">Sound &amp; camera</div><div data-t="script">Script</div><div data-t="notes">Notes</div></div>
+  <div class="pane on" id="look">
+   <label>Editing style</label><select id="style"></select>
+   <div class="hint">Calm Cards = a-*, Motion Pop = b-*</div>
+   <label>Looks</label><button id="bLooks">Generate 5 looks from this video</button><div class="looks" id="looks"></div>
+  </div>
+  <div class="pane" id="text">
+   <label>Caption font</label><select id="font_cap"></select>
+   <label>Keyword / big text font</label><select id="font_main"></select>
+   <label>Accent word font (Calm Cards) / editorial font</label><select id="font_accent"></select>
+   <label>Small lead / tail font</label><select id="font_lead"></select>
+   <label>Handwritten font</label><select id="font_hand"></select>
+   <label>Colours</label>
+   <div class="row"><div>Text<br><input type="color" id="c_text" value="#ffffff"></div><div>Accent words<br><input type="color" id="c_acc" value="#F3E37C"></div><div>Brand colour<br><input type="color" id="c_brand" value="#2F6BFF"></div><div>Keyword fade<br><input type="color" id="c_grad" value="#8fcaff"></div></div>
+   <label>Caption size <span id="capv"></span></label><input type="range" id="cap_size" min="44" max="96" value="66">
+   <div class="fontprev" id="fprev">The quick preview</div>
+  </div>
+  <div class="pane" id="fx">
+   <label>Music volume <span id="musv"></span></label><input type="range" id="music" min="0" max="0.3" step="0.01" value="0.14">
+   <label>Sound effects</label><select id="sfx"><option value="0">Off</option><option value="0.6">Subtle</option><option value="1" selected>Normal</option><option value="1.4">Punchy</option></select>
+   <label>Zoom punch-ins <span id="zv"></span></label><input type="range" id="zoom" min="0" max="0.2" step="0.01" value="0.11">
+   <div class="hint">Alt-click a word in Script to add / remove a zoom on it.</div>
+  </div>
+  <div class="pane" id="script">
+   <div class="hint">Click a word to cut it (shift-click to cut a range). Double-click to fix its spelling. Alt-click to zoom on it.</div>
+   <div class="words" id="words"></div>
+  </div>
+  <div class="pane" id="notes">
+   <label>Tell Claude what to change</label>
+   <textarea id="noteText" rows="4" placeholder="e.g. make the $700K text bigger, add a B-roll of a laptop at 'digital product', use the Gold Luxe look…"></textarea>
+   <div class="bar" style="justify-content:flex-start;margin-top:8px"><button class="pri" id="bNote">Send to Claude</button></div>
+   <div class="hint">Claude (running /reubx-studio on this computer) picks notes up, edits the plan and re-renders.</div>
+   <div id="noteList"></div>
+  </div>
+ </div>
+</main>
+<script>
+const $=id=>document.getElementById(id); let S=null, cur=null, J=null, lastShift=null, view='edit';
+const api=(u,b)=>fetch(u,b?{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)}:{}).then(r=>r.json());
+document.querySelectorAll('.tabs div').forEach(t=>t.onclick=()=>{document.querySelectorAll('.tabs div,.pane').forEach(e=>e.classList.remove('on'));t.classList.add('on');$(t.dataset.t).classList.add('on')});
+async function refresh(){
+  S=await api('/api/state'); $('path').textContent='Watching '+S.folder+'  ·  drop videos in this folder'; $('auto').checked=!!S.settings.auto;
+  if(!$('style').options.length){S.styles.forEach(s=>$('style').add(new Option(s,s)));['font_cap','font_main','font_accent','font_lead','font_hand'].forEach(id=>S.fonts.forEach(f=>$(id).add(new Option(f,f))))}
+  $('list').innerHTML=S.videos.map(v=>`<div class="vid ${cur==v.id?'sel':''}" onclick="pick('${v.id}')"><div class="n">${v.name}</div><span class="chip ${v.status}">${v.status}</span></div>`).join('')||'<div class="hint">Drop a raw video into the folder.</div>';
+  $('noteList').innerHTML=S.notes.slice().reverse().filter(n=>!cur||n.job==cur).map(n=>`<div class="note">${n.text}<br><small>#${n.id} · ${n.status}</small></div>`).join('');
+  if(cur){const v=S.videos.find(v=>v.id==cur); if(v){$('stat').textContent=v.status+(v.qa&&v.qa.lufs?` · ${v.qa.lufs} LUFS · word check ${(v.qa.recall_final*100).toFixed(1)}%`:'')+(v.error?' · '+v.error.slice(-160):'');
+    if(['rendering','queued'].includes(v.status)){const j=await api('/api/job/'+cur); $('log').style.display='block'; $('log').textContent=j.log||'starting…'} else $('log').style.display='none';
+    if(v.status=='done'&&J&&J._out!=v.out){J._out=v.out; if(view=='edit') load('edit')}}}
+}
+async function pick(id){cur=id; J=await api('/api/job/'+id); const v=S.videos.find(v=>v.id==id); J._out=v.out; fill(); load(v.out?'edit':'raw'); refresh()}
+function load(which){view=which; const v=S.videos.find(v=>v.id==cur); if(!v)return; const p=which=='edit'&&v.out?v.out:v.name; $('player').src='/file?p='+encodeURIComponent(p)+'&t='+(v.updated||0)}
+$('bRaw').onclick=()=>load('raw'); $('bEdit').onclick=()=>load('edit');
+function fill(){const p=J.plan||{}, lk=p.look||{}; $('style').value=p.style||S.settings.style;
+  [['font_cap','Poppins'],['font_main','Montserrat'],['font_accent','Instrument Serif'],['font_lead','Poppins'],['font_hand','Gochi']].forEach(([k,d])=>$(k).value=lk[k]||d);
+  $('c_text').value=lk.text||'#ffffff'; $('c_acc').value=lk.accent_text||'#F3E37C'; $('c_brand').value=(p.style||'').startsWith('a')?(p.accent_color||'#ff5a93'):(p.accent||'#2F6BFF');
+  const g=(lk.grad||'').match(/#[0-9a-fA-F]{6}(?=[^#]*$)/); $('c_grad').value=g?g[0]:'#8fcaff';
+  $('cap_size').value=lk.cap_size||66; $('music').value=lk.music??0.14; $('sfx').value=String(lk.sfx??1); $('zoom').value=lk.zoom??0.11; labels(); words(); $('looks').innerHTML=''}
+function labels(){$('capv').textContent=$('cap_size').value+'px'; $('musv').textContent=Math.round($('music').value*100)+'%'; $('zv').textContent='+'+Math.round($('zoom').value*100)+'%';
+  $('fprev').style.fontFamily=$('font_cap').value; $('fprev').innerHTML=`<span style="font-family:'${$('font_cap').value}'">caption</span> · <i style="font-family:'${$('font_accent').value}'">accent</i> · <b style="font-family:'${$('font_main').value}'">KEYWORD</b>`}
+['cap_size','music','zoom','font_cap','font_accent','font_main'].forEach(id=>$(id).oninput=labels);
+function removedSet(){const s=new Set(); (J.plan.remove||[]).forEach(([a,b])=>{for(let i=a;i<=b;i++)s.add(i)}); return s}
+function toRanges(set){const a=[...set].sort((x,y)=>x-y), r=[]; a.forEach(i=>{if(r.length&&r[r.length-1][1]==i-1)r[r.length-1][1]=i; else r.push([i,i])}); return r}
+function words(){const rm=removedSet(), pu=new Set(J.plan.punch||[]), fx=J.plan.fix||{};
+  $('words').innerHTML=J.transcript.map((w,i)=>`<span class="w ${rm.has(i)?'cut':''} ${pu.has(i)?'punch':''} ${fx[i]!==undefined?'fixed':''}" data-i="${i}">${fx[i]!==undefined?fx[i]:w.w}</span>`).join(' ');
+  $('words').querySelectorAll('.w').forEach(el=>{const i=+el.dataset.i;
+    el.onclick=e=>{ if(e.altKey){const p=new Set(J.plan.punch||[]); p.has(i)?p.delete(i):p.add(i); J.plan.punch=[...p].sort((a,b)=>a-b); return words()}
+      const s=removedSet(); if(e.shiftKey&&lastShift!=null){const [a,b]=[Math.min(lastShift,i),Math.max(lastShift,i)]; const on=!s.has(i); for(let k=a;k<=b;k++) on?s.add(k):s.delete(k)} else s.has(i)?s.delete(i):s.add(i);
+      lastShift=i; J.plan.remove=toRanges(s); words()};
+    el.ondblclick=()=>{const t=prompt('Correct this word (empty = hide it in captions)', el.textContent); if(t===null)return; J.plan.fix=J.plan.fix||{}; J.plan.fix[i]=t; words()}})}
+function patch(){const st=$('style').value, isA=st.startsWith('a'), lk={font_cap:$('font_cap').value,font_main:$('font_main').value,font_accent:$('font_accent').value,font_lead:$('font_lead').value,font_hand:$('font_hand').value,
+  text:$('c_text').value,accent_text:$('c_acc').value,cap_size:+$('cap_size').value,music:+$('music').value,sfx:+$('sfx').value,zoom:+$('zoom').value,grad:`linear-gradient(180deg,#fff 0%,#fff 48%,${$('c_grad').value}55 70%,${$('c_grad').value} 100%)`};
+  const p={style:st,look:lk,remove:J.plan.remove||[],fix:J.plan.fix||{},punch:J.plan.punch||[]}; if(isA)p.accent_color=$('c_brand').value; else {p.accent=$('c_brand').value;p.accent2=$('c_grad').value}; return p}
+$('bRender').onclick=async()=>{if(!cur)return; J.plan=await api(`/api/job/${cur}/plan`,patch()); await api(`/api/job/${cur}/render`,{}); refresh()};
+$('bLooks').onclick=async()=>{if(!cur)return; await api(`/api/job/${cur}/plan`,{style:$('style').value}); $('looks').innerHTML='<div class="hint">Rendering looks…</div>';
+  const r=await api(`/api/job/${cur}/looks`,{}); $('looks').innerHTML=r.looks.map((l,k)=>`<div class="look"><img src="/file?p=${encodeURIComponent(l.img)}&t=${Date.now()}"><div>${l.name}</div><button onclick='useLook(${JSON.stringify(l.look)})'>Use this look</button></div>`).join('')};
+window.useLook=async lk=>{const isA=$('style').value.startsWith('a'); const p={look:lk}; if(isA)p.accent_color=lk.accent; else {p.accent=lk.accent;p.accent2=lk.accent2}
+  J.plan=await api(`/api/job/${cur}/plan`,p); fill()};
+$('bNote').onclick=async()=>{if(!cur||!$('noteText').value.trim())return; await api(`/api/job/${cur}/note`,{text:$('noteText').value}); $('noteText').value=''; refresh()};
+$('auto').onchange=()=>api('/api/settings',{auto:$('auto').checked});
+$('style').onchange=()=>api('/api/settings',{style:$('style').value});
+refresh(); setInterval(refresh,3000);
+</script></body></html>
