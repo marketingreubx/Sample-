@@ -13,7 +13,14 @@ def build(job, plan, cut, wins_out):
     t_of = lambda i: WO[i]["o"]; te_of = lambda i: WO[i]["oe"]
     F = np.array(json.load(open(job.p("faces.json"))), float); shots = json.load(open(job.p("shots.json")))
     END = 2.4 if plan.get("end") else 0.0; TT = T + END
-    PINK = plan.get("accent", "#ff5a93")
+    PINK = plan.get("accent_color", "#ff5a93")
+    import subprocess
+    _raw = subprocess.run(["ffmpeg", "-v", "error", "-i", job.p("base.mp4"), "-vf", "fps=5,scale=108:192,format=gray", "-f", "rawvideo", "-"], capture_output=True, check=True).stdout
+    LUM = np.frombuffer(_raw, np.uint8).reshape(-1, 192, 108).astype(np.float32) / 255
+    def scrim(t, yc, w, h):
+        k = min(int(t * 5), len(LUM) - 1); reg = LUM[k, int(max(yc - h / 2, 0) / 10):int(min(yc + h / 2, 1919) / 10) + 1, int(max(540 - w / 2, 0) / 10):int(min(540 + w / 2, 1079) / 10) + 1]
+        a = float(np.clip(0.22 + (reg.mean() - 0.30) * 1.1 + reg.std() * 0.8, 0.22, 0.68)) if reg.size else 0.35
+        return f'<div class="scrim" style="width:{w:.0f}px;height:{h:.0f}px;opacity:{a:.2f}"></div>'
     L = {"front": []}; EV = []; SKIP = set()
     _sy = {}
     def shot_y(t):
@@ -28,7 +35,8 @@ def build(job, plan, cut, wins_out):
         if kf: it["kf"] = kf
         if ease: it["ease"] = ease
         L["front"].append(it)
-    def text(html, yc, t0, t1, kind="pop", dur=None, out="blur", outd=90, h=170, rot=0):
+    def text(html, yc, t0, t1, kind="pop", dur=None, out="blur", outd=90, h=170, rot=0, sw=None):
+        if sw and t0 < T: html = f'<div style="position:relative;isolation:isolate">{scrim(t0 + 0.1, yc, sw, h + 40)}{html}</div>'
         add(f'<div style="transform:rotate({rot}deg)">{html}</div>', f"left:0;top:{int(yc - h / 2)}px;width:1080px;height:{h}px;display:flex;align-items:center;justify-content:center", kind, t0, t1, dur, out, outd)
     sans = lambda s, sz=94: f'<span class="sans" style="font-size:{sz}px">{s}</span>'
     serif = lambda s, sz=128: f'<span class="serif" style="font-size:{sz}px">{s}</span>'
@@ -38,7 +46,7 @@ def build(job, plan, cut, wins_out):
     if plan.get("header"):
         h = plan["header"]; a, b = h["w"]; he = te_of(b) + 0.12; SKIP.update(ids(a, b))
         if h.get("top"): text(hand(h["top"], 66, YEL), 215, t_of(a), he, "rise", rot=-2); EV.append((t_of(a), "swish", 0.25, 0.25))
-        if h.get("main"): text(sans(h["main"], 100), 322, t_of(a) + 0.5, he, "rise", 500); EV.append((t_of(a) + 0.5, "pop", None, 0.25))
+        if h.get("main"): text(sans(h["main"], 100), 322, t_of(a) + 0.5, he, "rise", 500, sw=len(h["main"]) * 56 + 200); EV.append((t_of(a) + 0.5, "pop", None, 0.25))
         if h.get("sub"): text(hand(h["sub"], 60), 425, t_of(a) + 1.0, he, "rise", rot=-1)
     # ---- handwritten story lines (key phrase in yellow)
     for s in plan.get("story", []):
@@ -47,13 +55,13 @@ def build(job, plan, cut, wins_out):
         b = min(te_of(ii[-1]) + 0.5, t_of(nx[0]) - 0.03) if nx else te_of(ii[-1]) + 0.5
         lines = [ln.replace(s.get("key", "\0"), f'<span style="color:{YEL}">{s.get("key", "")}</span>') for ln in s["text"].split("|")]
         y = int(min(max(shot_y(a + 0.05) + 40, 1180), 1680))
-        text(f'<div style="text-align:center;line-height:1.15">{"<br>".join(hand(ln, 80) for ln in lines)}</div>', y, a, b, "rise", 520, h=260)
+        text(f'<div style="text-align:center;line-height:1.15">{"<br>".join(hand(ln, 80) for ln in lines)}</div>', y, a, b, "rise", 520, h=260, sw=max(len(re.sub("<[^>]+>", "", ln)) for ln in lines) * 40 + 160)
     # ---- big numbers (yellow serif) + handwritten sub
     for n in plan.get("numbers", []):
         i = n["w"]; SKIP.update(ids(i, n.get("sub_w", i))); a = t_of(i) - 0.04
         b = t_of(n["until"]) - 0.05 if n.get("until") is not None else TT - END + 0.3
         y = shot_y(a + 0.05) - 60
-        text(serif(n["text"], 300), y, a, b, "slam", h=330); EV.append((a, "hit", 0.6, 0.22))
+        text(serif(n["text"], 300), y, a, b, "slam", h=330, sw=len(n["text"]) * 170 + 160); EV.append((a, "hit", 0.6, 0.22))
         if n.get("sub"): text(hand(n["sub"].replace("*", ""), 84, YEL), y + 195, t_of(n.get("sub_w", i)) - 0.05, b, "rise", rot=-3, h=140)
     # ---- one-word captions (2 when a small word leads), fixed height per shot, instant swap
     accent = set(plan.get("accent", [])) if isinstance(plan.get("accent"), list) else set()
@@ -68,10 +76,10 @@ def build(job, plan, cut, wins_out):
         a = ch[0]["o"] - 0.03; b = min(chunks[n + 1][0]["o"] - 0.03 if n + 1 < len(chunks) else TT, ch[-1]["oe"] + 0.45)
         parts = [serif(clean(x["w"])) if x["i"] in accent else sans(clean(x["w"])) for x in ch]
         html = "".join(p.replace('style="', 'style="margin-right:0.28em;', 1) if j < len(parts) - 1 else p for j, p in enumerate(parts))
-        text(html, shot_y(a + 0.05), a, b, "pop", 200, "cut", 1)
+        text(html, shot_y(a + 0.05), a, b, "pop", 200, "cut", 1, sw=sum(len(clean(x["w"])) for x in ch) * 58 + 160)
     # ---- floating white UI cards
     def card(inner, left, top, w, h, t0, t1, rot=0):
-        add(f'<div class="card" style="width:{w}px;height:{h}px;transform:rotate({rot}deg)">{inner}<i class="sheen"></i></div>', f"left:{left}px;top:{top}px;width:{w}px;height:{h}px", "tilt", t0, t1, out="blur", outd=200)
+        add(f'<div class="card" style="width:{w}px;height:{h}px;transform:rotate({rot}deg)">{inner}<i class="sheen"></i></div>', f"left:{left}px;top:{top}px;width:{w}px;height:{h}px", "glide", t0, t1, out="blur", outd=200)
         EV.append((t0, "swish", 0.25, 0.3)); EV.append((t0 + 0.1, "pop", None, 0.18))
     lab = lambda s, sz=31, col=INK, wt=600: f'<span class="lab" style="font-size:{sz}px;color:{col};font-weight:{wt}">{s}</span>'
     for c in plan.get("cards", []):

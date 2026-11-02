@@ -14,7 +14,7 @@ Keep replies short. The engine already encodes the style; your only creative job
    `editing-engine/reubx/PLANS.md` (read that file once). Fix names/brand words in `fix`, cut retakes in `remove`.
 4. Style A uses no B-roll (photo cards may use images the user supplied; put them in `$WORK/broll/`).
 5. `python3 editing-engine/reubx/run.py render "<video>" --work "$WORK" --style a-skit` (6-10 min; run in background and wait).
-6. Read the printed QA. If `pass` is false or anything looks off, look at `$WORK/contact_sheet.png` once, fix `plan.json`, re-render.
+6. Read the printed QA, then look at `$WORK/contact_sheet.png` once and check **every text is readable and nothing overlaps** (the engine adds contrast scrims and hands off overlapping elements automatically; if something still fails, adjust `plan.json` timing/wording and re-render).
 7. SendUserFile the final MP4 with a 3-line summary (length, what was cut, anything to double-check).
 
 **Corrections** ("move X", "change the colour", "cut this line"): edit `plan.json` only and re-run step 5 — cached steps are reused.

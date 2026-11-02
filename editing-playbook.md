@@ -179,6 +179,19 @@ It needs a lot of B-roll and graphics; plan a visual for every key noun before b
 
 ---
 
+# Text visibility rules (owner feedback — always on, built into the engine)
+- **Contrast check on every text element:** a feathered dark scrim (no box) sits behind every keyword stack, counter and caption;
+  its strength is set automatically from the brightness and busyness of the frame behind the text (stronger on bright or busy
+  backgrounds and on full-screen B-roll). Main words use a light white-to-sky gradient with deep shadows, never dark blue on dark clothes.
+- **Text is always on screen while someone speaks:** captions only hide while a keyword block already shows those words.
+  During glass pills, chips, bars and toggles the caption moves BELOW the element; on full-screen cards it sits at the bottom
+  (dark text on light cards).
+- **Nothing overlaps:** chest elements (blocks, counters, pills, chips, bars, toggles, CTA) play one at a time — the earlier one
+  hands off when the next one arrives.
+- **Typography is the reference stack, not boxes:** small italic lead hugging the top-left of a heavy italic main word,
+  optional italic tail hugging the bottom-right, tight leading. Entrances are lead slides from the left, main word zooms in
+  sharp from a blur, tail slides from the right — no 3D tilts.
+
 # The premium bar (owner feedback after the first Style B build)
 
 The owner wants the edit to match the references **exactly**: same kind of camera moves, effects, motion and sound design.

@@ -3,6 +3,19 @@
 Word numbers (`i`) come from the numbered transcript that `run.py prep` prints. `"w":[a,b]` = from word a to word b.
 Write the plan in one pass from the transcript. Do not re-study references; everything below is already the style.
 
+## Text visibility rules (owner feedback — always on, built into the engine)
+- **Contrast check on every text element:** a feathered dark scrim (no box) sits behind every keyword stack, counter and caption;
+  its strength is set automatically from the brightness and busyness of the frame behind the text (stronger on bright or busy
+  backgrounds and on full-screen B-roll). Main words use a light white-to-sky gradient with deep shadows, never dark blue on dark clothes.
+- **Text is always on screen while someone speaks:** captions only hide while a keyword block already shows those words.
+  During glass pills, chips, bars and toggles the caption moves BELOW the element; on full-screen cards it sits at the bottom
+  (dark text on light cards).
+- **Nothing overlaps:** chest elements (blocks, counters, pills, chips, bars, toggles, CTA) play one at a time — the earlier one
+  hands off when the next one arrives.
+- **Typography is the reference stack, not boxes:** small italic lead hugging the top-left of a heavy italic main word,
+  optional italic tail hugging the bottom-right, tight leading. Entrances are lead slides from the left, main word zooms in
+  sharp from a blur, tail slides from the right — no 3D tilts.
+
 ## Common keys (all styles)
 | key | meaning |
 |---|---|
@@ -35,7 +48,7 @@ Variant density:
 | `accent`,`accent2` | box colour and light tint. Pick to CONTRAST the wardrobe/background (navy shirt -> bright blue `#2F6BFF` box with white text is fine; never light text on a similar colour). |
 | `key` | words highlighted in captions. |
 | `broll` | `[{"img":"name.webp","lay":"F|S","w":[a,b]}]` F = full-screen photo with wipe, S = split (photo top, speaker bottom). One every 6-10 s on concrete nouns. Images go in `<work>/broll/`. |
-| `blocks` | `[{"w":[lead_i,big_i,end_i],"lead":"small white lead-in","text":"BIG WORDS","small":"optional line","x":false}]` — punchline keyword blocks; `<br>` for 2 lines when > ~14 chars. One every 4-6 s. `x:true` adds a red ✕ badge. |
+| `blocks` | `[{"w":[lead_i,big_i,end_i],"lead":"small italic lead-in","text":"BIG WORDS","tail":"small italic tail","x":false}]` — the reference stack: small italic lead hugging the top-left of a heavy white-to-blue italic word, optional tail hugging the bottom-right (e.g. lead "You throw" / "A PARTY" / tail "somebody"). No boxes; `<br>` for 2 lines when > ~14 chars. One every 4-6 s. `x:true` adds a red ✕ badge. |
 | `counts` | `[{"w":[a,b],"to":"$700K","lead":"who made about","small":"US DOLLARS"}]` counting numbers. |
 | `pills` | `[{"w":[a,b],"icon":"calendar-days","text":"in the first <b>3 weeks</b>"}]` glass pill. |
 | `chips` | `[{"w":[a,b],"items":[["pen-line","captions"],...]}]` 2-4 glass chips. |
