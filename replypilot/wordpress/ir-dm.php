@@ -325,6 +325,8 @@ function ir_dm_webhook_post( WP_REST_Request $req ) {
 	$raw = (string) $req->get_body();
 	if ( ! ir_dm_sig_ok( $raw, $req->get_header( 'x_hub_signature_256' ) ) ) {
 		update_option( 'ir_dm_last_bad_sig', time(), false );
+		$j = json_decode( $raw, true );
+		update_option( 'ir_dm_bad_sig_info', [ 't' => time(), 'len' => strlen( $raw ), 'object' => $j['object'] ?? null, 'entry_ids' => array_map( function ( $e ) { return $e['id'] ?? null; }, (array) ( $j['entry'] ?? [] ) ), 'fields' => array_map( function ( $c ) { return $c['field'] ?? null; }, (array) ( $j['entry'][0]['changes'] ?? [] ) ), 'has_msg' => ! empty( $j['entry'][0]['messaging'] ), 'sig_prefix' => substr( (string) $req->get_header( 'x_hub_signature_256' ), 0, 14 ), 'ua' => substr( (string) $req->get_header( 'user_agent' ), 0, 60 ) ], false );
 		return new WP_REST_Response( [ 'error' => 'Invalid signature' ], 401 );
 	}
 	update_option( 'ir_dm_last_hook', time(), false );
@@ -523,6 +525,56 @@ function ir_dm_do_message( $e ) {
 	}
 	ir_dm_set( $log->id, [ 'status' => 'sent', 'sent_at' => ir_dm_now(), 'error' => null, 'dm_text' => $m['text'] ] );
 	return 'sent';
+}
+
+/* ---------- backup: check posts for new comments every 2 minutes ----------
+ * Works even when Meta does not send webhooks (e.g. app not Live). Safe to run alongside webhooks:
+ * every comment is processed once (log table + seen list). */
+add_action( 'init', function () {
+	if ( function_exists( 'as_has_scheduled_action' ) && ! as_has_scheduled_action( 'ir_dm_poll' ) ) {
+		as_schedule_recurring_action( time() + 60, 120, 'ir_dm_poll', [], 'ir-dm' );
+	}
+}, 21 );
+add_action( 'ir_dm_poll', 'ir_dm_poll' );
+function ir_dm_poll() {
+	if ( get_transient( 'ir_dm_polling' ) ) { return 0; }
+	set_transient( 'ir_dm_polling', 1, 100 );
+	update_option( 'ir_dm_last_poll', time(), false );
+	$found = 0;
+	foreach ( get_users( [ 'meta_key' => 'ir_dm_ig_id', 'fields' => 'ID', 'number' => 500 ] ) as $uid ) {
+		$a = ir_dm_acct( $uid );
+		if ( ! $a || ( $a['status'] ?? '' ) !== 'active' ) { continue; }
+		$autos = ir_dm_autos( $uid, 'comments' );
+		if ( ! $autos ) { continue; }
+		$media = []; $any = false;
+		foreach ( $autos as $x ) { if ( ! empty( $x['cfg']['any_post'] ) ) { $any = true; } elseif ( ! empty( $x['cfg']['post'] ) ) { $media[] = (string) $x['cfg']['post']; } }
+		if ( $any ) {
+			$r = ir_dm_api( $a, 'GET', $a['id'] . '/media?fields=id&limit=10' );
+			if ( ! is_wp_error( $r ) ) { foreach ( (array) ( $r['data'] ?? [] ) as $m ) { $media[] = (string) $m['id']; } }
+		}
+		$seen = get_user_meta( $uid, 'ir_dm_seen', true );
+		if ( ! is_array( $seen ) ) { $seen = []; }
+		foreach ( array_unique( $media ) as $mid ) {
+			$r = ir_dm_api( $a, 'GET', $mid . '/comments?fields=id,text,timestamp,username,from&limit=50' );
+			if ( is_wp_error( $r ) ) { if ( $r->get_error_code() === 'token' ) { ir_dm_mark_acct( $uid, 'expired', $r->get_error_message() ); } continue; }
+			foreach ( (array) ( $r['data'] ?? [] ) as $c ) {
+				$cid = (string) ( $c['id'] ?? '' );
+				if ( $cid === '' || isset( $seen[ 'c' . $cid ] ) ) { continue; }
+				$seen[ 'c' . $cid ] = time();
+				$ts = strtotime( (string) ( $c['timestamp'] ?? '' ) ) ?: time();
+				if ( time() - $ts > DAY_IN_SECONDS ) { continue; }
+				$from = (string) ( $c['from']['id'] ?? '' );
+				$un = (string) ( $c['from']['username'] ?? ( $c['username'] ?? '' ) );
+				if ( $from === '' || $from === (string) $a['id'] || strcasecmp( $un, (string) $a['username'] ) === 0 ) { continue; }
+				$found++;
+				ir_dm_job( [ 'k' => 'comment', 'ig' => (string) $a['id'], 'id' => $cid, 'text' => (string) ( $c['text'] ?? '' ), 'from' => $from, 'uname' => $un, 'media' => $mid, 'omedia' => '', 'ts' => $ts ], 0 );
+			}
+		}
+		if ( count( $seen ) > 3000 ) { $seen = array_slice( $seen, -3000, null, true ); }
+		update_user_meta( $uid, 'ir_dm_seen', $seen );
+	}
+	delete_transient( 'ir_dm_polling' );
+	return $found;
 }
 
 /* ---------- daily token refresh (Instagram-login tokens last 60 days) ---------- */
