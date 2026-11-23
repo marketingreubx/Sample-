@@ -983,6 +983,10 @@ function ir_dm_auth() {
 	}
 	$signup = $mode === 'signup';
 	ob_start(); ?>
+<div class="rx-auth-wrap"><div class="rx-auth-side"><div style="display:flex;align-items:center;gap:12px;font-size:18px;position:relative;z-index:1"><span class="rx-logo" style="background:rgba(255,255,255,.18);box-shadow:none"><?php echo ir_dm_logo(); // phpcs:ignore ?></span><b><?php echo esc_html( IR_DM_NAME ); ?></b></div>
+ <div style="position:relative;z-index:1"><h2>Your AI assistant that turns <span>comments</span> into clients.</h2>
+ <ul><li><i>💬</i>Comment a word, get a DM, automatically</li><li><i>🔗</i>Tracked links show who clicked</li><li><i>📱</i>Several Instagram accounts, one dashboard</li><li><i>🛡️</i>Official Meta API, follows Instagram's rules</li></ul></div>
+ <small style="position:relative;z-index:1;color:rgba(255,255,255,.7)">by Igho Reuben</small></div>
 <div class="rx-auth">
  <div class="rx-auth-top"><span class="rx-logo"><?php echo ir_dm_logo(); // phpcs:ignore ?></span><b class="rx-brand"><?php echo esc_html( IR_DM_NAME ); ?><small>AI DM automation</small></b><button type="button" class="rx-ib" onclick="rxTheme()" aria-label="Light or dark mode"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button></div>
  <h1 class="rx-hero"><?php echo $signup ? 'Let AI turn <span>comments</span><br>into clients.' : 'Welcome <span>back.</span>'; ?></h1>
@@ -998,7 +1002,7 @@ function ir_dm_auth() {
   <?php if ( ! $signup ) : ?><a class="rx-link" href="<?php echo esc_url( wp_lostpassword_url( ir_dm_url() ) ); ?>">Forgot password?</a><?php endif; ?>
  </form>
  <?php if ( $open ) : ?><p class="rx-center rx-muted"><?php echo $signup ? 'Already have an account?' : 'New here?'; ?> <a class="rx-link" href="<?php echo esc_url( add_query_arg( 'm', $signup ? 'login' : 'signup', ir_dm_url() ) ); ?>"><?php echo $signup ? 'Sign in' : 'Create a free account'; ?></a></p><?php endif; ?>
-</div>
+</div></div>
 <?php
 	ir_dm_shell( $signup ? 'Create account' : 'Sign in', ob_get_clean(), '' );
 }
@@ -1082,9 +1086,45 @@ a{color:inherit}button{font:inherit;color:inherit;cursor:pointer}input,textarea,
 .rx-tpls{display:grid;grid-template-columns:1fr 1fr;gap:10px}.rx-tpl{border:1px solid var(--line);background:var(--card);border-radius:22px;padding:16px;text-align:left}.rx-tpl:hover{border-color:var(--acc)}.rx-tpl .e{font-size:26px;display:block;margin-bottom:6px}.rx-tpl b{display:block;font-weight:700}.rx-tpl small{color:var(--muted);font-size:12.5px;line-height:1.35}
 .rx-act{padding:12px 0;border-top:1px solid var(--line)}.rx-act:first-child{border:0;padding-top:0}.rx-act .r{font-weight:700;font-size:13.5px;margin-top:4px}.rx-act .r.ok{color:var(--ok)}.rx-act .r.no{color:var(--or)}
 .rx-row{display:flex;gap:10px;align-items:center}.rx-err{color:var(--red);font-weight:600;margin:0 0 12px}.rx-err[hidden]{display:none}
-.rx-auth{max-width:440px;margin:0 auto;padding:28px 18px 40px}.rx-auth-top{display:flex;align-items:center;gap:10px;font-size:18px;margin:0 0 34px}.rx-auth-top .rx-ib{margin-left:auto}.rx-logo{width:44px;height:44px;border-radius:14px;background:linear-gradient(135deg,#1660E8,#0F4ACB);display:grid;place-items:center;box-shadow:0 10px 22px -10px #1660E8}.rx-logo svg{stroke:#fff}.rx-h1{margin:0 0 8px}
+.rx-auth{max-width:480px;width:100%;margin:0 auto;padding:28px 18px 40px}.rx-auth-top{display:flex;align-items:center;gap:10px;font-size:18px;margin:0 0 34px}.rx-auth-top .rx-ib{margin-left:auto}.rx-logo{width:44px;height:44px;border-radius:14px;background:linear-gradient(135deg,#1660E8,#0F4ACB);display:grid;place-items:center;box-shadow:0 10px 22px -10px #1660E8}.rx-logo svg{stroke:#fff}.rx-h1{margin:0 0 8px}
 .rx-brand small{display:block;font:600 11px/1 Inter,sans-serif;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin-top:3px}
 details.rx-card>summary{list-style:none;cursor:pointer;font-weight:700}details.rx-card>summary::-webkit-details-marker{display:none}
+.rx-side{display:none}.rx-kpis{display:none}.rx-acard{margin:0 0 12px}
+@media(min-width:900px){
+.rx-app{max-width:none;padding:0;display:grid;grid-template-columns:268px minmax(0,1fr);min-height:100vh}
+.rx-mob,.rx-nav{display:none!important}
+.rx-side{display:flex;flex-direction:column;gap:18px;position:sticky;top:0;height:100vh;padding:24px 18px;background:var(--card);border-right:1px solid var(--line);overflow:auto}
+.rx-sbrand{display:flex;align-items:center;gap:12px;font-size:17px;padding:0 6px}
+.rx-snav{display:flex;flex-direction:column;gap:4px}.rx-snav button{display:flex;align-items:center;gap:12px;border:0;background:none;border-radius:14px;padding:12px 14px;font-weight:600;color:var(--muted);text-align:left}
+.rx-snav button svg{width:20px;height:20px}.rx-snav button:hover{background:var(--soft);color:var(--ink)}.rx-snav button.on{background:var(--accs);color:var(--acc)}:root[data-theme="dark"] .rx-snav button.on{color:#9DBBFF}
+.rx-snav em{margin-left:auto;font-style:normal;font-size:12px;background:var(--soft);border-radius:99px;padding:1px 8px;color:var(--muted)}
+.rx-sacc{border-top:1px solid var(--line);padding:16px 6px 0;display:flex;flex-direction:column;gap:10px}.rx-sacc>small{color:var(--muted);font-weight:700;font-size:11px;letter-spacing:.08em;text-transform:uppercase}
+.rx-srow{display:flex;align-items:center;gap:10px;font-weight:600;font-size:14px}.rx-srow .rx-av{width:28px;height:28px;font-size:12px}.rx-srow>span:not(.rx-av){flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis}.rx-srow i{width:8px;height:8px;border-radius:50%;background:var(--ok)}.rx-srow i.bad{background:var(--red)}
+.rx-sfoot{margin-top:auto;display:flex;flex-direction:column;gap:2px;border-top:1px solid var(--line);padding-top:12px}
+.rx-sbtn{display:flex;align-items:center;gap:12px;border:0;background:none;border-radius:12px;padding:10px 14px;font-weight:600;color:var(--muted);text-decoration:none;font-size:14px}.rx-sbtn:hover{background:var(--soft);color:var(--ink)}.rx-sbtn svg{width:19px;height:19px}
+.rx-main{padding:32px 44px 60px;max-width:1280px;width:100%}
+.rx-top{margin:0 0 26px}.rx-hero{font-size:50px;letter-spacing:-1.8px;margin:0 0 22px}
+.rx-dash{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(320px,1fr);gap:28px;align-items:start}
+.rx-dr{position:sticky;top:24px}.rx-kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:0 0 20px}.rx-kpis .rx-card{padding:16px}.rx-kpis small{display:block;color:var(--muted);font-size:12.5px;font-weight:600}.rx-kpis b{font-size:26px;letter-spacing:-.5px}
+.rx-tile{padding:22px 10px;font-size:14.5px}.rx-tile:hover,.rx-tpl:hover,.rx-item:hover{border-color:var(--acc)}.rx-tile,.rx-tpl,.rx-item{transition:transform .15s,border-color .15s,box-shadow .15s}.rx-tile:hover,.rx-tpl:hover{transform:translateY(-2px);box-shadow:0 14px 30px -20px var(--sh)}
+.rx-promo{padding:24px}.rx-promo h3{font-size:21px}
+.rx-head{margin:0 0 24px}.rx-head h1{font-size:28px;letter-spacing:-.6px}
+.rx-alist{display:grid;grid-template-columns:repeat(auto-fill,minmax(360px,1fr));gap:16px}.rx-acard{margin:0}
+.rx-pick{max-width:800px}.rx-pick .rx-tpls{grid-template-columns:repeat(4,1fr)}
+.rx-ed{display:grid;grid-template-columns:minmax(0,1fr) 400px;gap:24px;align-items:start}.rx-edr{position:sticky;top:24px}
+.rx-grid{grid-template-columns:repeat(5,1fr)}
+.rx-pgrid{display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start}
+}
+@media(min-width:900px) and (max-width:1150px){.rx-dash,.rx-ed{grid-template-columns:1fr}.rx-dr,.rx-edr{position:static}.rx-grid{grid-template-columns:repeat(4,1fr)}}
+.rx-auth-wrap{min-height:100vh}.rx-auth-side{display:none}
+@media(min-width:900px){
+.rx-auth-wrap{display:grid;grid-template-columns:1.1fr 1fr}
+.rx-auth-side{display:flex;flex-direction:column;justify-content:space-between;padding:48px;color:#fff;background:linear-gradient(150deg,#1660E8,#0F4ACB 45%,#071233);position:relative;overflow:hidden}
+.rx-auth-side:after{content:"";position:absolute;right:-120px;bottom:-120px;width:420px;height:420px;border-radius:50%;background:radial-gradient(circle,rgba(255,122,26,.5),transparent 70%)}
+.rx-auth-side h2{font:800 46px/1.05 "Plus Jakarta Sans",sans-serif;letter-spacing:-1.6px;margin:0 0 22px;max-width:520px}.rx-auth-side h2 span{color:#FFB37A}
+.rx-auth-side ul{list-style:none;padding:0;margin:0;display:grid;gap:14px}.rx-auth-side li{display:flex;gap:12px;align-items:center;font-size:16px;color:rgba(255,255,255,.9)}.rx-auth-side li i{width:36px;height:36px;border-radius:12px;background:rgba(255,255,255,.15);display:grid;place-items:center;font-style:normal}
+.rx-auth{display:flex;flex-direction:column;justify-content:center;padding:48px}
+}
 [hidden]{display:none!important}
 CSS;
 }
@@ -1108,6 +1148,8 @@ story:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="
 link:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg>',
 send:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h12M12 6l6 6-6 6"/></svg>',
 bolt:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M13 3 5 14h6l-1 7 8-11h-6z"/></svg>',
+logo:'<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6.5A2.5 2.5 0 0 1 6.5 4h11A2.5 2.5 0 0 1 20 6.5v7a2.5 2.5 0 0 1-2.5 2.5H11l-4.5 4v-4A2.5 2.5 0 0 1 4 13.5z"/><path d="M13 7.5 10.5 11h3.5L11.5 14"/></svg>',
+out:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3M10 17l5-5-5-5M15 12H3"/></svg>',
 moon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>',
 plus:'<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>'};
 function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
@@ -1122,47 +1164,55 @@ var TPL=[
  {e:'✏️',n:'Start blank',d:'Write your own',kw:[],msg:'Hey {name}! ',btn:'',pub:['Check your DMs {name} 💌']}];
 function blank(t,trig){t=t||TPL[3];var a=S.accts[0];return{id:0,name:'',acct:a?a.id:'',t:{comments:trig?trig==='comments':true,dms:trig==='dms',story:trig==='story'},any_post:!!trig&&trig!=='comments',post:'',post_img:'',keywords:t.kw.slice(),any_word:false,message:t.msg,link:'',button:t.btn,public_on:t.n!=='Start blank'&&(!trig||trig==='comments'),public:t.pub.slice()}}
 function load(){return post('ir_dm_state').then(function(r){if(!r.ok){R.innerHTML='<div class="rx-alert bad">'+esc(r.err)+'</div>';return}S=r;draw()})}
-function nav(){var t=[['home','Home','home'],['autos','Automations','chat'],['activity','Activity','list'],['profile','Profile','gear']];
- return '<nav class="rx-nav">'+t.map(function(x){var on=TAB===x[0]&&!ED;return '<button data-tab="'+x[0]+'" class="'+(on?'on':'')+'" aria-label="'+x[1]+'">'+(on?'<i>'+I[x[2]]+'</i><span>'+x[1]+'</span>':I[x[2]])+'</button>'}).join('')+'</nav>'}
+var TABS=[['home','Home','home'],['autos','Automations','chat'],['activity','Activity','list'],['profile','Profile','gear']];
+function side(){var on=function(t){return TAB===t&&!ED};
+ return '<aside class="rx-side"><div class="rx-sbrand"><span class="rx-logo">'+I.logo+'</span><b class="rx-brand">'+esc(C.name)+'<small>AI DM automation</small></b></div>'+
+ '<button class="rx-btn rx-lime rx-wide" data-new="">'+I.plus+' New automation</button>'+
+ '<nav class="rx-snav">'+TABS.map(function(x){return '<button data-tab="'+x[0]+'" class="'+(on(x[0])?'on':'')+'">'+I[x[2]]+'<span>'+x[1]+'</span>'+(x[0]==='autos'&&S.autos.length?'<em>'+S.autos.length+'</em>':'')+'</button>'}).join('')+'</nav>'+
+ '<div class="rx-sacc"><small>Accounts</small>'+(S.accts.length?S.accts.map(function(a){return '<div class="rx-srow">'+av(a)+'<span>@'+esc(a.username)+'</span><i class="'+(a.status==='active'?'ok':'bad')+'"></i></div>'}).join(''):'<div class="rx-muted" style="font-size:13px">None connected</div>')+'<a class="rx-link" href="'+esc(C.connect)+'">+ Add account</a></div>'+
+ '<div class="rx-sfoot"><button class="rx-sbtn" onclick="rxTheme()">'+I.moon+'<span>Light / dark</span></button>'+(S.me.admin?'<a class="rx-sbtn" href="'+esc(C.setup)+'">'+I.gear+'<span>Setup</span></a>':'')+'<a class="rx-sbtn" href="'+esc(C.logout)+'">'+I.out+'<span>Sign out</span></a></div></aside>'}
+function shell(h){return side()+'<main class="rx-main">'+h+'</main>'+nav()}
+function nav(){return '<nav class="rx-nav">'+TABS.map(function(x){var on=TAB===x[0]&&!ED;return '<button data-tab="'+x[0]+'" class="'+(on?'on':'')+'" aria-label="'+x[1]+'">'+(on?'<i>'+I[x[2]]+'</i><span>'+x[1]+'</span>':I[x[2]])+'</button>'}).join('')+'</nav>'}
 function banner(){var h='';if(C.msg)h+='<div class="rx-alert ok">'+esc(C.msg)+'</div>';if(C.err)h+='<div class="rx-alert bad">'+esc(C.err)+'</div>';C.msg=C.err='';return h}
 function draw(){if(ED)return editor();var h='';
  if(TAB==='home')h=home();else if(TAB==='autos')h=autos();else if(TAB==='activity')h=activity();else h=profile();
- R.innerHTML=h+nav();bind();window.scrollTo(0,0)}
+ R.innerHTML=shell(h);bind();window.scrollTo(0,0)}
 function connectCard(){var a=S.accts;
  if(!S.ready&&!a.length)return '<div class="rx-promo"><div class="row"><span class="rx-crown">'+I.crown+'</span><div><h3>Almost ready</h3><p>'+(S.me.admin?'Finish the one-time Meta setup first. You can build automations meanwhile.':'Instagram connection opens soon. You can build automations meanwhile.')+'</p></div></div>'+(S.me.admin?'<a class="rx-btn rx-wide" href="'+esc(C.setup)+'">Open setup</a>':'')+'</div>';
  if(!a.length)return '<div class="rx-promo"><div class="row"><span class="rx-crown">'+I.crown+'</span><div><h3>Connect Instagram</h3><p>Business or Creator account. Log in, tap Allow, done.</p></div></div><a class="rx-btn rx-wide" href="'+esc(C.connect)+'">'+I.plus+' Connect Instagram</a></div>';
  var bad=a.filter(function(x){return x.status!=='active'});
  if(bad.length)return '<div class="rx-promo warn"><div class="row"><span class="rx-crown">'+I.crown+'</span><div><h3>@'+esc(bad[0].username)+' needs you</h3><p>Instagram logged it out. Reconnect to keep DMs flowing.</p></div></div><a class="rx-btn rx-wide" href="'+esc(C.connect)+'">Reconnect</a></div>';
  return '<div class="rx-promo"><div class="row"><span class="rx-crown">'+I.crown+'</span><div><h3>'+S.tot.sent+' DMs sent</h3><p>'+S.autos.filter(function(x){return x.on}).length+' automation'+(S.autos.length===1?'':'s')+' live on '+a.map(function(x){return '@'+esc(x.username)}).join(', ')+'</p></div></div><button class="rx-btn rx-wide" data-new="">'+I.plus+' New automation</button></div>'}
-function home(){var h='<div class="rx-top"><button class="rx-hello" data-tab="profile">'+av(S.accts[0])+'<span>Hello, '+esc(S.me.name||'there')+'!</span></button><button class="rx-ib lime" data-new="" aria-label="New automation">'+I.spark+'</button><button class="rx-ib" onclick="rxTheme()" aria-label="Light or dark mode">'+I.moon+'</button></div>';
- h+=banner()+'<h1 class="rx-hero">Let AI turn your <span>comments</span><br><em>into</em> clients today.</h1>';
- h+='<div class="rx-chips"><button class="rx-pill" data-new="">New automation</button><button class="rx-ib" data-new="comments" aria-label="Comment trigger">'+I.chat+'</button><button class="rx-ib" data-new="dms" aria-label="DM trigger">'+I.dm+'</button><button class="rx-ib" data-new="story" aria-label="Story trigger">'+I.story+'</button></div>';
- h+=connectCard();
- h+='<div class="rx-tiles"><button class="rx-tile" data-new="comments"><span class="rx-ic">'+I.chat+'</span>Comment to DM</button><button class="rx-tile on" data-new="dms"><span class="rx-ic g">'+I.dm+'</span>DM keyword</button><button class="rx-tile" data-new="story"><span class="rx-ic b">'+I.story+'</span>Story reply</button></div>';
- h+='<div class="rx-sec"><h2>Recent activity</h2><button data-tab="activity">View all</button></div>';
- h+=S.activity.length?S.activity.slice(0,4).map(actItem).join(''):'<div class="rx-item"><span class="rx-ic k">'+I.bolt+'</span><div class="t"><b>Nothing yet</b><small>When someone comments your word, it shows up here.</small></div></div>';
- return h}
+function home(){var top='<div class="rx-top"><button class="rx-hello" data-tab="profile">'+av(S.accts[0])+'<span>Hello, '+esc(S.me.name||'there')+'!</span></button><button class="rx-ib lime" data-new="" aria-label="New automation">'+I.spark+'</button><button class="rx-ib rx-mob" onclick="rxTheme()" aria-label="Light or dark mode">'+I.moon+'</button></div>';
+ var L=banner()+'<h1 class="rx-hero">Let AI turn your <span>comments</span><br><em>into</em> clients today.</h1>'+
+ '<div class="rx-chips"><button class="rx-pill" data-new="">New automation</button><button class="rx-ib" data-new="comments" aria-label="Comment trigger">'+I.chat+'</button><button class="rx-ib" data-new="dms" aria-label="DM trigger">'+I.dm+'</button><button class="rx-ib" data-new="story" aria-label="Story trigger">'+I.story+'</button></div>'+connectCard()+
+ '<div class="rx-tiles"><button class="rx-tile" data-new="comments"><span class="rx-ic">'+I.chat+'</span>Comment to DM</button><button class="rx-tile on" data-new="dms"><span class="rx-ic g">'+I.dm+'</span>DM keyword</button><button class="rx-tile" data-new="story"><span class="rx-ic b">'+I.story+'</span>Story reply</button></div>';
+ var Rr='<div class="rx-kpis"><div class="rx-card"><small>DMs sent</small><b>'+S.tot.sent+'</b></div><div class="rx-card"><small>Link clicks</small><b>'+S.tot.clicks+'</b></div><div class="rx-card"><small>Live automations</small><b>'+S.autos.filter(function(x){return x.on}).length+'</b></div></div>'+
+ '<div class="rx-sec"><h2>Recent activity</h2><button data-tab="activity">View all</button></div>'+
+ (S.activity.length?S.activity.slice(0,6).map(actItem).join(''):'<div class="rx-item"><span class="rx-ic k">'+I.bolt+'</span><div class="t"><b>Nothing yet</b><small>When someone comments your word, it shows up here.</small></div></div>');
+ return top+'<div class="rx-dash"><div>'+L+'</div><div class="rx-dr">'+Rr+'</div></div>'}
 function actItem(x){return '<div class="rx-item"><span class="rx-ic '+(x.ok?'g':'o')+'">'+(x.trig==='comment'?I.chat:x.trig==='story'?I.story:I.dm)+'</span><div class="t"><b>'+esc(x.who)+' · '+esc(x.said||'…')+'</b><small>'+(x.ok?'✓ DM sent':esc(x.res))+' · '+ago(x.when)+'</small></div><span class="rx-go">'+I.arrow+'</span></div>'}
 function acctOf(id){return S.accts.filter(function(a){return a.id===String(id)})[0]||S.accts[0]}
 function autos(){var h='<div class="rx-head"><h1>Automations</h1><button class="rx-ib lime" data-new="">'+I.plus+'</button></div>'+banner();
  if(!S.autos.length)return h+'<div class="rx-card rx-pad"><p style="margin:0 0 12px;font-weight:700">Pick a starting point</p>'+tpls()+'</div>';
- return h+S.autos.map(function(a){var c=a.cfg,ac=acctOf(c.acct),w=[];if(c.t.comments)w.push('comments '+(c.any_word?'anything':c.keywords.join(' / ')));if(c.t.dms)w.push('DMs '+(c.any_word?'you':c.keywords.join(' / ')));if(c.t.story)w.push('replies to your Story');
-  return '<div class="rx-card rx-pad" style="margin:0 0 12px"><div class="rx-row">'+(c.post_img&&!c.any_post?'<img class="rx-thumb" src="'+esc(c.post_img)+'" alt="">':'<span class="rx-thumb">💬</span>')+'<div style="flex:1;min-width:0"><b style="display:block">'+esc(a.name)+'</b><small class="rx-muted">When someone '+esc(w.join(', or '))+(ac&&S.accts.length>1?' · @'+esc(ac.username):'')+'</small><div style="font-size:13px;font-weight:700;margin-top:4px">'+a.sent+' <span class="rx-muted">sent</span> · '+a.clicks+' <span class="rx-muted">clicks</span></div></div><label class="rx-sw"><input type="checkbox" data-tog="'+a.id+'"'+(a.on?' checked':'')+'><i></i></label></div>'+
-  '<div class="rx-row" style="margin-top:12px"><button class="rx-btn rx-dark" style="padding:10px 16px" data-edit="'+a.id+'">Edit</button><button class="rx-btn" style="padding:10px 16px;border:1px solid var(--line)" data-try="'+a.id+'">Try it</button><button class="rx-link rx-red" style="margin-left:auto" data-del="'+a.id+'">Delete</button></div><div data-tryout="'+a.id+'"></div></div>'}).join('')}
+ return h+'<div class="rx-alist">'+S.autos.map(function(a){var c=a.cfg,ac=acctOf(c.acct),w=[];if(c.t.comments)w.push('comments '+(c.any_word?'anything':c.keywords.join(' / ')));if(c.t.dms)w.push('DMs '+(c.any_word?'you':c.keywords.join(' / ')));if(c.t.story)w.push('replies to your Story');
+  return '<div class="rx-card rx-pad rx-acard"><div class="rx-row">'+(c.post_img&&!c.any_post?'<img class="rx-thumb" src="'+esc(c.post_img)+'" alt="">':'<span class="rx-thumb">💬</span>')+'<div style="flex:1;min-width:0"><b style="display:block">'+esc(a.name)+'</b><small class="rx-muted">When someone '+esc(w.join(', or '))+(ac&&S.accts.length>1?' · @'+esc(ac.username):'')+'</small><div style="font-size:13px;font-weight:700;margin-top:4px">'+a.sent+' <span class="rx-muted">sent</span> · '+a.clicks+' <span class="rx-muted">clicks</span></div></div><label class="rx-sw"><input type="checkbox" data-tog="'+a.id+'"'+(a.on?' checked':'')+'><i></i></label></div>'+
+  '<div class="rx-row" style="margin-top:12px"><button class="rx-btn rx-dark" style="padding:10px 16px" data-edit="'+a.id+'">Edit</button><button class="rx-btn" style="padding:10px 16px;border:1px solid var(--line)" data-try="'+a.id+'">Try it</button><button class="rx-link rx-red" style="margin-left:auto" data-del="'+a.id+'">Delete</button></div><div data-tryout="'+a.id+'"></div></div>'}).join('')+'</div>'}
 function tpls(){return '<div class="rx-tpls">'+TPL.map(function(t,i){return '<button class="rx-tpl" data-tpl="'+i+'"><span class="e">'+t.e+'</span><b>'+esc(t.n)+'</b><small>'+esc(t.d)+'</small></button>'}).join('')+'</div>'}
 function activity(){return '<div class="rx-head"><h1>Activity</h1><button class="rx-ib" data-reload="1" aria-label="Refresh">'+I.bolt+'</button></div>'+(S.activity.length?'<div class="rx-card rx-pad">'+S.activity.map(function(x){return '<div class="rx-act"><div class="rx-row" style="justify-content:space-between"><b>'+esc(x.who)+'</b><small class="rx-muted">'+ago(x.when)+'</small></div><div class="rx-muted" style="font-size:14px">'+(x.trig==='comment'?'Commented':x.trig==='story'?'Replied to your Story':'Sent you a DM')+': “'+esc(x.said||'…')+'” · '+esc(x.auto)+'</div><div class="r '+(x.ok?'ok':'no')+'">'+(x.ok?'✓ ':'')+esc(x.res)+'</div></div>'}).join('')+'</div>':'<div class="rx-alert info">No activity yet. New comments are checked every 2 minutes.</div>')}
 function profile(){var a=S.accts,live=S.autos.filter(function(x){return x.on}).length;
- var h='<div class="rx-head"><button class="rx-ib" data-tab="home">'+I.back+'</button><h1>Profile</h1>'+(S.me.admin?'<a class="rx-ib" href="'+esc(C.setup)+'" aria-label="Setup">'+I.gear+'</a>':'<span style="width:48px"></span>')+'</div>'+banner();
+ var h='<div class="rx-head"><button class="rx-ib" data-tab="home">'+I.back+'</button><h1>Profile</h1>'+(S.me.admin?'<a class="rx-ib" href="'+esc(C.setup)+'" aria-label="Setup">'+I.gear+'</a>':'<span style="width:48px"></span>')+'</div>'+banner()+'<div class="rx-pgrid"><div>';
  h+='<div class="rx-prof"><div class="rx-card me">'+av(a[0])+'<h2>'+esc(S.me.name||'You')+'</h2><span class="rx-badge">★ '+live+' live automation'+(live===1?'':'s')+'</span><div class="rx-muted" style="font-size:12px">'+esc(S.me.email)+'</div></div><div class="rx-mini"><div class="rx-card"><span class="rx-ic">'+I.dm+'</span><div><b>'+S.tot.sent+'</b><small>DMs sent</small></div></div><div class="rx-card"><span class="rx-ic g">'+I.link+'</span><div><b>'+S.tot.clicks+'</b><small>Link clicks</small></div></div></div></div>';
  h+='<div class="rx-card rx-stats"><div><span class="rx-ic">'+I.chat+'</span><small>Automations</small><b>'+S.autos.length+'</b></div><div><span class="rx-ic b">'+I.crown.split('#fff').join('currentColor')+'</span><small>Accounts</small><b>'+a.length+'</b></div><div><span class="rx-ic o">'+I.bolt+'</span><small>Triggers</small><b>'+S.activity.length+'</b></div></div>';
+ h+='</div><div>';
  h+='<div class="rx-promo"><div class="row"><span class="rx-crown">'+I.crown+'</span><div><h3>'+(a.length?'Add another account':'Connect Instagram')+'</h3><p>Run automations on several Instagram accounts from one place.</p></div></div><a class="rx-btn rx-wide" href="'+esc(C.connect)+'">'+I.plus+' '+(a.length?'Add Instagram account':'Connect Instagram')+'</a></div>';
  if(a.length)h+='<div class="rx-sec"><h2>Your accounts</h2></div>'+a.map(function(x){return '<div class="rx-item">'+av(x)+'<div class="t"><b>@'+esc(x.username)+'</b><small>'+(x.status==='active'?'<span class="rx-okc">● Connected</span>':'<span class="rx-red" style="font-weight:700">Needs reconnecting</span>')+'</small></div>'+(x.status==='active'?'<button class="rx-link rx-red" data-disc="'+esc(x.id)+'">Remove</button>':'<a class="rx-link" href="'+esc(C.connect)+'">Reconnect</a>')+'</div>'}).join('');
  h+='<details class="rx-card rx-pad" style="margin:12px 0"><summary>How it works & Instagram rules</summary><p class="rx-muted" style="margin:10px 0 0;font-size:14px;line-height:1.6">• One automatic DM per comment, within 7 days of the comment.<br>• DM and Story replies within 24 hours of their message.<br>• Your own comments never trigger anything.<br>• New comments are checked every 2 minutes.<br>• Links are tracked so you can see clicks.</p></details>';
- h+='<a class="rx-btn rx-wide" style="border:1px solid var(--line)" href="'+esc(C.logout)+'">Sign out</a>';return h}
+ h+='<a class="rx-btn rx-wide rx-mob" style="border:1px solid var(--line)" href="'+esc(C.logout)+'">Sign out</a></div></div>';return h}
 function find(id){return S.autos.filter(function(a){return String(a.id)===String(id)})[0]}
 function bind(){var q=function(s){return R.querySelectorAll(s)};
  q('[data-tab]').forEach(function(b){b.onclick=function(){TAB=b.dataset.tab;ED=null;draw()}});
- q('[data-new]').forEach(function(b){b.onclick=function(){var t=b.dataset.new;if(t){edit(blank(TPL[t==='comments'?0:3],t))}else{TAB='autos';R.innerHTML='<div class="rx-head"><button class="rx-ib" data-tab="autos">'+I.back+'</button><h1>New automation</h1><span style="width:48px"></span></div><div class="rx-card rx-pad">'+tpls()+'</div>'+nav();bind()}}});
+ q('[data-new]').forEach(function(b){b.onclick=function(){var t=b.dataset.new;if(t){edit(blank(TPL[t==='comments'?0:3],t))}else{TAB='autos';R.innerHTML=shell('<div class="rx-head"><button class="rx-ib" data-tab="autos">'+I.back+'</button><h1>New automation</h1><span style="width:48px"></span></div><div class="rx-card rx-pad rx-pick"><p style="margin:0 0 14px;font-weight:700">Pick a starting point. You can change everything.</p>'+tpls()+'</div>');bind()}}});
  q('[data-tpl]').forEach(function(b){b.onclick=function(){edit(blank(TPL[+b.dataset.tpl]))}});
  q('[data-edit]').forEach(function(b){b.onclick=function(){var a=find(b.dataset.edit),c=JSON.parse(JSON.stringify(a.cfg));c.id=a.id;c.name=a.name;if(!c.acct&&S.accts[0])c.acct=S.accts[0].id;edit(c)}});
  q('[data-try]').forEach(function(b){b.onclick=function(){var a=find(b.dataset.try),c=JSON.parse(JSON.stringify(a.cfg));c.id=a.id;tryIt(c,R.querySelector('[data-tryout="'+a.id+'"]'))}});
@@ -1172,17 +1222,18 @@ function bind(){var q=function(s){return R.querySelectorAll(s)};
  q('[data-reload]').forEach(function(b){b.onclick=load})}
 /* ---------- editor ---------- */
 function edit(c){ED=c;TAB='autos';editor()}
-function editor(){var c=ED,h='<div class="rx-head"><button class="rx-ib" id="rxBack">'+I.back+'</button><h1>'+(c.id?'Edit automation':'New automation')+'</h1><span style="width:48px"></span></div>';
+function editor(){var c=ED,h='<div class="rx-head"><button class="rx-ib" id="rxBack">'+I.back+'</button><h1>'+(c.id?'Edit automation':'New automation')+'</h1><span style="width:48px"></span></div><div class="rx-ed"><div>';
  if(S.accts.length>1)h+='<div class="rx-card rx-pad rx-step"><h3><span class="rx-num">@</span>Which account?</h3><div>'+S.accts.map(function(a){return '<button class="rx-tag'+(c.acct===a.id?' on':'')+'" data-acct="'+esc(a.id)+'">'+(a.pic?'<img src="'+esc(a.pic)+'" alt="" onerror="this.remove()">':'')+'@'+esc(a.username)+'</button>'}).join('')+'</div></div>';
  h+='<div class="rx-card rx-pad rx-step"><h3><span class="rx-num">1</span>When should it run?</h3><label class="rx-chk"><input type="checkbox" id="rxTc"'+(c.t.comments?' checked':'')+'><span>Someone <b>comments</b> on my post</span></label><label class="rx-chk"><input type="checkbox" id="rxTd"'+(c.t.dms?' checked':'')+'><span>Someone <b>sends me a DM</b> with the word</span></label><label class="rx-chk" style="margin:0"><input type="checkbox" id="rxTs"'+(c.t.story?' checked':'')+'><span>Someone <b>replies to my Story</b></span></label></div>';
  h+='<div class="rx-card rx-pad rx-step" id="rxPostBox"'+(c.t.comments?'':' hidden')+'><h3><span class="rx-num">2</span>Which post?</h3><div id="rxPosts"></div></div>';
  h+='<div class="rx-card rx-pad rx-step"><h3><span class="rx-num">3</span>Trigger word</h3><label class="rx-f"><input id="rxKw" placeholder="e.g. GUIDE" value="'+esc(c.keywords.join(', '))+'" autocapitalize="characters"><small>Capitals, emojis and dots don\'t matter. Add more with a comma.</small></label><label class="rx-chk" style="margin:0"><input type="checkbox" id="rxAny"'+(c.any_word?' checked':'')+'><span>Reply to <b>every</b> comment or message</span></label></div>';
  h+='<div class="rx-card rx-pad rx-step"><h3><span class="rx-num">4</span>The DM they get</h3><div style="margin:0 0 8px"><button class="rx-tag" data-ins="{name}">+ Their @name</button><button class="rx-tag" data-ins="{link}">+ Your link</button></div><label class="rx-f"><textarea id="rxMsg" rows="5" maxlength="1000">'+esc(c.message)+'</textarea></label><label class="rx-f"><span>Your link <small>(optional, clicks are counted)</small></span><input id="rxLink" type="url" inputmode="url" placeholder="https://yourwebsite.com/offer" value="'+esc(c.link)+'"></label><label class="rx-chk"><input type="checkbox" id="rxBtnOn"'+(c.button?' checked':'')+'><span>Show the link as a button</span></label><label class="rx-f" id="rxBtnBox"'+(c.button?'':' hidden')+' style="margin:0"><span>Button text</span><input id="rxBtn" maxlength="20" value="'+esc(c.button||'Open link')+'"></label></div>';
  h+='<div class="rx-card rx-pad rx-step" id="rxPubBox"'+(c.t.comments?'':' hidden')+'><h3><span class="rx-num">5</span>Reply under the comment?</h3><label class="rx-chk"><input type="checkbox" id="rxPubOn"'+(c.public_on?' checked':'')+'><span>Yes, reply publicly too</span></label><label class="rx-f" id="rxPubTxt"'+(c.public_on?'':' hidden')+' style="margin:0"><textarea id="rxPub" rows="3">'+esc(c.public.join('\n'))+'</textarea><small>One per line. A different one is picked each time.</small></label></div>';
+ h+='</div><div class="rx-edr">';
  h+='<div class="rx-card rx-pad rx-step"><h3><span class="rx-num">👀</span>Preview</h3><div class="rx-phone" id="rxPrev"></div></div>';
  h+='<label class="rx-f"><span>Name <small>(just for you)</small></span><input id="rxName" placeholder="e.g. Free guide giveaway" value="'+esc(c.name||'')+'"></label>';
- h+='<div class="rx-err" id="rxErr" hidden></div><button class="rx-btn rx-dark rx-wide" id="rxSave" style="padding:17px">'+(c.id?'Save changes':'Save and switch on')+'</button><button class="rx-btn rx-wide" id="rxTry" style="margin-top:10px;border:1px solid var(--line)">Try it first</button><div id="rxTryOut"></div>';
- R.innerHTML=h+nav();
+ h+='<div class="rx-err" id="rxErr" hidden></div><button class="rx-btn rx-dark rx-wide" id="rxSave" style="padding:17px">'+(c.id?'Save changes':'Save and switch on')+'</button><button class="rx-btn rx-wide" id="rxTry" style="margin-top:10px;border:1px solid var(--line)">Try it first</button><div id="rxTryOut"></div></div></div>';
+ R.innerHTML=shell(h);
  var $=function(s){return R.querySelector(s)};
  $('#rxBack').onclick=function(){ED=null;draw()};
  R.querySelectorAll('[data-tab]').forEach(function(b){b.onclick=function(){ED=null;TAB=b.dataset.tab;draw()}});
