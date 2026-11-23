@@ -10,7 +10,7 @@
  */
 if ( ! defined( 'ABSPATH' ) ) { exit; }
 
-define( 'IR_DM_VER', '1.1.0' );
+define( 'IR_DM_VER', '1.2.0' );
 
 /* =========================================================================
  * Settings, storage, crypto
@@ -115,6 +115,12 @@ function ir_dm_install() {
  PRIMARY KEY  (id),
  UNIQUE KEY who (ig_id,igsid)
 ) $cs;" );
+	dbDelta( 'CREATE TABLE ' . ir_dm_t( 'contact' ) . " (
+ ig_id varchar(40) NOT NULL,
+ igsid varchar(40) NOT NULL,
+ first_seen datetime NOT NULL,
+ PRIMARY KEY  (ig_id,igsid)
+) $cs;" );
 	update_option( 'ir_dm_db', IR_DM_VER, false );
 }
 
@@ -192,6 +198,10 @@ function ir_dm_autos_for( $uid, $trigger, $ig ) {
 		$acct = (string) ( $a['cfg']['acct'] ?? '' );
 		return $acct === (string) $ig || ( $acct === '' && (string) $ig === $firstid );
 	} ) );
+}
+/** Every post an automation applies to (the old single post field and the newer list). */
+function ir_dm_post_ids( $c ) {
+	return array_values( array_unique( array_filter( array_map( 'strval', array_merge( [ $c['post'] ?? '' ], (array) ( $c['posts'] ?? [] ) ) ) ) ) );
 }
 function ir_dm_slug( $auto_id ) {
 	$s = get_post_meta( $auto_id, '_ir_dm_slug', true );
@@ -547,7 +557,7 @@ function ir_dm_do_comment( $e ) {
 	$retry = false; $defer = 0;
 	foreach ( ir_dm_autos_for( $uid, 'comments', $e['ig'] ) as $a ) {
 		$c = $a['cfg'];
-		if ( empty( $c['any_post'] ) && ! in_array( (string) ( $c['post'] ?? '' ), array_filter( [ $e['media'], $e['omedia'] ] ), true ) ) { continue; }
+		if ( empty( $c['any_post'] ) && ! array_intersect( ir_dm_post_ids( $c ), array_filter( [ $e['media'], $e['omedia'] ] ) ) ) { continue; }
 		$kw = ir_dm_match( $e['text'], $c );
 		if ( $kw === false ) { continue; }
 		$log = ir_dm_claim( $uid, $a['id'], $e, $kw );
@@ -605,10 +615,18 @@ function ir_dm_do_message( $e ) {
 	$uid = ir_dm_owner( $e['ig'] );
 	if ( ! $uid || $e['from'] === $e['ig'] ) { return 'ignored'; }
 	if ( $e['k'] === 'dm' && ( $w = ir_dm_wait_get( $e['ig'], $e['from'] ) ) ) { return ir_dm_do_email( $uid, $e, $w ); }
+	global $wpdb;
+	// First time this person writes to this account? (then a welcome automation may greet them)
+	$is_new = (bool) $wpdb->query( $wpdb->prepare( 'INSERT IGNORE INTO ' . ir_dm_t( 'contact' ) . ' (ig_id,igsid,first_seen) VALUES (%s,%s,%s)', $e['ig'], $e['from'], ir_dm_now() ) );
+	if ( $is_new && $wpdb->get_var( $wpdb->prepare( 'SELECT 1 FROM ' . ir_dm_t( 'log' ) . ' WHERE ig_id=%s AND sender_id=%s LIMIT 1', $e['ig'], $e['from'] ) ) ) { $is_new = false; }
 	$hit = null;
 	foreach ( ir_dm_autos_for( $uid, $e['k'] === 'story' ? 'story' : 'dms', $e['ig'] ) as $a ) {
+		if ( empty( $a['cfg']['t'][ $e['k'] === 'story' ? 'story' : 'dms' ] ) ) { continue; }
 		$kw = ir_dm_match( $e['text'], $a['cfg'] );
 		if ( $kw !== false ) { $hit = [ $a, $kw ]; break; } // one automated answer per message: the oldest matching automation
+	}
+	if ( ! $hit && $is_new ) {
+		foreach ( ir_dm_autos_for( $uid, 'welcome', $e['ig'] ) as $a ) { $hit = [ $a, '' ]; break; }
 	}
 	if ( ! $hit ) { return 'nomatch'; }
 	list( $a, $kw ) = $hit;
@@ -728,10 +746,11 @@ function ir_dm_poll() {
 	foreach ( ir_dm_owners() as $uid ) { foreach ( ir_dm_accts( $uid ) as $a ) {
 		if ( ( $a['status'] ?? '' ) !== 'active' ) { continue; }
 		ir_dm_poll_replies( $a );
+		ir_dm_poll_dms( $uid, $a );
 		$autos = ir_dm_autos_for( $uid, 'comments', $a['id'] );
 		if ( ! $autos ) { continue; }
 		$media = []; $any = false;
-		foreach ( $autos as $x ) { if ( ! empty( $x['cfg']['any_post'] ) ) { $any = true; } elseif ( ! empty( $x['cfg']['post'] ) ) { $media[] = (string) $x['cfg']['post']; } }
+		foreach ( $autos as $x ) { if ( ! empty( $x['cfg']['any_post'] ) ) { $any = true; } else { foreach ( ir_dm_post_ids( $x['cfg'] ) as $pid ) { $media[] = $pid; } } }
 		if ( $any ) {
 			$r = ir_dm_api( $a, 'GET', $a['id'] . '/media?fields=id&limit=10' );
 			if ( ! is_wp_error( $r ) ) { foreach ( (array) ( $r['data'] ?? [] ) as $m ) { $media[] = (string) $m['id']; } }
@@ -759,6 +778,25 @@ function ir_dm_poll() {
 	} }
 	delete_transient( 'ir_dm_polling' );
 	return $found;
+}
+
+/** Pick up new DMs when Meta is not sending notifications (app not Live). Only the latest message of recent chats. */
+function ir_dm_poll_dms( $uid, $a ) {
+	if ( ! ir_dm_autos_for( $uid, 'dms', $a['id'] ) && ! ir_dm_autos_for( $uid, 'story', $a['id'] ) && ! ir_dm_autos_for( $uid, 'welcome', $a['id'] ) ) { return; }
+	if ( (int) get_option( 'ir_dm_last_real_hook' ) > time() - 600 ) { return; } // webhooks are working, no need
+	$r = ir_dm_api( $a, 'GET', $a['id'] . '/conversations?platform=instagram&fields=updated_time,messages.limit(1){id,message,from,created_time}&limit=10' );
+	if ( is_wp_error( $r ) ) { return; }
+	$seen = get_user_meta( $uid, 'ir_dm_seen', true ); if ( ! is_array( $seen ) ) { $seen = []; }
+	foreach ( (array) ( $r['data'] ?? [] ) as $cv ) {
+		$m = $cv['messages']['data'][0] ?? null;
+		if ( ! $m || empty( $m['id'] ) || empty( $m['message'] ) ) { continue; }
+		$from = (string) ( $m['from']['id'] ?? '' );
+		$t = strtotime( (string) ( $m['created_time'] ?? '' ) ) ?: 0;
+		if ( $from === '' || $from === (string) $a['id'] || isset( $seen[ 'm' . $m['id'] ] ) || time() - $t > 3600 ) { continue; }
+		$seen[ 'm' . $m['id'] ] = time();
+		ir_dm_job( [ 'k' => 'dm', 'ig' => (string) $a['id'], 'id' => (string) $m['id'], 'text' => (string) $m['message'], 'from' => $from, 'uname' => '', 'media' => '', 'omedia' => '', 'ts' => $t ?: time() ], 0 );
+	}
+	update_user_meta( $uid, 'ir_dm_seen', $seen );
 }
 
 /** Read DM replies from people we are waiting on (email), for when Meta's notifications are not arriving. */
@@ -976,9 +1014,10 @@ function ir_dm_clean_cfg( $in ) {
 	if ( $link !== '' && ! preg_match( '#^https?://#i', $link ) ) { $link = 'https://' . $link; }
 	$link = $link !== '' ? esc_url_raw( $link, [ 'http', 'https' ] ) : '';
 	$c = [
-		't'        => [ 'comments' => ! empty( $in['t']['comments'] ), 'dms' => ! empty( $in['t']['dms'] ), 'story' => ! empty( $in['t']['story'] ) ],
+		't'        => [ 'comments' => ! empty( $in['t']['comments'] ), 'dms' => ! empty( $in['t']['dms'] ), 'story' => ! empty( $in['t']['story'] ), 'welcome' => ! empty( $in['t']['welcome'] ) ],
 		'any_post' => ! empty( $in['any_post'] ),
 		'post'     => preg_replace( '/[^0-9A-Za-z_]/', '', (string) ( $in['post'] ?? '' ) ),
+		'posts'    => array_slice( array_values( array_unique( array_filter( array_map( function ( $p ) { return preg_replace( '/[^0-9A-Za-z_]/', '', (string) $p ); }, (array) ( $in['posts'] ?? [] ) ) ) ) ), 0, 30 ),
 		'post_img' => esc_url_raw( (string) ( $in['post_img'] ?? '' ) ),
 		'keywords' => array_slice( $kws, 0, 20 ),
 		'any_word' => ! empty( $in['any_word'] ),
@@ -995,10 +1034,13 @@ function ir_dm_clean_cfg( $in ) {
 		'email_thanks' => $s( $in['email_thanks'] ?? '', 1000 ),
 		'public'   => array_slice( array_values( array_filter( array_map( function ( $p ) use ( $s ) { return $s( $p, 300 ); }, (array) ( $in['public'] ?? [] ) ) ) ), 0, 10 ),
 	];
-	if ( $c['any_post'] ) { $c['post'] = ''; $c['post_img'] = ''; }
+	if ( $c['any_post'] ) { $c['post'] = ''; $c['post_img'] = ''; $c['posts'] = []; }
+	elseif ( $c['posts'] && ! $c['post'] ) { $c['post'] = $c['posts'][0]; }
+	$only_welcome = $c['t']['welcome'] && ! $c['t']['comments'] && ! $c['t']['dms'] && ! $c['t']['story'];
+	if ( $only_welcome ) { $c['any_word'] = true; }
 	$err = '';
-	if ( ! $c['t']['comments'] && ! $c['t']['dms'] && ! $c['t']['story'] ) { $err = 'Choose when this should run (comments, DMs or Story replies).'; }
-	elseif ( $c['t']['comments'] && ! $c['any_post'] && ! $c['post'] ) { $err = 'Pick a post, or choose "Any post".'; }
+	if ( ! $c['t']['comments'] && ! $c['t']['dms'] && ! $c['t']['story'] && ! $c['t']['welcome'] ) { $err = 'Choose when this should run (comments, DMs, Story replies or a welcome).'; }
+	elseif ( $c['t']['comments'] && ! $c['any_post'] && ! $c['post'] && ! $c['posts'] ) { $err = 'Pick one or more posts, or choose "All posts".'; }
 	elseif ( ! $c['any_word'] && ! $c['keywords'] ) { $err = 'Type the word people should comment, like GUIDE.'; }
 	elseif ( $c['message'] === '' ) { $err = 'Write the DM people will get.'; }
 	elseif ( ! empty( $in['link'] ) && ! $c['link'] ) { $err = 'That link does not look right. It should look like https://yourwebsite.com'; }
@@ -1375,8 +1417,9 @@ var TPL=[
  {e:'💰',n:'Price list',d:'Comment PRICE, get your prices',kw:['PRICE','PRICES'],msg:'Hi {name}! Here are my prices and packages 👇\n{link}\n\nAny questions, just reply here.',btn:'See prices',pub:['Sent you the price list {name} 💌','Check your DMs!']},
  {e:'✏️',n:'Start blank',d:'Write your own',kw:[],msg:'Hey {name}! ',btn:'',pub:['Check your DMs {name} 💌']},
  {e:'⭐',n:'Followers only',d:'Reward people who follow you',kw:['FOLLOW'],msg:'Thanks for following {name}! Here is what I promised 👇\n{link}',btn:'Get it',pub:['Sent! Check your DMs 💌'],mode:'follow'},
+ {e:'👋',n:'Welcome new contacts',d:'Greet people the first time they message you, with a freebie',kw:[],msg:'Hey {name}, welcome! 👋 So glad you reached out. Here is a little something for you:\n{link}',btn:'Get my freebie',pub:[],trig:'welcome'},
  {e:'✉️',n:'Collect emails',d:'Give a freebie for an email',kw:['GUIDE'],msg:'Thanks {name}! Here is your free guide 👇\n{link}',btn:'Get the guide',pub:['Check your DMs {name} 📩'],mode:'email'}];
-function blank(t,trig){t=t||TPL[3];var a=S.accts[0];return{id:0,name:'',acct:a?a.id:'',t:{comments:trig?trig==='comments':true,dms:trig==='dms',story:trig==='story'},any_post:!!trig&&trig!=='comments',post:'',post_img:'',keywords:t.kw.slice(),any_word:false,message:t.msg,link:'',button:t.btn,public_on:t.n!=='Start blank'&&(!trig||trig==='comments'),public:t.pub.slice(),follow:t.mode==='follow',follow_msg:'Hey {name}! Tap below and I will send it right over 👇',follow_btn:'Send it to me',ask_email:t.mode==='email',email_ask:'Hey {name}! What is the best email to send it to? 📩',email_thanks:''}}
+function blank(t,trig){t=t||TPL[3];trig=trig||t.trig;var a=S.accts[0];return{id:0,name:'',acct:a?a.id:'',t:{comments:trig?trig==='comments':true,dms:trig==='dms',story:trig==='story',welcome:trig==='welcome'},any_post:!!trig&&trig!=='comments',post:'',posts:[],post_img:'',keywords:t.kw.slice(),any_word:trig==='welcome',message:t.msg,link:'',button:t.btn,public_on:t.n!=='Start blank'&&(!trig||trig==='comments'),public:t.pub.slice(),follow:t.mode==='follow',follow_msg:'Hey {name}! Tap below and I will send it right over 👇',follow_btn:'Send it to me',ask_email:t.mode==='email',email_ask:'Hey {name}! What is the best email to send it to? 📩',email_thanks:''}}
 function load(){return post('ir_dm_state').then(function(r){if(!r.ok){R.innerHTML='<div class="rx-alert bad">'+esc(r.err)+'</div>';return}S=r;draw()})}
 var TABS=[['home','Home','home'],['autos','Automations','chat'],['activity','Activity','list'],['leads','Leads','mail'],['profile','Profile','gear']];
 function side(){var on=function(t){return TAB===t&&!ED};
@@ -1409,7 +1452,7 @@ function actItem(x){return '<div class="rx-item"><span class="rx-ic '+(x.ok?'g':
 function acctOf(id){return S.accts.filter(function(a){return a.id===String(id)})[0]||S.accts[0]}
 function autos(){var h='<div class="rx-head"><h1>Automations</h1><button class="rx-ib lime" data-new="">'+I.plus+'</button></div>'+banner();
  if(!S.autos.length)return h+'<div class="rx-card rx-pad"><p style="margin:0 0 12px;font-weight:700">Pick a starting point</p>'+tpls()+'</div>';
- return h+'<div class="rx-alist">'+S.autos.map(function(a){var c=a.cfg,ac=acctOf(c.acct),w=[];if(c.t.comments)w.push('comments '+(c.any_word?'anything':c.keywords.join(' / ')));if(c.t.dms)w.push('DMs '+(c.any_word?'you':c.keywords.join(' / ')));if(c.t.story)w.push('replies to your Story');
+ return h+'<div class="rx-alist">'+S.autos.map(function(a){var c=a.cfg,ac=acctOf(c.acct),w=[];if(c.t.comments)w.push('comments '+(c.any_word?'anything':c.keywords.join(' / ')));if(c.t.dms)w.push('DMs '+(c.any_word?'you':c.keywords.join(' / ')));if(c.t.welcome)w.push('messages you for the first time');if(c.t.story)w.push('replies to your Story');
   return '<div class="rx-card rx-pad rx-acard"><div class="rx-row">'+(c.post_img&&!c.any_post?'<img class="rx-thumb" src="'+esc(c.post_img)+'" alt="">':'<span class="rx-thumb">💬</span>')+'<div style="flex:1;min-width:0"><b style="display:block">'+esc(a.name)+'</b><small class="rx-muted">When someone '+esc(w.join(', or '))+(ac&&S.accts.length>1?' · @'+esc(ac.username):'')+'</small><div style="font-size:13px;font-weight:700;margin-top:4px">'+a.sent+' <span class="rx-muted">sent</span> · '+a.clicks+' <span class="rx-muted">clicks</span></div></div><label class="rx-sw"><input type="checkbox" data-tog="'+a.id+'"'+(a.on?' checked':'')+'><i></i></label></div>'+
   '<div class="rx-row" style="margin-top:12px"><button class="rx-btn rx-dark" style="padding:10px 16px" data-edit="'+a.id+'">Edit</button><button class="rx-btn" style="padding:10px 16px;border:1px solid var(--line)" data-try="'+a.id+'">Try it</button><button class="rx-link rx-red" style="margin-left:auto" data-del="'+a.id+'">Delete</button></div><div data-tryout="'+a.id+'"></div></div>'}).join('')+'</div>'}
 function tpls(){return '<div class="rx-tpls">'+TPL.map(function(t,i){return '<button class="rx-tpl" data-tpl="'+i+'"><span class="e">'+t.e+'</span><b>'+esc(t.n)+'</b><small>'+esc(t.d)+'</small></button>'}).join('')+'</div>'}
@@ -1442,12 +1485,12 @@ function bind(){var q=function(s){return R.querySelectorAll(s)};
  q('[data-reload]').forEach(function(b){b.onclick=load});
  var hs=R.querySelector('#rxHookSave');if(hs)hs.onclick=function(){hs.disabled=true;post('ir_dm_hook',{url:R.querySelector('#rxHook').value.trim()}).then(function(x){hs.disabled=false;var m=R.querySelector('#rxHookMsg');if(!x.ok){m.textContent=x.err;m.style.color='var(--red)';return}S.hook=R.querySelector('#rxHook').value.trim();m.style.color='';m.textContent=S.hook?'✓ Saved. We sent a test lead (test@example.com) so you can check it arrived.':'Disconnected.'})}}
 /* ---------- editor ---------- */
-function edit(c){ED=c;TAB='autos';editor()}
+function edit(c){ED=c;if(!Array.isArray(c.posts))c.posts=[];if(c.post&&c.posts.indexOf(c.post)<0)c.posts.unshift(c.post);TAB='autos';editor()}
 function editor(){var c=ED,h='<div class="rx-head"><button class="rx-ib" id="rxBack">'+I.back+'</button><h1>'+(c.id?'Edit automation':'New automation')+'</h1><span style="width:48px"></span></div><div class="rx-ed"><div>';
  if(S.accts.length>1)h+='<div class="rx-card rx-pad rx-step"><h3><span class="rx-num">@</span>Which account?</h3><div>'+S.accts.map(function(a){return '<button class="rx-tag'+(c.acct===a.id?' on':'')+'" data-acct="'+esc(a.id)+'">'+(a.pic?'<img src="'+esc(a.pic)+'" alt="" onerror="this.remove()">':'')+'@'+esc(a.username)+'</button>'}).join('')+'</div></div>';
- h+='<div class="rx-card rx-pad rx-step"><h3><span class="rx-num">1</span>When should it run?</h3><label class="rx-chk"><input type="checkbox" id="rxTc"'+(c.t.comments?' checked':'')+'><span>Someone <b>comments</b> on my post</span></label><label class="rx-chk"><input type="checkbox" id="rxTd"'+(c.t.dms?' checked':'')+'><span>Someone <b>sends me a DM</b> with the word</span></label><label class="rx-chk" style="margin:0"><input type="checkbox" id="rxTs"'+(c.t.story?' checked':'')+'><span>Someone <b>replies to my Story</b></span></label></div>';
- h+='<div class="rx-card rx-pad rx-step" id="rxPostBox"'+(c.t.comments?'':' hidden')+'><h3><span class="rx-num">2</span>Which post?</h3><div id="rxPosts"></div></div>';
- h+='<div class="rx-card rx-pad rx-step"><h3><span class="rx-num">3</span>Trigger word</h3><label class="rx-f"><input id="rxKw" placeholder="e.g. GUIDE" value="'+esc(c.keywords.join(', '))+'" autocapitalize="characters"><small>Capitals, emojis and dots don\'t matter. Add more with a comma.</small></label><label class="rx-chk" style="margin:0"><input type="checkbox" id="rxAny"'+(c.any_word?' checked':'')+'><span>Reply to <b>every</b> comment or message</span></label></div>';
+ h+='<div class="rx-card rx-pad rx-step"><h3><span class="rx-num">1</span>When should it run?</h3><label class="rx-chk"><input type="checkbox" id="rxTc"'+(c.t.comments?' checked':'')+'><span>Someone <b>comments</b> on my post</span></label><label class="rx-chk"><input type="checkbox" id="rxTd"'+(c.t.dms?' checked':'')+'><span>Someone <b>sends me a DM</b> with the word</span></label><label class="rx-chk"><input type="checkbox" id="rxTs"'+(c.t.story?' checked':'')+'><span>Someone <b>replies to my Story</b></span></label><label class="rx-chk" style="margin:0"><input type="checkbox" id="rxTw"'+(c.t.welcome?' checked':'')+'><span><b>Welcome message:</b> someone messages me for the first time</span></label></div>';
+ h+='<div class="rx-card rx-pad rx-step" id="rxPostBox"'+(c.t.comments?'':' hidden')+'><h3><span class="rx-num">2</span>Which posts?</h3><div id="rxPosts"></div></div>';
+ h+='<div class="rx-card rx-pad rx-step" id="rxKwBox"'+((c.t.welcome&&!c.t.comments&&!c.t.dms&&!c.t.story)?' hidden':'')+'><h3><span class="rx-num">3</span>Trigger word</h3><label class="rx-f"><input id="rxKw" placeholder="e.g. GUIDE" value="'+esc(c.keywords.join(', '))+'" autocapitalize="characters"><small>Capitals, emojis and dots don\'t matter. Add more with a comma.</small></label><label class="rx-chk" style="margin:0"><input type="checkbox" id="rxAny"'+(c.any_word?' checked':'')+'><span>Reply to <b>every</b> comment or message</span></label></div>';
  h+='<div class="rx-card rx-pad rx-step"><h3><span class="rx-num">4</span>The DM they get</h3><div style="margin:0 0 8px"><button class="rx-tag" data-ins="{name}">+ Their @name</button><button class="rx-tag" data-ins="{link}">+ Your link</button></div><label class="rx-f"><textarea id="rxMsg" rows="5" maxlength="1000">'+esc(c.message)+'</textarea></label><label class="rx-f"><span>Your link <small>(optional, clicks are counted)</small></span><input id="rxLink" type="url" inputmode="url" placeholder="https://yourwebsite.com/offer" value="'+esc(c.link)+'"></label><label class="rx-chk"><input type="checkbox" id="rxBtnOn"'+(c.button?' checked':'')+'><span>Show the link as a button</span></label><label class="rx-f" id="rxBtnBox"'+(c.button?'':' hidden')+' style="margin:0"><span>Button text</span><input id="rxBtn" maxlength="20" value="'+esc(c.button||'Open link')+'"></label></div>';
  h+='<div class="rx-card rx-pad rx-step" id="rxPubBox"'+(c.t.comments?'':' hidden')+'><h3><span class="rx-num">5</span>Reply under the comment?</h3><label class="rx-chk"><input type="checkbox" id="rxPubOn"'+(c.public_on?' checked':'')+'><span>Yes, reply publicly too</span></label><label class="rx-f" id="rxPubTxt"'+(c.public_on?'':' hidden')+' style="margin:0"><textarea id="rxPub" rows="3">'+esc(c.public.join('\n'))+'</textarea><small>One per line. A different one is picked each time.</small></label></div>';
  var md=c.follow&&c.ask_email?'both':c.follow?'follow':c.ask_email?'email':'normal';
@@ -1464,7 +1507,8 @@ function editor(){var c=ED,h='<div class="rx-head"><button class="rx-ib" id="rxB
  R.querySelectorAll('[data-tab]').forEach(function(b){b.onclick=function(){ED=null;TAB=b.dataset.tab;draw()}});
  R.querySelectorAll('[data-acct]').forEach(function(b){b.onclick=function(){collect();ED.acct=b.dataset.acct;ED.post='';ED.post_img='';editor()}});
  R.querySelectorAll('[data-ins]').forEach(function(p){p.onclick=function(){var t=$('#rxMsg'),v=p.dataset.ins,s=t.selectionStart||t.value.length;t.value=t.value.slice(0,s)+v+t.value.slice(t.selectionEnd||s);t.focus();prev()}});
- $('#rxTc').onchange=function(){$('#rxPostBox').hidden=!this.checked;$('#rxPubBox').hidden=!this.checked};
+ var vis=function(){var tc=$('#rxTc').checked,o=tc||$('#rxTd').checked||$('#rxTs').checked;$('#rxPostBox').hidden=!tc;$('#rxPubBox').hidden=!tc;$('#rxKwBox').hidden=!o&&$('#rxTw').checked;prev()};
+ ['#rxTc','#rxTd','#rxTs','#rxTw'].forEach(function(x){$(x).onchange=vis});
  $('#rxBtnOn').onchange=function(){$('#rxBtnBox').hidden=!this.checked;prev()};
  $('#rxPubOn').onchange=function(){$('#rxPubTxt').hidden=!this.checked};
  R.querySelectorAll('input[name=rxMode]').forEach(function(x){x.onchange=function(){var v=x.value;$('#rxFolBox').hidden=!(v==='follow'||v==='both');$('#rxEmBox').hidden=!(v==='email'||v==='both');R.querySelectorAll('.rx-mode').forEach(function(l){l.classList.toggle('on',l.querySelector('input').checked)});prev()}});
@@ -1475,7 +1519,7 @@ function editor(){var c=ED,h='<div class="rx-head"><button class="rx-ib" id="rxB
 function collect(){var $=function(s){return R.querySelector(s)},c=ED;
  c.keywords=$('#rxKw').value.split(',').map(function(s){return s.trim()}).filter(Boolean);c.any_word=$('#rxAny').checked;c.message=$('#rxMsg').value;c.link=$('#rxLink').value.trim();
  c.button=$('#rxBtnOn').checked?($('#rxBtn').value.trim()||'Open link'):'';c.public_on=$('#rxPubOn').checked;c.public=$('#rxPub').value.split('\n').map(function(s){return s.trim()}).filter(Boolean);
- c.t={comments:$('#rxTc').checked,dms:$('#rxTd').checked,story:$('#rxTs').checked};c.name=$('#rxName').value.trim();
+ c.t={comments:$('#rxTc').checked,dms:$('#rxTd').checked,story:$('#rxTs').checked,welcome:$('#rxTw').checked};if(c.t.welcome&&!c.t.comments&&!c.t.dms&&!c.t.story)c.any_word=true;c.name=$('#rxName').value.trim();
  var mm=R.querySelector('input[name=rxMode]:checked'),mv=mm?mm.value:'normal';c.follow=(mv==='follow'||mv==='both');c.ask_email=(mv==='email'||mv==='both');c.follow_msg=$('#rxFolMsg').value;c.follow_btn=$('#rxFolBtn').value.trim();c.email_ask=$('#rxEmAsk').value;c.email_thanks=$('#rxEmThx').value;return c}
 function prev(){var c=collect(),link=c.link?location.origin+'/dmlink/…':'',btn=!!(c.link&&c.button);
  var m=c.message.replace(/\{name\}|\{username\}/gi,'@their_name').replace(/\{keyword\}/gi,c.keywords[0]||'');
@@ -1485,13 +1529,17 @@ function prev(){var c=collect(),link=c.link?location.origin+'/dmlink/…':'',btn
  if(c.follow)h+='<div class="rx-out">'+esc(nm(c.follow_msg))+'<div class="rx-bt">'+esc(c.follow_btn||'Send it to me')+'</div></div><div class="rx-in">Tapped</div>';
  if(c.ask_email)h+='<div class="rx-out">'+esc(nm(c.email_ask))+'</div><div class="rx-in">amaka@gmail.com</div>';
  h+='<div class="rx-out">'+esc(m.trim()||'…')+(btn?'<div class="rx-bt">'+esc(c.button)+'</div>':'')+'</div>';R.querySelector('#rxPrev').innerHTML=h}
-function posts(){var box=R.querySelector('#rxPosts'),c=ED;if(!box)return;
- var anyB='<button class="rx-post any'+(c.any_post?' on':'')+'" data-any="1">🌐<br>Any post<br><small class="rx-muted">incl. new ones</small></button>';
- if(!S.accts.length){c.any_post=true;box.innerHTML='<div class="rx-grid">'+anyB.replace('rx-post any','rx-post any on')+'</div><small class="rx-muted">Connect Instagram to pick one post.</small>';return}
+function posts(){var box=R.querySelector('#rxPosts'),c=ED;if(!box)return;if(!Array.isArray(c.posts))c.posts=[];
+ var anyB=function(){return '<button class="rx-post any'+(c.any_post?' on':'')+'" data-any="1">🌐<br>All posts<br><small class="rx-muted">incl. new ones</small></button>'};
+ if(!S.accts.length){c.any_post=true;box.innerHTML='<div class="rx-grid">'+anyB()+'</div><small class="rx-muted">Connect Instagram to pick specific posts.</small>';return}
  var key=c.acct||S.accts[0].id;
- var paint=function(){box.innerHTML='<div class="rx-grid">'+anyB+(MEDIA[key]||[]).map(function(m){return '<button class="rx-post'+(!c.any_post&&c.post===m.id?' on':'')+'" data-id="'+esc(m.id)+'" data-img="'+esc(m.img)+'" title="'+esc(m.cap)+'">'+(m.img?'<img src="'+esc(m.img)+'" alt="" loading="lazy">':'')+'</button>'}).join('')+'</div><small class="rx-muted">Tap a post to select it, tap it again to unselect.</small>'+((c.post||c.any_post)?' <button type="button" class="rx-link" data-clr="1">Clear selection</button>':'');
-  box.querySelectorAll('.rx-post').forEach(function(b){b.onclick=function(){if(b.dataset.any){c.any_post=!c.any_post;c.post='';c.post_img=''}else if(!c.any_post&&c.post===b.dataset.id){c.post='';c.post_img=''}else{c.any_post=false;c.post=b.dataset.id;c.post_img=b.dataset.img}paint()}});
-  var cl=box.querySelector('[data-clr]');if(cl)cl.onclick=function(){c.any_post=false;c.post='';c.post_img='';paint()}};
+ var sync=function(){c.post=c.posts[0]||'';var m=(MEDIA[key]||[]).filter(function(x){return x.id===c.post})[0];c.post_img=m?m.img:c.post_img&&c.post?c.post_img:''};
+ var paint=function(){var n=c.posts.length;box.innerHTML='<div class="rx-grid">'+anyB()+(MEDIA[key]||[]).map(function(m){return '<button class="rx-post'+(!c.any_post&&c.posts.indexOf(m.id)>=0?' on':'')+'" data-id="'+esc(m.id)+'" title="'+esc(m.cap)+'">'+(m.img?'<img src="'+esc(m.img)+'" alt="" loading="lazy">':'')+'</button>'}).join('')+'</div><small class="rx-muted">'+(c.any_post?'This automation runs on <b>every post</b>, including new ones. Tap it again to switch off.':n?'<b>'+n+' post'+(n===1?'':'s')+' selected.</b> Tap more to add, tap a selected one to remove.':'Tap one or more posts, or choose <b>All posts</b> to use the same setup everywhere.')+'</small>'+((n||c.any_post)?' <button type="button" class="rx-link" data-clr="1">Clear selection</button>':'');
+  box.querySelectorAll('.rx-post').forEach(function(b){b.onclick=function(){
+   if(b.dataset.any){c.any_post=!c.any_post;if(c.any_post){c.posts=[]}}
+   else{c.any_post=false;var k=c.posts.indexOf(b.dataset.id);if(k>=0)c.posts.splice(k,1);else c.posts.push(b.dataset.id)}
+   sync();paint()}});
+  var cl=box.querySelector('[data-clr]');if(cl)cl.onclick=function(){c.any_post=false;c.posts=[];c.post='';c.post_img='';paint()}};
  if(MEDIA[key])return paint();box.innerHTML='<div class="rx-load" style="height:120px"><i></i></div>';
  post('ir_dm_media',{ig:key}).then(function(r){MEDIA[key]=r.ok?r.media:[];if(!r.ok)box.innerHTML='<div class="rx-alert bad">'+esc(r.err)+'</div>';else paint()})}
 function save(){var c=collect(),b=R.querySelector('#rxSave'),e=R.querySelector('#rxErr');b.disabled=true;b.textContent='Saving…';e.hidden=true;
