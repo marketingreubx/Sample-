@@ -826,6 +826,12 @@ function ir_dm_poll() {
 	foreach ( $list as $pair ) { list( $uid, $a ) = $pair;
 		if ( ( $a['status'] ?? '' ) !== 'active' ) { continue; }
 		if ( microtime( true ) - $t0 > 20 ) { break; }
+		/* Message access was off on Instagram: check every 5 minutes and clear the warning as soon as it is back on. */
+		if ( ( $a['warn'] ?? '' ) === 'msg_access' && ! get_transient( 'ir_dm_wchk_' . $a['id'] ) ) {
+			set_transient( 'ir_dm_wchk_' . $a['id'], 1, 300 );
+			$wt = ir_dm_api( $a, 'GET', $a['id'] . '/conversations?platform=instagram&limit=1' );
+			if ( ! is_wp_error( $wt ) ) { ir_dm_warn_acct( $a['id'], '' ); $a['warn'] = ''; }
+		}
 		ir_dm_poll_replies( $a );
 		ir_dm_poll_dms( $uid, $a );
 		$autos = ir_dm_autos_for( $uid, 'comments', $a['id'] );
