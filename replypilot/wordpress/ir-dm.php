@@ -948,7 +948,7 @@ add_action( 'wp_ajax_ir_dm_state', function () {
 	$accts = array_values( array_map( function ( $a ) use ( $per, $autos ) { $p = ir_dm_acct_public( $a ); $p['sent'] = $per[ $p['id'] ] ?? 0; $first = (string) ( ir_dm_acct( $uid )['id'] ?? '' ); $p['autos'] = count( array_filter( $autos, function ( $x ) use ( $p, $first ) { $ac = (string) ( $x['cfg']['acct'] ?? '' ); return $ac === $p['id'] || ( $ac === '' && $p['id'] === $first ); } ) ); return $p; }, ir_dm_accts( $uid ) ) );
 	wp_send_json( [ 'ok' => true, 'ready' => ir_dm_ready(), 'accts' => $accts, 'autos' => $autos, 'activity' => $act, 'tot' => $tot,
 		'leads' => array_map( function ( $l ) { return [ 'email' => $l->email, 'who' => $l->username ? '@' . $l->username : '', 'auto' => get_the_title( (int) $l->auto_id ), 'when' => strtotime( $l->created_at . ' UTC' ) ]; }, $leads ),
-		'hook' => (string) get_user_meta( $uid, 'ir_dm_hook', true ), 'req' => get_user_meta( $uid, 'ir_dm_req', true ) ?: null, 'instant' => (int) get_option( 'ir_dm_last_real_hook' ) > time() - 7 * DAY_IN_SECONDS,
+		'hook' => (string) get_user_meta( $uid, 'ir_dm_hook', true ), 'instant' => (int) get_option( 'ir_dm_last_real_hook' ) > time() - 7 * DAY_IN_SECONDS,
 		'me' => [ 'name' => $u->first_name ?: $u->display_name, 'email' => $u->user_email, 'admin' => user_can( $uid, 'manage_options' ) ] ] );
 } );
 
@@ -1134,29 +1134,6 @@ add_action( 'template_redirect', function () {
 	else { ir_dm_page(); }
 	exit;
 }, 0 );
-
-/* AI Profit System > AI Tools tile. Members are already logged in, so the app opens signed in. */
-add_action( 'ir_pp_tool_tiles', function () {
-	echo '<a class="px-tool" style="--a:#1660E8;--b:#0B1A33" href="' . esc_url( ir_dm_url() ) . '"><span class="ic"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6.5A2.5 2.5 0 0 1 6.5 4h11A2.5 2.5 0 0 1 20 6.5v7a2.5 2.5 0 0 1-2.5 2.5H11l-4.5 4v-4A2.5 2.5 0 0 1 4 13.5z"/><path d="M13 7.5 10.5 11h3.5L11.5 14"/></svg></span><span><b>' . esc_html( IR_DM_NAME ) . '</b><small>AI DM automation: auto-DM everyone who comments your word, collect emails</small></span></a>'; // phpcs:ignore
-} );
-
-/* Members ask to be approved for Instagram (Meta needs each account added as a tester until App Review). */
-add_action( 'wp_ajax_ir_dm_request', function () {
-	$uid = ir_dm_member_ok();
-	$h = strtolower( trim( preg_replace( '/[^A-Za-z0-9._]/', '', (string) wp_unslash( $_POST['ig'] ?? '' ) ) ) );
-	if ( strlen( $h ) < 2 ) { wp_send_json( [ 'ok' => false, 'err' => 'Type your Instagram username.' ] ); }
-	update_user_meta( $uid, 'ir_dm_req', [ 'ig' => $h, 't' => time(), 'done' => 0 ] );
-	$u = wp_get_current_user();
-	wp_mail( get_option( 'admin_email' ), IR_DM_NAME . ': approve @' . $h, "{$u->display_name} ({$u->user_email}) wants to connect Instagram @{$h}.\n\n1. Meta app > App roles > Roles > Add People > Instagram Tester > {$h}\n2. Then mark it done here: " . admin_url( 'admin.php?page=ir-dm' ) );
-	wp_send_json( [ 'ok' => true ] );
-} );
-add_action( 'admin_post_ir_dm_req_done', function () {
-	if ( ! current_user_can( 'manage_options' ) ) { wp_die( 'No access' ); }
-	check_admin_referer( 'ir_dm_req' );
-	$uid = (int) ( $_GET['u'] ?? 0 ); $r = get_user_meta( $uid, 'ir_dm_req', true );
-	if ( is_array( $r ) ) { $r['done'] = 1; update_user_meta( $uid, 'ir_dm_req', $r ); }
-	wp_safe_redirect( admin_url( 'admin.php?page=ir-dm&saved=1' ) ); exit;
-} );
 
 add_action( 'admin_bar_menu', function ( $bar ) {
 	if ( ir_dm_can() ) { $bar->add_node( [ 'id' => 'ir-dm', 'title' => IR_DM_NAME, 'href' => ir_dm_url() ] ); }
@@ -1412,9 +1389,6 @@ function draw(){if(ED)return editor();var h='';
  R.innerHTML=shell(h);bind();window.scrollTo(0,0)}
 function connectCard(){var a=S.accts;
  if(!S.ready&&!a.length)return '<div class="rx-promo"><div class="row"><span class="rx-crown">'+I.crown+'</span><div><h3>Almost ready</h3><p>'+(S.me.admin?'Finish the one-time Meta setup first. You can build automations meanwhile.':'Instagram connection opens soon. You can build automations meanwhile.')+'</p></div></div>'+(S.me.admin?'<a class="rx-btn rx-wide" href="'+esc(C.setup)+'">Open setup</a>':'')+'</div>';
- if(!a.length&&!S.me.admin){var q=S.req;
-  if(!q)return '<div class="rx-promo"><div class="row"><span class="rx-crown">'+I.crown+'</span><div><h3>Step 1: Get approved</h3><p>Type your Instagram username. We add it to the app (takes a few hours at most) and tell you when to connect.</p></div></div><div class="rx-row" style="position:relative;z-index:1"><input id="rxReq" class="rx-in2" style="background:rgba(255,255,255,.95);color:#0A1633" placeholder="your_instagram_username"><button class="rx-btn" id="rxReqGo">Send</button></div><a class="rx-link" style="position:relative;z-index:1;display:inline-block;margin-top:10px;color:#fff" href="'+esc(C.connect)+'">Already approved? Connect Instagram →</a></div>';
-  return '<div class="rx-promo"><div class="row"><span class="rx-crown">'+I.crown+'</span><div><h3>'+(q.done?'You are approved 🎉':'Request sent for @'+esc(q.ig))+'</h3><p>'+(q.done?'1. Open Instagram › Settings › Apps and websites › Tester invites and tap Accept (or open instagram.com/accounts/manage_access on a laptop). 2. Tap Connect below.':'We will add @'+esc(q.ig)+' shortly. Then accept the invite in Instagram (Settings › Apps and websites › Tester invites) and tap Connect.')+'</p></div></div><a class="rx-btn rx-wide" href="'+esc(C.connect)+'">'+I.plus+' Connect Instagram</a></div>'}
  if(!a.length)return '<div class="rx-promo"><div class="row"><span class="rx-crown">'+I.crown+'</span><div><h3>Connect Instagram</h3><p>Business or Creator account. Log in, tap Allow, done.</p></div></div><a class="rx-btn rx-wide" href="'+esc(C.connect)+'">'+I.plus+' Connect Instagram</a></div>';
  var bad=a.filter(function(x){return x.status!=='active'});
  if(bad.length)return '<div class="rx-promo warn"><div class="row"><span class="rx-crown">'+I.crown+'</span><div><h3>@'+esc(bad[0].username)+' needs you</h3><p>Instagram logged it out. Reconnect to keep DMs flowing.</p></div></div><a class="rx-btn rx-wide" href="'+esc(C.connect)+'">Reconnect</a></div>';
@@ -1462,7 +1436,6 @@ function bind(){var q=function(s){return R.querySelectorAll(s)};
  q('[data-tog]').forEach(function(i){i.onchange=function(){post('ir_dm_toggle',{id:i.dataset.tog,on:i.checked?1:''}).then(function(r){if(!r.ok){alert(r.err);i.checked=!i.checked}else load()})}});
  q('[data-disc]').forEach(function(b){b.onclick=function(){if(confirm('Remove this Instagram account? Its automations stop.'))post('ir_dm_disconnect',{ig:b.dataset.disc}).then(load)}});
  q('[data-reload]').forEach(function(b){b.onclick=load});
- var rq=R.querySelector('#rxReqGo');if(rq)rq.onclick=function(){rq.disabled=true;post('ir_dm_request',{ig:R.querySelector('#rxReq').value}).then(function(x){rq.disabled=false;if(!x.ok){alert(x.err);return}C.msg='Request sent. You will be able to connect shortly.';load()})};
  var hs=R.querySelector('#rxHookSave');if(hs)hs.onclick=function(){hs.disabled=true;post('ir_dm_hook',{url:R.querySelector('#rxHook').value.trim()}).then(function(x){hs.disabled=false;var m=R.querySelector('#rxHookMsg');if(!x.ok){m.textContent=x.err;m.style.color='var(--red)';return}S.hook=R.querySelector('#rxHook').value.trim();m.style.color='';m.textContent=S.hook?'✓ Saved. We sent a test lead (test@example.com) so you can check it arrived.':'Disconnected.'})}}
 /* ---------- editor ---------- */
 function edit(c){ED=c;TAB='autos';editor()}
@@ -1581,12 +1554,6 @@ function ir_dm_admin() {
 	echo '<tr><td>' . $ok( $last > 0 ) . ' Webhooks arriving from Meta</td><td>' . ( $last ? 'Last one ' . esc_html( human_time_diff( $last ) ) . ' ago' : 'None yet' ) . ( $bad && $bad > $last ? ' · <b style="color:#dc2626">A webhook was rejected (wrong app secret?) ' . esc_html( human_time_diff( $bad ) ) . ' ago</b>' : '' ) . '</td></tr>'; // phpcs:ignore
 	echo '<tr><td>' . $ok( function_exists( 'as_enqueue_async_action' ) ) . ' Background queue (Action Scheduler)</td><td>Retries and delayed sends.</td></tr>'; // phpcs:ignore
 	echo '<tr><td>Instagram accounts connected</td><td>' . (int) $members . '</td></tr><tr><td>Active automations</td><td>' . (int) $autos . '</td></tr><tr><td>DMs sent (7 days)</td><td>' . (int) $sent7 . '</td></tr>';
-	echo '</tbody></table>';
-	$reqs = get_users( [ 'meta_key' => 'ir_dm_req', 'number' => 200 ] );
-	echo '<h2>Instagram approval requests</h2><p>Members who want to connect Instagram. Add each username in your Meta app (App roles &gt; Roles &gt; Add People &gt; Instagram Tester), then tap Done. They then accept the invite in Instagram and connect.</p><table class="widefat striped" style="max-width:900px"><thead><tr><th>Member</th><th>Instagram</th><th>Asked</th><th></th></tr></thead><tbody>';
-	foreach ( $reqs as $ru ) { $q = get_user_meta( $ru->ID, 'ir_dm_req', true ); if ( ! is_array( $q ) ) { continue; }
-		echo '<tr><td>' . esc_html( $ru->display_name . ' · ' . $ru->user_email ) . '</td><td><b>@' . esc_html( $q['ig'] ) . '</b></td><td>' . esc_html( human_time_diff( (int) $q['t'] ) ) . ' ago</td><td>' . ( ! empty( $q['done'] ) ? '✓ Added' : '<a class="button button-primary" href="' . esc_url( wp_nonce_url( admin_url( 'admin-post.php?action=ir_dm_req_done&u=' . $ru->ID ), 'ir_dm_req' ) ) . '">Done, I added them</a>' ) . '</td></tr>'; }
-	if ( ! $reqs ) { echo '<tr><td colspan="4">No requests yet.</td></tr>'; }
 	echo '</tbody></table>';
 	echo '<h2>Paste these into your Meta app</h2><table class="form-table"><tbody>';
 	echo '<tr><th>Webhook callback URL</th><td>' . $copy( ir_dm_webhook_url() ) . '</td></tr>'; // phpcs:ignore
