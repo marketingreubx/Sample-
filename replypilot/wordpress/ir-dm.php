@@ -97,24 +97,56 @@ function ir_dm_install() {
 
 function ir_dm_now() { return gmdate( 'Y-m-d H:i:s' ); }
 
-/* ---------- connected Instagram account (one per member) ---------- */
+/* ---------- connected Instagram accounts (several per user) ---------- */
 
-function ir_dm_acct( $uid ) {
-	$a = get_user_meta( $uid, 'ir_dm_ig', true );
-	return is_array( $a ) && ! empty( $a['id'] ) ? $a : null;
+function ir_dm_accts( $uid ) {
+	$all = get_user_meta( $uid, 'ir_dm_igs', true );
+	if ( ! is_array( $all ) ) { $all = []; }
+	$old = get_user_meta( $uid, 'ir_dm_ig', true ); // single-account data from v1
+	if ( is_array( $old ) && ! empty( $old['id'] ) ) { $all[ (string) $old['id'] ] = $old; update_user_meta( $uid, 'ir_dm_igs', $all ); delete_user_meta( $uid, 'ir_dm_ig' ); }
+	return $all;
+}
+function ir_dm_acct( $uid, $ig = null ) {
+	$all = ir_dm_accts( $uid );
+	if ( $ig !== null && $ig !== '' ) { return $all[ (string) $ig ] ?? null; }
+	return $all ? reset( $all ) : null;
+}
+function ir_dm_save_acct( $uid, $a ) {
+	$all = ir_dm_accts( $uid );
+	$all[ (string) $a['id'] ] = $a;
+	update_user_meta( $uid, 'ir_dm_igs', $all );
+	if ( ! in_array( (string) $a['id'], array_map( 'strval', (array) get_user_meta( $uid, 'ir_dm_ig_id' ) ), true ) ) { add_user_meta( $uid, 'ir_dm_ig_id', (string) $a['id'] ); }
+}
+function ir_dm_remove_acct( $uid, $ig ) {
+	$all = ir_dm_accts( $uid );
+	unset( $all[ (string) $ig ] );
+	update_user_meta( $uid, 'ir_dm_igs', $all );
+	delete_user_meta( $uid, 'ir_dm_ig_id', (string) $ig );
 }
 function ir_dm_acct_public( $a ) {
 	if ( ! $a ) { return null; }
-	return [ 'username' => $a['username'], 'name' => $a['name'] ?? '', 'pic' => $a['pic'] ?? '', 'status' => $a['status'] ?? 'active', 'expires' => $a['expires'] ?? 0, 'subscribed' => ! empty( $a['subscribed'] ) ];
+	return [ 'id' => (string) $a['id'], 'username' => $a['username'], 'name' => $a['name'] ?? '', 'pic' => $a['pic'] ?? '', 'status' => $a['status'] ?? 'active', 'expires' => $a['expires'] ?? 0, 'subscribed' => ! empty( $a['subscribed'] ) ];
 }
 function ir_dm_owner( $ig_id ) {
 	$u = get_users( [ 'meta_key' => 'ir_dm_ig_id', 'meta_value' => (string) $ig_id, 'number' => 1, 'fields' => 'ID' ] );
 	return $u ? (int) $u[0] : 0;
 }
-function ir_dm_mark_acct( $uid, $status, $detail = '' ) {
-	$a = ir_dm_acct( $uid ); if ( ! $a ) { return; }
+function ir_dm_owners() { return array_values( array_unique( array_map( 'intval', get_users( [ 'meta_key' => 'ir_dm_ig_id', 'fields' => 'ID', 'number' => 5000 ] ) ) ) ); }
+function ir_dm_mark_acct( $uid, $status, $detail = '', $ig = null ) {
+	$a = ir_dm_acct( $uid, $ig ); if ( ! $a ) { return; }
 	$a['status'] = $status; $a['detail'] = $detail;
-	update_user_meta( $uid, 'ir_dm_ig', $a );
+	ir_dm_save_acct( $uid, $a );
+}
+/** Who may use the app: admins always; everyone else depends on the Access setting. */
+function ir_dm_can( $uid = 0 ) {
+	$uid = $uid ?: get_current_user_id();
+	if ( ! $uid ) { return false; }
+	if ( user_can( $uid, 'manage_options' ) ) { return true; }
+	switch ( ir_dm_opt( 'access', 'everyone' ) ) {
+		case 'everyone': return true;
+		case 'members': return ( function_exists( 'ir_pp_has_access' ) && ir_pp_has_access( $uid ) ) || ( function_exists( 'ir_pb_has_access' ) && ir_pb_has_access( $uid ) );
+		default: return false;
+	}
 }
 
 /* ---------- automations (custom post type, config in post meta) ---------- */
@@ -129,6 +161,14 @@ function ir_dm_autos( $uid, $trigger = null, $only_active = true ) {
 		$out[] = [ 'id' => $p->ID, 'name' => $p->post_title, 'on' => $p->post_status === 'publish', 'cfg' => $c, 'created' => $p->post_date_gmt ];
 	}
 	return $out;
+}
+function ir_dm_autos_for( $uid, $trigger, $ig ) {
+	$first = ir_dm_acct( $uid );
+	$firstid = $first ? (string) $first['id'] : '';
+	return array_values( array_filter( ir_dm_autos( $uid, $trigger ), function ( $a ) use ( $ig, $firstid ) {
+		$acct = (string) ( $a['cfg']['acct'] ?? '' );
+		return $acct === (string) $ig || ( $acct === '' && (string) $ig === $firstid );
+	} ) );
 }
 function ir_dm_slug( $auto_id ) {
 	$s = get_post_meta( $auto_id, '_ir_dm_slug', true );
@@ -262,8 +302,10 @@ function ir_dm_get( $url, $args = [] ) {
  * ========================================================================= */
 
 function ir_dm_webhook_url() { return rest_url( 'ir-dm/v1/webhook' ); }
-function ir_dm_url( $p = '' ) { return home_url( '/dm/' . ( $p ? trim( $p, '/' ) . '/' : '' ) ); }
-function ir_dm_redirect_uri() { return ir_dm_url( 'callback' ); }
+define( 'IR_DM_NAME', 'Replixa' );
+function ir_dm_url( $p = '' ) { return home_url( '/replixa/' . ( $p ? trim( $p, '/' ) . '/' : '' ) ); }
+/* Registered in Meta as the OAuth redirect: keep it stable. */
+function ir_dm_redirect_uri() { return home_url( '/dm/callback/' ); }
 
 add_action( 'rest_api_init', function () {
 	register_rest_route( 'ir-dm/v1', '/webhook', [
@@ -406,10 +448,10 @@ function ir_dm_cap_wait( $ig, $kind ) {
 }
 
 /** Records a failed send. Returns ['retry'=>1], ['defer'=>secs] or null. */
-function ir_dm_fail( $uid, $log_id, WP_Error $err ) {
+function ir_dm_fail( $uid, $log_id, WP_Error $err, $ig = null ) {
 	ir_dm_set( $log_id, [ 'status' => 'failed', 'error' => $err->get_error_message() ] );
 	switch ( $err->get_error_code() ) {
-		case 'token': ir_dm_mark_acct( $uid, 'expired', $err->get_error_message() ); return null;
+		case 'token': ir_dm_mark_acct( $uid, 'expired', $err->get_error_message(), $ig ); return null;
 		case 'rate': ir_dm_pause( $uid ); return [ 'defer' => 900 ];
 		case 'window':
 		case 'permission': return null;
@@ -430,9 +472,9 @@ function ir_dm_send( $acct, $recipient, $m ) {
 function ir_dm_do_comment( $e ) {
 	$uid = ir_dm_owner( $e['ig'] );
 	if ( ! $uid || $e['from'] === $e['ig'] ) { return 'ignored'; }
-	$acct = ir_dm_acct( $uid );
+	$acct = ir_dm_acct( $uid, $e['ig'] );
 	$retry = false; $defer = 0;
-	foreach ( ir_dm_autos( $uid, 'comments' ) as $a ) {
+	foreach ( ir_dm_autos_for( $uid, 'comments', $e['ig'] ) as $a ) {
 		$c = $a['cfg'];
 		if ( empty( $c['any_post'] ) && ! in_array( (string) ( $c['post'] ?? '' ), array_filter( [ $e['media'], $e['omedia'] ] ), true ) ) { continue; }
 		$kw = ir_dm_match( $e['text'], $c );
@@ -452,7 +494,7 @@ function ir_dm_do_comment( $e ) {
 			$r = ir_dm_api( $acct, 'POST', rawurlencode( $e['id'] ) . '/replies', [ 'message' => $txt ] );
 			if ( is_wp_error( $r ) ) {
 				ir_dm_set( $log->id, [ 'public_status' => 'failed', 'public_text' => $txt, 'error' => 'Public reply: ' . $r->get_error_message() ] );
-				if ( $r->get_error_code() === 'token' ) { ir_dm_mark_acct( $uid, 'expired', $r->get_error_message() ); continue; }
+				if ( $r->get_error_code() === 'token' ) { ir_dm_mark_acct( $uid, 'expired', $r->get_error_message(), $e['ig'] ); continue; }
 				if ( $r->get_error_code() === 'rate' ) { ir_dm_pause( $uid ); $defer = max( $defer, 900 ); continue; }
 				if ( $r->get_error_code() === 'transient' ) { $retry = true; }
 			} else {
@@ -476,7 +518,7 @@ function ir_dm_do_comment( $e ) {
 		ir_dm_set( $log->id, [ 'attempts' => $attempts, 'dm_text' => $m['text'] ] );
 		list( $r, $m ) = ir_dm_send( $acct, [ 'comment_id' => $e['id'] ], $m );
 		if ( is_wp_error( $r ) ) {
-			$f = ir_dm_fail( $uid, $log->id, $r );
+			$f = ir_dm_fail( $uid, $log->id, $r, $e['ig'] );
 			if ( ! empty( $f['defer'] ) ) { $defer = max( $defer, $f['defer'] ); }
 			if ( ! empty( $f['retry'] ) && $attempts < IR_DM_MAX_ATTEMPTS ) { $retry = true; }
 		} else {
@@ -491,7 +533,7 @@ function ir_dm_do_message( $e ) {
 	$uid = ir_dm_owner( $e['ig'] );
 	if ( ! $uid || $e['from'] === $e['ig'] ) { return 'ignored'; }
 	$hit = null;
-	foreach ( ir_dm_autos( $uid, $e['k'] === 'story' ? 'story' : 'dms' ) as $a ) {
+	foreach ( ir_dm_autos_for( $uid, $e['k'] === 'story' ? 'story' : 'dms', $e['ig'] ) as $a ) {
 		$kw = ir_dm_match( $e['text'], $a['cfg'] );
 		if ( $kw !== false ) { $hit = [ $a, $kw ]; break; } // one automated answer per message: the oldest matching automation
 	}
@@ -499,7 +541,7 @@ function ir_dm_do_message( $e ) {
 	list( $a, $kw ) = $hit;
 	$log = ir_dm_claim( $uid, $a['id'], $e, $kw );
 	if ( ! $log || in_array( $log->status, [ 'sent', 'skipped' ], true ) || (int) $log->attempts >= IR_DM_MAX_ATTEMPTS ) { return 'done'; }
-	$acct = ir_dm_acct( $uid );
+	$acct = ir_dm_acct( $uid, $e['ig'] );
 	if ( ! $acct || ( $acct['status'] ?? 'active' ) !== 'active' ) { ir_dm_set( $log->id, [ 'status' => 'skipped', 'reason' => 'not_connected' ] ); return 'done'; }
 	if ( time() - (int) $e['ts'] > IR_DM_MSG_WINDOW ) { ir_dm_set( $log->id, [ 'status' => 'skipped', 'reason' => 'window' ] ); return 'done'; }
 	global $wpdb;
@@ -519,7 +561,7 @@ function ir_dm_do_message( $e ) {
 	ir_dm_set( $log->id, [ 'attempts' => $attempts, 'dm_text' => $m['text'] ] );
 	list( $r, $m ) = ir_dm_send( $acct, [ 'id' => $e['from'] ], $m );
 	if ( is_wp_error( $r ) ) {
-		$f = ir_dm_fail( $uid, $log->id, $r );
+		$f = ir_dm_fail( $uid, $log->id, $r, $e['ig'] );
 		if ( ! empty( $f['defer'] ) ) { return $f; }
 		return ( ! empty( $f['retry'] ) && $attempts < IR_DM_MAX_ATTEMPTS ) ? [ 'retry' => 1 ] : 'failed';
 	}
@@ -541,10 +583,9 @@ function ir_dm_poll() {
 	set_transient( 'ir_dm_polling', 1, 100 );
 	update_option( 'ir_dm_last_poll', time(), false );
 	$found = 0;
-	foreach ( get_users( [ 'meta_key' => 'ir_dm_ig_id', 'fields' => 'ID', 'number' => 500 ] ) as $uid ) {
-		$a = ir_dm_acct( $uid );
-		if ( ! $a || ( $a['status'] ?? '' ) !== 'active' ) { continue; }
-		$autos = ir_dm_autos( $uid, 'comments' );
+	foreach ( ir_dm_owners() as $uid ) { foreach ( ir_dm_accts( $uid ) as $a ) {
+		if ( ( $a['status'] ?? '' ) !== 'active' ) { continue; }
+		$autos = ir_dm_autos_for( $uid, 'comments', $a['id'] );
 		if ( ! $autos ) { continue; }
 		$media = []; $any = false;
 		foreach ( $autos as $x ) { if ( ! empty( $x['cfg']['any_post'] ) ) { $any = true; } elseif ( ! empty( $x['cfg']['post'] ) ) { $media[] = (string) $x['cfg']['post']; } }
@@ -556,7 +597,7 @@ function ir_dm_poll() {
 		if ( ! is_array( $seen ) ) { $seen = []; }
 		foreach ( array_unique( $media ) as $mid ) {
 			$r = ir_dm_api( $a, 'GET', $mid . '/comments?fields=id,text,timestamp,username,from&limit=50' );
-			if ( is_wp_error( $r ) ) { if ( $r->get_error_code() === 'token' ) { ir_dm_mark_acct( $uid, 'expired', $r->get_error_message() ); } continue; }
+			if ( is_wp_error( $r ) ) { if ( $r->get_error_code() === 'token' ) { ir_dm_mark_acct( $uid, 'expired', $r->get_error_message(), $a['id'] ); } continue; }
 			foreach ( (array) ( $r['data'] ?? [] ) as $c ) {
 				$cid = (string) ( $c['id'] ?? '' );
 				if ( $cid === '' || isset( $seen[ 'c' . $cid ] ) ) { continue; }
@@ -572,7 +613,7 @@ function ir_dm_poll() {
 		}
 		if ( count( $seen ) > 3000 ) { $seen = array_slice( $seen, -3000, null, true ); }
 		update_user_meta( $uid, 'ir_dm_seen', $seen );
-	}
+	} }
 	delete_transient( 'ir_dm_polling' );
 	return $found;
 }
@@ -585,15 +626,14 @@ add_action( 'init', function () {
 	}
 }, 20 );
 add_action( 'ir_dm_refresh', function () {
-	foreach ( get_users( [ 'meta_key' => 'ir_dm_ig_id', 'fields' => 'ID', 'number' => 2000 ] ) as $uid ) {
-		$a = ir_dm_acct( $uid );
-		if ( ! $a || ( $a['login'] ?? '' ) !== 'instagram' || ( $a['status'] ?? '' ) !== 'active' ) { continue; }
+	foreach ( ir_dm_owners() as $uid ) { foreach ( ir_dm_accts( $uid ) as $a ) {
+		if ( ( $a['login'] ?? '' ) !== 'instagram' || ( $a['status'] ?? '' ) !== 'active' ) { continue; }
 		if ( empty( $a['expires'] ) || $a['expires'] > time() + 10 * DAY_IN_SECONDS || ( $a['refreshed'] ?? 0 ) > time() - DAY_IN_SECONDS ) { continue; }
 		$r = ir_dm_get( 'https://graph.instagram.com/refresh_access_token?grant_type=ig_refresh_token&access_token=' . rawurlencode( ir_dm_dec( $a['token'] ) ) );
-		if ( is_wp_error( $r ) ) { if ( $r->get_error_code() === 'token' ) { ir_dm_mark_acct( $uid, 'expired', $r->get_error_message() ); } continue; }
+		if ( is_wp_error( $r ) ) { if ( $r->get_error_code() === 'token' ) { ir_dm_mark_acct( $uid, 'expired', $r->get_error_message(), $a['id'] ); } continue; }
 		$a['token'] = ir_dm_enc( $r['access_token'] ); $a['expires'] = time() + (int) ( $r['expires_in'] ?? 5184000 ); $a['refreshed'] = time();
-		update_user_meta( $uid, 'ir_dm_ig', $a );
-	}
+		ir_dm_save_acct( $uid, $a );
+	} }
 } );
 
 /* =========================================================================
@@ -659,9 +699,12 @@ function ir_dm_page_callback() {
 		if ( is_wp_error( $tok ) ) { $back( [ 'err' => ir_dm_connect_err( $tok ) ] ); }
 		$list = ir_dm_get( "https://graph.facebook.com/$ver/me/assigned_instagram_accounts?fields=id,username,name,profile_picture_url&access_token=" . rawurlencode( $tok['access_token'] ) );
 		if ( is_wp_error( $list ) || empty( $list['data'][0]['id'] ) ) { $back( [ 'err' => 'No Instagram account was shared. Make sure you pick your Instagram account in the Meta window.' ] ); }
-		$me = $list['data'][0];
-		$acct = [ 'id' => (string) $me['id'], 'username' => (string) ( $me['username'] ?? $me['id'] ), 'name' => (string) ( $me['name'] ?? '' ), 'pic' => (string) ( $me['profile_picture_url'] ?? '' ),
-			'login' => 'unified', 'token' => ir_dm_enc( $tok['access_token'] ), 'expires' => ! empty( $tok['expires_in'] ) ? time() + (int) $tok['expires_in'] : 0 ];
+		$accts = [];
+		foreach ( $list['data'] as $me ) {
+			if ( empty( $me['id'] ) ) { continue; }
+			$accts[] = [ 'id' => (string) $me['id'], 'username' => (string) ( $me['username'] ?? $me['id'] ), 'name' => (string) ( $me['name'] ?? '' ), 'pic' => (string) ( $me['profile_picture_url'] ?? '' ),
+				'login' => 'unified', 'token' => ir_dm_enc( $tok['access_token'] ), 'expires' => ! empty( $tok['expires_in'] ) ? time() + (int) $tok['expires_in'] : 0 ];
+		}
 	} else {
 		$short = ir_dm_get( 'https://api.instagram.com/oauth/access_token', [ 'method' => 'POST', 'body' => [ 'client_id' => ir_dm_opt( 'ig_app_id' ), 'client_secret' => ir_dm_secret( 'ig_secret' ),
 			'grant_type' => 'authorization_code', 'redirect_uri' => ir_dm_redirect_uri(), 'code' => $code ] ] );
@@ -673,17 +716,22 @@ function ir_dm_page_callback() {
 		if ( is_wp_error( $me ) ) { $back( [ 'err' => ir_dm_connect_err( $me ) ] ); }
 		$acct = [ 'id' => (string) ( $me['user_id'] ?? $short['user_id'] ), 'username' => (string) $me['username'], 'name' => (string) ( $me['name'] ?? '' ), 'pic' => (string) ( $me['profile_picture_url'] ?? '' ),
 			'login' => 'instagram', 'token' => ir_dm_enc( $long['access_token'] ), 'expires' => time() + (int) ( $long['expires_in'] ?? 5184000 ), 'refreshed' => time() ];
+		$accts = [ $acct ];
 	}
-	$other = ir_dm_owner( $acct['id'] );
-	if ( $other && $other !== $uid ) { $back( [ 'err' => '@' . $acct['username'] . ' is already connected to another user on this site.' ] ); }
-	$acct['status'] = 'active';
-	$sub = ir_dm_api( $acct, 'POST', $acct['id'] . '/subscribed_apps?subscribed_fields=comments,messages' );
-	$acct['subscribed'] = ! is_wp_error( $sub ) && ! empty( $sub['success'] );
-	update_user_meta( $uid, 'ir_dm_ig', $acct );
-	update_user_meta( $uid, 'ir_dm_ig_id', $acct['id'] );
+	$n = 0; $taken = [];
+	foreach ( $accts as $acct ) {
+		$other = ir_dm_owner( $acct['id'] );
+		if ( $other && $other !== $uid ) { $taken[] = '@' . $acct['username']; continue; }
+		$acct['status'] = 'active';
+		$sub = ir_dm_api( $acct, 'POST', $acct['id'] . '/subscribed_apps?subscribed_fields=comments,messages' );
+		$acct['subscribed'] = ! is_wp_error( $sub ) && ! empty( $sub['success'] );
+		ir_dm_save_acct( $uid, $acct );
+		delete_transient( 'ir_dm_media_' . $uid . '_' . $acct['id'] );
+		$n++;
+	}
 	delete_user_meta( $uid, 'ir_dm_pause' );
-	delete_transient( 'ir_dm_media_' . $uid );
-	$back( [ 'connected' => 1 ] );
+	if ( ! $n ) { $back( [ 'err' => implode( ', ', $taken ) . ' is already connected to another user.' ] ); }
+	$back( [ 'connected' => $n ] );
 }
 
 function ir_dm_connect_err( WP_Error $e ) {
@@ -701,7 +749,7 @@ function ir_dm_connect_err( WP_Error $e ) {
 
 function ir_dm_member_ok() {
 	check_ajax_referer( 'ir_dm', 'n' );
-	if ( ! current_user_can( 'manage_options' ) ) { wp_send_json( [ 'ok' => false, 'err' => 'Please log in again.' ] ); }
+	if ( ! ir_dm_can() ) { wp_send_json( [ 'ok' => false, 'err' => 'Please sign in again.' ] ); }
 	return get_current_user_id();
 }
 function ir_dm_own_auto( $uid, $id ) {
@@ -733,21 +781,25 @@ add_action( 'wp_ajax_ir_dm_state', function () {
 			'auto' => (string) $r->name, 'ok' => $r->status === 'sent', 'res' => $res, 'dm' => (string) $r->dm_text, 'pub' => $r->public_status === 'sent' ? (string) $r->public_text : '' ];
 	}, $rows );
 	$tot = [ 'sent' => array_sum( array_column( $autos, 'sent' ) ), 'clicks' => array_sum( array_column( $autos, 'clicks' ) ) ];
-	wp_send_json( [ 'ok' => true, 'ready' => ir_dm_ready(), 'acct' => ir_dm_acct_public( ir_dm_acct( $uid ) ), 'autos' => $autos, 'activity' => $act, 'tot' => $tot ] );
+	$u = wp_get_current_user();
+	wp_send_json( [ 'ok' => true, 'ready' => ir_dm_ready(), 'accts' => array_values( array_map( 'ir_dm_acct_public', ir_dm_accts( $uid ) ) ), 'autos' => $autos, 'activity' => $act, 'tot' => $tot,
+		'me' => [ 'name' => $u->first_name ?: $u->display_name, 'email' => $u->user_email, 'admin' => user_can( $uid, 'manage_options' ) ] ] );
 } );
 
 add_action( 'wp_ajax_ir_dm_media', function () {
 	$uid = ir_dm_member_ok();
-	$a = ir_dm_acct( $uid );
+	$ig = preg_replace( '/[^0-9]/', '', (string) ( $_POST['ig'] ?? '' ) );
+	$a = ir_dm_acct( $uid, $ig );
 	if ( ! $a ) { wp_send_json( [ 'ok' => true, 'media' => [] ] ); }
-	$cached = get_transient( 'ir_dm_media_' . $uid );
+	$ck = 'ir_dm_media_' . $uid . '_' . $a['id'];
+	$cached = get_transient( $ck );
 	if ( is_array( $cached ) && empty( $_POST['fresh'] ) ) { wp_send_json( [ 'ok' => true, 'media' => $cached ] ); }
 	$r = ir_dm_api( $a, 'GET', $a['id'] . '/media?fields=id,caption,media_type,media_url,thumbnail_url,permalink,timestamp&limit=30' );
 	if ( is_wp_error( $r ) ) { wp_send_json( [ 'ok' => false, 'err' => ir_dm_friendly( $r->get_error_message() ) ] ); }
 	$media = array_map( function ( $m ) {
 		return [ 'id' => (string) $m['id'], 'img' => (string) ( $m['thumbnail_url'] ?? ( $m['media_url'] ?? '' ) ), 'cap' => mb_substr( (string) ( $m['caption'] ?? '' ), 0, 80 ), 'link' => (string) ( $m['permalink'] ?? '' ), 'video' => ( $m['media_type'] ?? '' ) === 'VIDEO' ];
 	}, (array) ( $r['data'] ?? [] ) );
-	set_transient( 'ir_dm_media_' . $uid, $media, 10 * MINUTE_IN_SECONDS );
+	set_transient( $ck, $media, 10 * MINUTE_IN_SECONDS );
 	wp_send_json( [ 'ok' => true, 'media' => $media ] );
 } );
 
@@ -768,6 +820,7 @@ function ir_dm_clean_cfg( $in ) {
 		'link'     => $link,
 		'button'   => $link ? $s( $in['button'] ?? '', 20 ) : '',
 		'public_on'=> ! empty( $in['public_on'] ),
+		'acct'     => preg_replace( '/[^0-9]/', '', (string) ( $in['acct'] ?? '' ) ),
 		'public'   => array_slice( array_values( array_filter( array_map( function ( $p ) use ( $s ) { return $s( $p, 300 ); }, (array) ( $in['public'] ?? [] ) ) ) ), 0, 10 ),
 	];
 	if ( $c['any_post'] ) { $c['post'] = ''; $c['post_img'] = ''; }
@@ -787,6 +840,8 @@ add_action( 'wp_ajax_ir_dm_save', function () {
 	if ( ! is_array( $in ) ) { wp_send_json( [ 'ok' => false, 'err' => 'Something went wrong. Please try again.' ] ); }
 	list( $cfg, $err ) = ir_dm_clean_cfg( $in );
 	if ( $err ) { wp_send_json( [ 'ok' => false, 'err' => $err ] ); }
+	$mine = ir_dm_accts( $uid );
+	if ( $mine && ! isset( $mine[ $cfg['acct'] ] ) ) { $cfg['acct'] = (string) reset( $mine )['id']; }
 	$name = mb_substr( trim( sanitize_text_field( (string) ( $in['name'] ?? '' ) ) ), 0, 80 );
 	if ( $name === '' ) { $name = $cfg['any_word'] ? 'Reply to everyone' : strtoupper( $cfg['keywords'][0] ) . ' automation'; }
 	$id = (int) ( $in['id'] ?? 0 );
@@ -844,9 +899,10 @@ add_action( 'wp_ajax_ir_dm_test', function () {
 
 add_action( 'wp_ajax_ir_dm_disconnect', function () {
 	$uid = ir_dm_member_ok();
-	delete_user_meta( $uid, 'ir_dm_ig' );
-	delete_user_meta( $uid, 'ir_dm_ig_id' );
-	delete_transient( 'ir_dm_media_' . $uid );
+	$ig = preg_replace( '/[^0-9]/', '', (string) ( $_POST['ig'] ?? '' ) );
+	if ( $ig === '' || ! ir_dm_acct( $uid, $ig ) ) { wp_send_json( [ 'ok' => false, 'err' => 'Account not found.' ] ); }
+	ir_dm_remove_acct( $uid, $ig );
+	delete_transient( 'ir_dm_media_' . $uid . '_' . $ig );
 	wp_send_json( [ 'ok' => true ] );
 } );
 
@@ -862,202 +918,300 @@ function ir_dm_icon( $size = 26 ) {
 	return '<svg width="' . (int) $size . '" height="' . (int) $size . '" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3h11A2.5 2.5 0 0 1 20 5.5v8a2.5 2.5 0 0 1-2.5 2.5H10l-4.5 4v-4A1.5 1.5 0 0 1 4 14.5z"/><path d="M12.8 6.5 10 10.5h3.5l-2.6 4"/></svg>';
 }
 
-/* Private page for site admins only: /dm/, /dm/connect/, /dm/callback/. Everyone else is sent to the home page. */
+/* App routes: /replixa/ (app), /replixa/connect/, /dm/callback/ (OAuth, registered in Meta). /dm/ forwards to /replixa/. */
 add_action( 'template_redirect', function () {
 	$path = trim( (string) wp_parse_url( $_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH ), '/' );
-	if ( ! preg_match( '#^dm(?:/(connect|callback))?$#', $path, $m ) ) { return; }
+	if ( ! preg_match( '#^(dm|replixa)(?:/(connect|callback))?$#', $path, $m ) ) { return; }
 	nocache_headers();
-	do_action( 'litespeed_control_set_nocache', 'dm automation' );
-	header( 'X-Robots-Tag: noindex, nofollow', true );
-	if ( ! is_user_logged_in() ) {
-		$qs = (string) ( $_SERVER['QUERY_STRING'] ?? '' );
-		wp_safe_redirect( wp_login_url( home_url( '/' . $path . '/' ) . ( $qs !== '' ? '?' . $qs : '' ) ) ); exit;
-	}
-	if ( ! current_user_can( 'manage_options' ) ) { wp_safe_redirect( home_url( '/' ) ); exit; }
+	do_action( 'litespeed_control_set_nocache', 'replixa' );
 	status_header( 200 );
-	$r = $m[1] ?? '';
-	if ( $r === 'connect' ) { ir_dm_page_connect(); }
-	elseif ( $r === 'callback' ) { ir_dm_page_callback(); }
+	header( 'X-Robots-Tag: noindex, nofollow', true );
+	$sub = $m[2] ?? '';
+	if ( $m[1] === 'dm' && $sub === '' ) { wp_safe_redirect( ir_dm_url() ); exit; }
+	if ( ! is_user_logged_in() ) {
+		if ( $sub !== '' ) { wp_safe_redirect( ir_dm_url() ); exit; }
+		ir_dm_auth();
+		exit;
+	}
+	if ( ! ir_dm_can() ) { status_header( 200 ); ir_dm_shell( 'No access', '<div class="rx-auth"><div class="rx-card rx-pad"><h1 class="rx-h1">Not open yet</h1><p class="rx-muted">Your account doesn\'t have access to ' . esc_html( IR_DM_NAME ) . ' yet.</p><a class="rx-btn rx-dark" href="' . esc_url( wp_logout_url( ir_dm_url() ) ) . '">Sign out</a></div></div>', '' ); exit; }
+	status_header( 200 );
+	if ( $sub === 'connect' ) { ir_dm_page_connect(); }
+	elseif ( $sub === 'callback' ) { ir_dm_page_callback(); }
 	else { ir_dm_page(); }
 	exit;
 }, 0 );
 
-/* Quick access from the admin bar. */
 add_action( 'admin_bar_menu', function ( $bar ) {
-	if ( current_user_can( 'manage_options' ) ) { $bar->add_node( [ 'id' => 'ir-dm', 'title' => 'DM Automation', 'href' => ir_dm_url() ] ); }
+	if ( ir_dm_can() ) { $bar->add_node( [ 'id' => 'ir-dm', 'title' => IR_DM_NAME, 'href' => ir_dm_url() ] ); }
 }, 80 );
+
+/** Sign in / create account, styled like the app. */
+function ir_dm_auth() {
+	$mode = ( $_GET['m'] ?? '' ) === 'signup' ? 'signup' : 'login';
+	$err = '';
+	$open = ir_dm_opt( 'access', 'everyone' ) === 'everyone';
+	if ( ( $_SERVER['REQUEST_METHOD'] ?? '' ) === 'POST' && isset( $_POST['rx_act'] ) ) {
+		$mode = $_POST['rx_act'] === 'signup' ? 'signup' : 'login';
+		$ipk = 'ir_dm_auth_' . md5( (string) ( $_SERVER['REMOTE_ADDR'] ?? '' ) );
+		$tries = (int) get_transient( $ipk );
+		if ( ! wp_verify_nonce( (string) ( $_POST['_n'] ?? '' ), 'ir_dm_auth' ) ) { $err = 'The page expired. Please try again.'; }
+		elseif ( $tries > 20 ) { $err = 'Too many attempts. Please wait 15 minutes.'; }
+		else {
+			set_transient( $ipk, $tries + 1, 15 * MINUTE_IN_SECONDS );
+			$email = sanitize_email( wp_unslash( $_POST['email'] ?? '' ) );
+			$pass = (string) wp_unslash( $_POST['pass'] ?? '' );
+			if ( $mode === 'signup' ) {
+				$name = sanitize_text_field( wp_unslash( $_POST['name'] ?? '' ) );
+				if ( ! $open ) { $err = 'Sign-ups are closed right now.'; }
+				elseif ( ! is_email( $email ) ) { $err = 'Enter a valid email address.'; }
+				elseif ( strlen( $pass ) < 8 ) { $err = 'Use a password of at least 8 characters.'; }
+				elseif ( email_exists( $email ) ) { $err = 'You already have an account. Sign in instead.'; $mode = 'login'; }
+				else {
+					$base = sanitize_user( strtolower( strstr( $email, '@', true ) ), true ) ?: 'user';
+					$login = $base; $n = 1;
+					while ( username_exists( $login ) ) { $login = $base . ( ++$n ); }
+					$uid = wp_insert_user( [ 'user_login' => $login, 'user_email' => $email, 'user_pass' => $pass, 'first_name' => $name, 'display_name' => $name ?: $login, 'role' => 'subscriber' ] );
+					if ( is_wp_error( $uid ) ) { $err = 'Could not create your account. Please try again.'; }
+					else { wp_set_current_user( $uid ); wp_set_auth_cookie( $uid, true ); wp_safe_redirect( ir_dm_url() ); exit; }
+				}
+			} else {
+				$u = wp_signon( [ 'user_login' => $email ?: sanitize_user( wp_unslash( $_POST['email'] ?? '' ) ), 'user_password' => $pass, 'remember' => true ], is_ssl() );
+				if ( is_wp_error( $u ) ) { $err = 'Wrong email or password.'; }
+				else { wp_safe_redirect( ir_dm_url() ); exit; }
+			}
+		}
+	}
+	$signup = $mode === 'signup';
+	ob_start(); ?>
+<div class="rx-auth">
+ <div class="rx-auth-top"><span class="rx-logo"><?php echo ir_dm_logo(); // phpcs:ignore ?></span><b><?php echo esc_html( IR_DM_NAME ); ?></b></div>
+ <h1 class="rx-hero"><?php echo $signup ? 'Turn <span>comments</span><br>into clients.' : 'Welcome <span>back.</span>'; ?></h1>
+ <p class="rx-muted">Someone comments your word, they get your DM. Automatically, 24/7.</p>
+ <form method="post" class="rx-card rx-pad rx-form">
+  <input type="hidden" name="_n" value="<?php echo esc_attr( wp_create_nonce( 'ir_dm_auth' ) ); ?>">
+  <input type="hidden" name="rx_act" value="<?php echo $signup ? 'signup' : 'login'; ?>">
+  <?php if ( $err ) : ?><div class="rx-alert bad"><?php echo esc_html( $err ); ?></div><?php endif; ?>
+  <?php if ( $signup ) : ?><label>Your name<input name="name" autocomplete="name" placeholder="e.g. Amaka" value="<?php echo esc_attr( wp_unslash( $_POST['name'] ?? '' ) ); ?>"></label><?php endif; ?>
+  <label>Email<input name="email" type="email" required autocomplete="email" placeholder="you@email.com" value="<?php echo esc_attr( wp_unslash( $_POST['email'] ?? '' ) ); ?>"></label>
+  <label>Password<input name="pass" type="password" required minlength="8" autocomplete="<?php echo $signup ? 'new-password' : 'current-password'; ?>" placeholder="At least 8 characters"></label>
+  <button class="rx-btn rx-lime rx-wide"><?php echo $signup ? 'Create my free account' : 'Sign in'; ?></button>
+  <?php if ( ! $signup ) : ?><a class="rx-link" href="<?php echo esc_url( wp_lostpassword_url( ir_dm_url() ) ); ?>">Forgot password?</a><?php endif; ?>
+ </form>
+ <?php if ( $open ) : ?><p class="rx-center rx-muted"><?php echo $signup ? 'Already have an account?' : 'New here?'; ?> <a class="rx-link" href="<?php echo esc_url( add_query_arg( 'm', $signup ? 'login' : 'signup', ir_dm_url() ) ); ?>"><?php echo $signup ? 'Sign in' : 'Create a free account'; ?></a></p><?php endif; ?>
+</div>
+<?php
+	ir_dm_shell( $signup ? 'Create account' : 'Sign in', ob_get_clean(), '' );
+}
+
+function ir_dm_logo() {
+	return '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#141414" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6.5A2.5 2.5 0 0 1 6.5 4h11A2.5 2.5 0 0 1 20 6.5v7a2.5 2.5 0 0 1-2.5 2.5H11l-4.5 4v-4A2.5 2.5 0 0 1 4 13.5z"/><path d="M13 7.5 10.5 11h3.5L11.5 14"/></svg>';
+}
+
+function ir_dm_shell( $title, $body, $script ) {
+	?><!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="robots" content="noindex,nofollow"><meta name="theme-color" content="#EEF2EC">
+<title><?php echo esc_html( $title . ' · ' . IR_DM_NAME ); ?></title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style><?php echo ir_dm_css(); // phpcs:ignore ?></style></head>
+<body><?php echo $body; // phpcs:ignore ?><?php echo $script; // phpcs:ignore ?></body></html>
+<?php
+}
 
 function ir_dm_page() {
 	$cfg = [ 'aj' => admin_url( 'admin-ajax.php' ), 'n' => wp_create_nonce( 'ir_dm' ), 'connect' => ir_dm_url( 'connect' ), 'setup' => admin_url( 'admin.php?page=ir-dm' ),
-		'msg' => isset( $_GET['connected'] ) ? 'Your Instagram is connected. Now create your first automation below.' : '', 'err' => sanitize_text_field( wp_unslash( $_GET['err'] ?? '' ) ) ];
-	?><!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow">
-<title>DM Automation · <?php echo esc_html( get_bloginfo( 'name' ) ); ?></title>
-<style><?php echo ir_dm_css(); // phpcs:ignore ?></style></head>
-<body><header class="dm-top"><a class="dm-brand" href="<?php echo esc_url( ir_dm_url() ); ?>"><span class="ic"><?php echo ir_dm_icon( 20 ); // phpcs:ignore ?></span>DM Automation</a>
-<nav><a href="<?php echo esc_url( $cfg['setup'] ); ?>">Setup</a><a href="<?php echo esc_url( home_url( '/' ) ); ?>">Website</a></nav></header>
-<main class="tl dm"><div class="tl-hero"><span class="ic"><?php echo ir_dm_icon( 28 ); // phpcs:ignore ?></span><div><h1>DM Automation</h1><p>When someone comments a word on your post, they get your DM automatically. Only you can see this page.</p></div></div>
-<div id="dmApp"><div class="tl-status"><span class="tl-spin"></span><span>Loading…</span></div></div></main>
-<script>window.IRDM=<?php echo wp_json_encode( $cfg ); ?>;</script><script><?php echo ir_dm_js(); // phpcs:ignore ?></script></body></html>
-<?php
+		'logout' => wp_logout_url( ir_dm_url() ), 'name' => IR_DM_NAME,
+		'msg' => isset( $_GET['connected'] ) ? 'Instagram connected. Now create an automation.' : '', 'err' => sanitize_text_field( wp_unslash( $_GET['err'] ?? '' ) ) ];
+	ir_dm_shell( 'Home', '<div class="rx-app" id="rx"><div class="rx-load"><i></i></div></div>',
+		'<script>window.IRDM=' . wp_json_encode( $cfg ) . ';</script><script>' . ir_dm_js() . '</script>' );
 }
 
 function ir_dm_css() {
 	return <<<'CSS'
-:root{--bg:#f5f6fb;--surface:#fff;--soft:#eef0f7;--line:#e3e6ef;--text:#111827;--muted:#6b7280;--acc:#E1306C;color-scheme:light}
-@media(prefers-color-scheme:dark){:root{--bg:#0b1020;--surface:#141a2e;--soft:#1c2440;--line:#26304f;--text:#eef1f8;--muted:#9aa3bd;--acc:#ff4f8b;color-scheme:dark}}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}a{color:var(--acc)}
-.dm-top{position:sticky;top:0;z-index:5;display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 16px;background:color-mix(in srgb,var(--surface) 92%,transparent);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
-.dm-brand{display:flex;align-items:center;gap:10px;font-weight:800;color:var(--text);text-decoration:none}.dm-brand .ic{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;background:linear-gradient(135deg,#E1306C,#F77737)}
-.dm-top nav{display:flex;gap:14px;font-weight:700;font-size:14px}.dm-top nav a{color:var(--muted);text-decoration:none}
-.tl{max-width:760px;margin:0 auto;padding:18px 16px 60px}
-.tl-hero{display:flex;gap:14px;align-items:center;margin:4px 0 18px}.tl-hero .ic{width:56px;height:56px;border-radius:16px;display:grid;place-items:center;background:linear-gradient(135deg,#E1306C,#F77737);flex:none}
-.tl-hero h1{margin:0;font-size:26px;letter-spacing:-.5px;line-height:1.15}.tl-hero p{margin:5px 0 0;color:var(--muted);font-size:15px}
-.tl-card{background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:18px;margin:0 0 14px}
-.tl-f{display:grid;gap:6px;margin:0 0 14px}.tl-f>span{font-weight:700;font-size:14.5px}.tl-f>span em{font-style:normal;font-weight:600;color:var(--muted);font-size:13px}.tl-f small{color:var(--muted);font-size:13px;line-height:1.4}
-.tl-f input,.tl-f textarea{width:100%;font:inherit;font-size:16px;padding:13px 14px;border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--text)}.tl-f textarea{resize:vertical;line-height:1.55}
-.tl-go{display:block;width:100%;border:0;border-radius:16px;padding:17px;font-size:17px;font-weight:800;background:linear-gradient(135deg,#E1306C,#F77737);color:#fff;cursor:pointer;font-family:inherit}.tl-go[disabled]{opacity:.6;cursor:wait}
-.tl-btn2{border:1px solid var(--line);background:var(--soft);color:var(--text);border-radius:10px;padding:8px 12px;font-weight:700;font-size:13.5px;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:6px;font-family:inherit}
-.tl-acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.tl-err{color:#E5484D;font-weight:600;margin:10px 0}.tl-err[hidden]{display:none}
-.tl-status{display:flex;gap:10px;align-items:center;justify-content:center;padding:16px 4px;color:var(--muted);font-weight:600}
-.tl-spin{width:18px;height:18px;border-radius:50%;border:3px solid var(--line);border-top-color:var(--acc);animation:tlspin 1s linear infinite;flex:none}@keyframes tlspin{to{transform:rotate(360deg)}}
-.tl-note{background:var(--soft);border-radius:14px;padding:12px 14px;font-size:14.5px;line-height:1.55;margin:0 0 14px}
-.tl-more>summary{cursor:pointer;font-weight:700;color:var(--acc);font-size:14.5px;margin:0 0 12px;list-style:none}.tl-more>summary::-webkit-details-marker{display:none}
+:root{--bg:#EEF2EC;--card:#fff;--ink:#141414;--ink2:#2B2D2A;--muted:#8B9188;--line:#E3E8E0;--lime:#B8EB78;--lime2:#9ADB58;--lime3:#E6F7D2;--soft:#F4F7F2;--red:#E5484D;--r:26px}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}html,body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 "Plus Jakarta Sans",system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:inherit}button{font:inherit;color:inherit;cursor:pointer}input,textarea,select{font:inherit;color:var(--ink)}
+.rx-app{max-width:480px;margin:0 auto;padding:18px 18px 120px;min-height:100vh}
+.rx-load{display:grid;place-items:center;height:70vh}.rx-load i{width:34px;height:34px;border-radius:50%;border:3px solid var(--line);border-top-color:var(--lime2);animation:rxs 1s linear infinite}@keyframes rxs{to{transform:rotate(360deg)}}
+.rx-top{display:flex;align-items:center;gap:10px;margin:4px 0 22px}.rx-hello{display:flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--line);border-radius:999px;padding:5px 14px 5px 5px;font-weight:600;font-size:14px;margin-right:auto}
+.rx-av img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}.rx-av{position:relative;overflow:hidden;width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#F9A8D4,#FDBA74);display:grid;place-items:center;font-weight:800;color:#fff;flex:none}
+.rx-ib{width:48px;height:48px;border-radius:50%;border:1px solid var(--line);background:var(--card);display:grid;place-items:center;flex:none}.rx-ib.lime{background:var(--lime);border-color:var(--lime)}
+.rx-ib svg,.rx-ic svg{width:20px;height:20px}
+.rx-hero{font-size:34px;line-height:1.08;letter-spacing:-1.2px;font-weight:700;margin:0 0 18px}.rx-hero span{color:#9AA097;font-weight:600}
+.rx-chips{display:flex;gap:10px;margin:0 0 18px;overflow-x:auto;scrollbar-width:none}.rx-chips::-webkit-scrollbar{display:none}
+.rx-pill{border:1.5px solid var(--lime2);background:var(--card);border-radius:999px;padding:12px 18px;font-weight:600;white-space:nowrap}.rx-pill.ghost{border-color:var(--line)}
+.rx-card{background:var(--card);border-radius:var(--r);border:1px solid var(--line)}.rx-pad{padding:18px}
+.rx-promo{background:linear-gradient(140deg,#CFF3A4,var(--lime) 60%,#A6E06A);border:0;border-radius:var(--r);padding:18px;margin:0 0 16px;box-shadow:0 14px 30px -18px #7fbf3d}
+.rx-promo .row{display:flex;gap:14px;align-items:flex-start;margin:0 0 14px}.rx-promo h3{margin:0;font-size:18px;letter-spacing:-.3px}.rx-promo p{margin:3px 0 0;font-size:13.5px;color:#3B4A2C}
+.rx-crown{width:50px;height:50px;border-radius:50%;background:#5E8F2F;display:grid;place-items:center;flex:none}.rx-crown svg{width:24px;height:24px}
+.rx-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:0;border-radius:999px;padding:14px 20px;font-weight:700;text-decoration:none;background:var(--card);color:var(--ink)}
+.rx-wide{width:100%}.rx-dark{background:var(--ink);color:#fff}.rx-lime{background:var(--lime)}.rx-btn[disabled]{opacity:.6}
+.rx-tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:0 0 22px}.rx-tile{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:16px 8px;display:flex;flex-direction:column;align-items:center;gap:10px;font-weight:600;font-size:13.5px;text-align:center}
+.rx-tile.on{background:#DFEAD6;border-color:#DFEAD6}.rx-ic{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;background:#F1E8FB}.rx-ic.g{background:#E5F4D9}.rx-ic.b{background:#DCEFF0}.rx-ic.o{background:#FDEBDD}.rx-ic.k{background:var(--soft)}
+.rx-sec{display:flex;justify-content:space-between;align-items:center;margin:4px 0 10px}.rx-sec h2{font-size:18px;margin:0;letter-spacing:-.3px;font-weight:600}.rx-sec button{border:0;background:none;color:var(--muted);font-size:13px;font-weight:600}
+.rx-item{display:flex;gap:12px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:20px;padding:12px 14px;margin:0 0 10px}.rx-item .t{flex:1;min-width:0}.rx-item b{display:block;font-weight:600;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.rx-item small{display:block;color:var(--muted);font-size:12.5px;line-height:1.35}
+.rx-go{width:34px;height:34px;border-radius:50%;border:1px solid var(--line);display:grid;place-items:center;flex:none;background:var(--card)}
+.rx-nav{position:fixed;left:50%;bottom:calc(16px + env(safe-area-inset-bottom));transform:translateX(-50%);display:flex;gap:6px;padding:6px;background:rgba(255,255,255,.75);backdrop-filter:blur(14px);border:1px solid var(--line);border-radius:999px;box-shadow:0 18px 40px -20px rgba(0,0,0,.35);z-index:9}
+.rx-nav button{height:52px;min-width:52px;border-radius:999px;border:1px solid var(--line);background:var(--card);display:flex;align-items:center;justify-content:center;gap:8px;padding:0 15px;font-weight:600}
+.rx-nav button svg{width:21px;height:21px}.rx-nav button.on{background:var(--ink);color:#fff;border-color:var(--ink);padding:0 20px 0 7px}.rx-nav button.on i{width:38px;height:38px;border-radius:50%;background:#fff;display:grid;place-items:center}.rx-nav button.on i svg{stroke:var(--ink)}.rx-nav button span{display:none}.rx-nav button.on span{display:inline}
+.rx-head{display:flex;align-items:center;justify-content:space-between;margin:4px 0 18px}.rx-head h1{font-size:19px;margin:0;font-weight:600}
+.rx-prof{display:grid;grid-template-columns:1.15fr 1fr;gap:10px;margin:0 0 12px}.rx-prof .me{padding:16px}.rx-prof .me .rx-av{width:78px;height:78px;font-size:28px;margin-bottom:10px}
+.rx-prof h2{font-size:19px;margin:0;letter-spacing:-.3px}.rx-badge{display:inline-flex;gap:5px;align-items:center;background:var(--lime3);color:#3E7B16;border-radius:999px;padding:3px 9px;font-size:11.5px;font-weight:700;margin:5px 0}
+.rx-mini{display:flex;flex-direction:column;gap:10px}.rx-mini .rx-card{padding:12px 14px;display:flex;gap:10px;align-items:center}.rx-mini b{font-size:19px;display:block}.rx-mini small{color:var(--muted);font-size:12px}
+.rx-stats{display:grid;grid-template-columns:repeat(3,1fr);text-align:center;padding:14px 6px;margin:0 0 12px}.rx-stats>div{border-left:1px solid var(--line)}.rx-stats>div:first-child{border:0}.rx-stats .rx-ic{width:36px;height:36px;margin:0 auto 6px}.rx-stats small{color:var(--muted);font-size:12px;display:block}.rx-stats b{font-size:20px}
+.rx-sw{position:relative;width:50px;height:30px;flex:none}.rx-sw input{opacity:0;width:0;height:0}.rx-sw i{position:absolute;inset:0;border-radius:99px;background:#D7DCD4;transition:.2s}.rx-sw i:before{content:"";position:absolute;width:24px;height:24px;left:3px;top:3px;border-radius:50%;background:#fff;transition:.2s;box-shadow:0 1px 3px rgba(0,0,0,.2)}.rx-sw input:checked+i{background:var(--lime2)}.rx-sw input:checked+i:before{transform:translateX(20px)}
+.rx-thumb{width:54px;height:54px;border-radius:16px;object-fit:cover;flex:none;background:var(--soft);display:grid;place-items:center;font-size:22px}
+.rx-alert{border-radius:16px;padding:12px 14px;font-weight:600;font-size:14px;margin:0 0 14px;line-height:1.45}.rx-alert.ok{background:var(--lime3);color:#2F6410}.rx-alert.bad{background:#FDE7E7;color:#A61B1F}.rx-alert.info{background:var(--card);border:1px solid var(--line)}
+.rx-muted{color:var(--muted)}.rx-center{text-align:center}.rx-link{color:#4C8A1E;font-weight:700;text-decoration:none;background:none;border:0;padding:0}.rx-red{color:var(--red)}
+.rx-step{margin:0 0 12px}.rx-step h3{display:flex;align-items:center;gap:10px;font-size:16px;margin:0 0 12px;font-weight:700}.rx-num{width:28px;height:28px;border-radius:50%;background:var(--lime);display:grid;place-items:center;font-size:13px;font-weight:800;flex:none}
+.rx-form label,.rx-f{display:grid;gap:6px;font-weight:600;font-size:14px;margin:0 0 14px}.rx-f small{color:var(--muted);font-weight:500;font-size:12.5px}
+.rx-form input,.rx-f input,.rx-f textarea{width:100%;font-size:16px;padding:14px 16px;border:1.5px solid var(--line);border-radius:18px;background:var(--soft);outline:none}.rx-form input:focus,.rx-f input:focus,.rx-f textarea:focus{border-color:var(--lime2);background:#fff}.rx-f textarea{resize:vertical;line-height:1.5}
+.rx-chk{display:flex;gap:10px;align-items:flex-start;font-size:14.5px;margin:0 0 12px;cursor:pointer;line-height:1.4;font-weight:500}.rx-chk input{width:22px;height:22px;accent-color:#6DB52E;flex:none;margin:0}
+.rx-tag{display:inline-flex;align-items:center;gap:6px;border:1.5px solid var(--line);background:var(--card);border-radius:999px;padding:8px 12px;font-weight:600;font-size:13px;margin:0 6px 8px 0}.rx-tag.on{background:var(--ink);color:#fff;border-color:var(--ink)}.rx-tag img{width:22px;height:22px;border-radius:50%}
+.rx-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:0 0 10px}.rx-post{position:relative;border:2.5px solid transparent;border-radius:18px;overflow:hidden;padding:0;background:var(--soft);aspect-ratio:1}.rx-post img{width:100%;height:100%;object-fit:cover;display:block}
+.rx-post.on{border-color:var(--lime2)}.rx-post.on:after{content:"✓";position:absolute;top:6px;right:6px;width:24px;height:24px;border-radius:50%;background:var(--lime);display:grid;place-items:center;font-weight:800;font-size:13px}.rx-post.any{display:grid;place-items:center;text-align:center;font-weight:700;font-size:12.5px;padding:6px}
+.rx-phone{background:var(--soft);border-radius:22px;padding:14px;display:flex;flex-direction:column;gap:8px}.rx-in{align-self:flex-end;background:var(--ink);color:#fff;padding:9px 14px;border-radius:20px 20px 6px 20px;max-width:80%}
+.rx-out{align-self:flex-start;background:#fff;border:1px solid var(--line);padding:10px 14px;border-radius:20px 20px 20px 6px;max-width:88%;white-space:pre-wrap;word-break:break-word;line-height:1.5}.rx-bt{margin-top:8px;padding-top:8px;border-top:1px solid var(--line);text-align:center;font-weight:700;color:#2563EB}
+.rx-tpls{display:grid;grid-template-columns:1fr 1fr;gap:10px}.rx-tpl{border:1px solid var(--line);background:var(--card);border-radius:22px;padding:16px;text-align:left}.rx-tpl .e{font-size:26px;display:block;margin-bottom:6px}.rx-tpl b{display:block;font-weight:700}.rx-tpl small{color:var(--muted);font-size:12.5px;line-height:1.35}
+.rx-act{padding:12px 0;border-top:1px solid var(--line)}.rx-act:first-child{border:0;padding-top:0}.rx-act .r{font-weight:700;font-size:13.5px;margin-top:4px}.rx-act .r.ok{color:#3E7B16}.rx-act .r.no{color:#B45309}
+.rx-row{display:flex;gap:10px;align-items:center}.rx-err{color:var(--red);font-weight:600;margin:0 0 12px}.rx-err[hidden]{display:none}
+.rx-auth{max-width:440px;margin:0 auto;padding:28px 18px 40px}.rx-auth-top{display:flex;align-items:center;gap:10px;font-size:18px;margin:0 0 34px}.rx-logo{width:44px;height:44px;border-radius:14px;background:var(--lime);display:grid;place-items:center}.rx-h1{margin:0 0 8px}
+details.rx-card>summary{list-style:none;cursor:pointer;font-weight:700}details.rx-card>summary::-webkit-details-marker{display:none}
 [hidden]{display:none!important}
-.dm .dm-sec{margin:0 0 22px}.dm h2{font-size:19px;margin:0 0 10px;letter-spacing:-.2px}
-.dm .dm-acct{display:flex;gap:12px;align-items:center}.dm .dm-av{width:48px;height:48px;border-radius:50%;object-fit:cover;background:linear-gradient(135deg,#E1306C,#F77737);display:grid;place-items:center;color:#fff;font-weight:800;flex:none}
-.dm .dm-acct b{display:block;font-size:16px}.dm .dm-acct small{color:var(--muted)}.dm .dm-ok{color:#16a34a;font-weight:800}
-.dm .dm-steps{margin:10px 0 14px;padding-left:20px;line-height:1.7;font-size:15px}
-.dm .dm-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px;margin:6px 0 10px}
-.dm .dm-post{position:relative;border:2.5px solid transparent;border-radius:14px;overflow:hidden;padding:0;background:var(--soft);cursor:pointer;aspect-ratio:1}
-.dm .dm-post img{width:100%;height:100%;object-fit:cover;display:block}.dm .dm-post.on{border-color:var(--acc);box-shadow:0 0 0 3px color-mix(in srgb,var(--acc) 25%,transparent)}
-.dm .dm-post.on:after{content:"✓";position:absolute;top:6px;right:6px;background:var(--acc);color:#fff;border-radius:50%;width:24px;height:24px;display:grid;place-items:center;font-weight:800}
-.dm .dm-any{display:grid;place-items:center;text-align:center;font-weight:800;font-size:13px;color:var(--text);padding:8px}
-.dm .dm-auto{display:flex;gap:12px;align-items:center}.dm .dm-thumb{width:56px;height:56px;border-radius:12px;object-fit:cover;flex:none;background:var(--soft);display:grid;place-items:center;font-size:22px}
-.dm .dm-auto .tx{flex:1;min-width:0}.dm .dm-auto .tx>b{display:block;font-size:16px}.dm .dm-auto .tx small{display:block;color:var(--muted);font-size:13.5px;line-height:1.4}
-.dm .dm-nums{display:flex;gap:14px;margin-top:6px;font-size:13.5px;font-weight:700}.dm .dm-nums span{color:var(--muted);font-weight:600}
-.dm .dm-sw{position:relative;width:52px;height:30px;flex:none}.dm .dm-sw input{opacity:0;width:0;height:0}.dm .dm-sw i{position:absolute;inset:0;border-radius:99px;background:var(--line);cursor:pointer;transition:.2s}
-.dm .dm-sw i:before{content:"";position:absolute;width:24px;height:24px;left:3px;top:3px;border-radius:50%;background:#fff;transition:.2s;box-shadow:0 1px 3px rgba(0,0,0,.25)}.dm .dm-sw input:checked+i{background:#16a34a}.dm .dm-sw input:checked+i:before{transform:translateX(22px)}
-.dm .dm-tpls{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px}.dm .dm-tpl{border:1.5px solid var(--line);border-radius:16px;padding:14px;background:var(--surface);text-align:left;cursor:pointer;color:var(--text);font:inherit}
-.dm .dm-tpl b{display:block;font-size:15px}.dm .dm-tpl small{color:var(--muted);font-size:13px;line-height:1.4}.dm .dm-tpl .e{font-size:24px;display:block;margin-bottom:4px}.dm .dm-tpl:hover{border-color:var(--acc)}
-.dm .dm-num{display:inline-grid;place-items:center;width:26px;height:26px;border-radius:50%;background:var(--acc);color:#fff;font-weight:800;font-size:14px;margin-right:8px}
-.dm .dm-step h3{display:flex;align-items:center;font-size:17px;margin:0 0 10px}
-.dm .dm-phone{background:var(--soft);border-radius:18px;padding:14px;display:flex;flex-direction:column;gap:8px}
-.dm .dm-in{align-self:flex-end;background:linear-gradient(135deg,#E1306C,#F77737);color:#fff;padding:9px 13px;border-radius:18px 18px 4px 18px;max-width:80%;font-size:15px}
-.dm .dm-out{align-self:flex-start;background:var(--surface);border:1px solid var(--line);padding:9px 13px;border-radius:18px 18px 18px 4px;max-width:88%;white-space:pre-wrap;word-break:break-word;font-size:15px;line-height:1.5}
-.dm .dm-bt{margin-top:8px;padding-top:8px;border-top:1px solid var(--line);text-align:center;font-weight:800;color:#2563eb}
-.dm .dm-pill{display:inline-block;border:1.5px solid var(--line);background:var(--surface);color:var(--text);border-radius:99px;padding:6px 12px;font-weight:700;font-size:13.5px;cursor:pointer;margin:0 6px 6px 0}
-.dm .dm-chk{display:flex;gap:10px;align-items:flex-start;font-size:15px;margin:0 0 10px;cursor:pointer;line-height:1.4}.dm .dm-chk input{width:20px;height:20px;margin-top:1px;accent-color:var(--acc);flex:none}
-.dm .dm-act{border-top:1px solid var(--line);padding:12px 0}.dm .dm-act:first-child{border-top:0}.dm .dm-act .top{display:flex;justify-content:space-between;gap:8px;font-size:14px}.dm .dm-act .said{color:var(--muted);font-size:14px;margin:3px 0}
-.dm .dm-res{font-weight:700;font-size:14px}.dm .dm-res.ok{color:#16a34a}.dm .dm-res.no{color:#b45309}
-.dm .dm-banner{border-radius:14px;padding:12px 14px;font-weight:600;margin:0 0 14px;line-height:1.5}.dm .dm-banner.ok{background:#dcfce7;color:#166534}.dm .dm-banner.bad{background:#fee2e2;color:#991b1b}
-.dm .dm-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.dm .dm-link{background:none;border:0;color:var(--acc);font-weight:700;cursor:pointer;padding:6px 0;font-size:14px}
-.dm .dm-big{display:flex;justify-content:space-around;text-align:center;gap:10px}.dm .dm-big b{display:block;font-size:26px}.dm .dm-big span{color:var(--muted);font-size:13px;font-weight:600}
 CSS;
 }
 
 function ir_dm_js() {
 	return <<<'JS'
 (function(){
-var C=window.IRDM,app=document.getElementById('dmApp'),S=null,ED=null,MEDIA=null;
+var C=window.IRDM,R=document.getElementById('rx'),S=null,TAB='home',ED=null,MEDIA={};
+var I={
+home:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>',
+chat:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6.5A2.5 2.5 0 0 1 6.5 4h11A2.5 2.5 0 0 1 20 6.5v7a2.5 2.5 0 0 1-2.5 2.5H11l-4.5 4v-4A2.5 2.5 0 0 1 4 13.5z"/><path d="M8.5 9h7M8.5 12h4"/></svg>',
+list:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v14H4z"/><path d="M4 9h16M9 13h7M9 16h5"/></svg>',
+gear:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>',
+spark:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></svg>',
+menu:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h10"/></svg>',
+back:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>',
+arrow:'<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M8 7h9v9"/></svg>',
+crown:'<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.3" cy="6.7" r=".6" fill="#fff"/></svg>',
+dm:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 3 10 14"/><path d="M21 3l-7 18-4-7-7-4z"/></svg>',
+story:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="12" cy="12" r="8.5" stroke-dasharray="3 2.4"/><circle cx="12" cy="12" r="4"/></svg>',
+link:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg>',
+send:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h12M12 6l6 6-6 6"/></svg>',
+bolt:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M13 3 5 14h6l-1 7 8-11h-6z"/></svg>',
+plus:'<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>'};
 function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
 function post(action,data){var f=new FormData();f.append('action',action);f.append('n',C.n);Object.keys(data||{}).forEach(function(k){f.append(k,data[k])});
  return fetch(C.aj,{method:'POST',body:f,credentials:'same-origin'}).then(function(r){return r.json()}).catch(function(){return{ok:false,err:'No connection. Check your internet and try again.'}})}
-function ago(t){var s=Math.floor(Date.now()/1000-t);if(s<60)return 'just now';if(s<3600)return Math.floor(s/60)+' min ago';if(s<86400)return Math.floor(s/3600)+' h ago';return new Date(t*1000).toLocaleDateString()}
+function ago(t){var s=Math.floor(Date.now()/1000-t);if(s<60)return 'just now';if(s<3600)return Math.floor(s/60)+'m ago';if(s<86400)return Math.floor(s/3600)+'h ago';return new Date(t*1000).toLocaleDateString()}
+function av(a,cls){return '<span class="rx-av '+(cls||'')+'">'+esc(((a&&(a.username||a.name))||(S&&S.me.name)||'?')[0].toUpperCase())+(a&&a.pic?'<img src="'+esc(a.pic)+'" alt="" onerror="this.remove()">':'')+'</span>'}
 var TPL=[
- {e:'🎁',n:'Free guide',d:'Comment GUIDE, get your free guide',kw:['GUIDE'],msg:'Hey {name}! Here is the free guide you asked for 👇\n{link}\n\nEnjoy, and tell me what you think!',btn:'Get the guide',pub:['Sent! Check your DMs 💌','Just sent it to you {name} 📩','Check your inbox 👀']},
+ {e:'🎁',n:'Free guide',d:'Comment GUIDE, get the guide',kw:['GUIDE'],msg:'Hey {name}! Here is the free guide you asked for 👇\n{link}\n\nEnjoy, and tell me what you think!',btn:'Get the guide',pub:['Sent! Check your DMs 💌','Just sent it to you {name} 📩','Check your inbox 👀']},
  {e:'📅',n:'Book a call',d:'Comment BOOK, get your booking link',kw:['BOOK'],msg:'Hi {name}! So happy you want to work together. Pick a time that suits you here:\n{link}',btn:'Book now',pub:['Sent you the link {name} 📅','Check your DMs!']},
  {e:'💰',n:'Price list',d:'Comment PRICE, get your prices',kw:['PRICE','PRICES'],msg:'Hi {name}! Here are my prices and packages 👇\n{link}\n\nAny questions, just reply here.',btn:'See prices',pub:['Sent you the price list {name} 💌','Check your DMs!']},
- {e:'✏️',n:'Start blank',d:'Write your own from scratch',kw:[],msg:'Hey {name}! ',btn:'',pub:['Check your DMs {name} 💌']}
-];
-function blank(t){t=t||TPL[3];return{id:0,name:'',t:{comments:true,dms:false,story:false},any_post:false,post:'',post_img:'',keywords:t.kw.slice(),any_word:false,message:t.msg,link:'',button:t.btn,public_on:t.n!=='Start blank',public:t.pub.slice()}}
-
-function load(){return post('ir_dm_state').then(function(r){if(!r.ok){app.innerHTML='<div class="tl-err">'+esc(r.err)+'</div>';return}S=r;render()})}
-
-function banner(){var h='';if(C.msg)h+='<div class="dm-banner ok">'+esc(C.msg)+'</div>';if(C.err)h+='<div class="dm-banner bad">'+esc(C.err)+'</div>';C.msg=C.err='';return h}
-
-function acctCard(){var a=S.acct;
- if(!S.ready&&!a)return '<div class="tl-card"><h2>Step 1: Connect your Instagram</h2><p class="tl-note">First finish the one-time Meta setup on the <a href="'+esc(C.setup)+'">Setup page</a>. Meanwhile you can create automations below and test them with "Try it". They start working the moment you connect.</p></div>';
- if(!a)return '<div class="tl-card"><h2>Step 1: Connect your Instagram</h2><ol class="dm-steps"><li>Your Instagram must be a <b>Business</b> or <b>Creator</b> account (Instagram app: Settings › Account type and tools › Switch to professional account).</li><li>Tap the button below and log in to Instagram.</li><li>Tap <b>Allow</b>. You come straight back here.</li></ol><a class="tl-go ig" style="display:block;text-align:center;text-decoration:none" href="'+esc(C.connect)+'">Connect Instagram</a></div>';
- var bad=a.status!=='active';
- return '<div class="tl-card"><div class="dm-acct">'+(a.pic?'<img class="dm-av" src="'+esc(a.pic)+'" alt="">':'<span class="dm-av">'+esc((a.username||'?')[0].toUpperCase())+'</span>')+'<div style="flex:1"><b>@'+esc(a.username)+'</b>'+(bad?'<small style="color:#b91c1c;font-weight:700">Instagram logged you out. Reconnect to keep sending DMs.</small>':'<small><span class="dm-ok">● Connected</span> · automations are live</small>')+'</div>'+(bad?'<a class="tl-btn2" href="'+esc(C.connect)+'">Reconnect</a>':'<button class="dm-link" id="dmDisc">Disconnect</button>')+'</div>'+(!bad&&!a.subscribed?'<p class="tl-note" style="margin:12px 0 0">Almost there: tap <a href="'+esc(C.connect)+'">Reconnect</a> once so Instagram starts sending us your comments.</p>':'')+'</div>';
-}
-
-function autoCard(a){var c=a.cfg,when=[];if(c.t.comments)when.push('comments '+(c.any_word?'anything':'<b>'+esc(c.keywords.join(' or '))+'</b>')+(c.any_post?' on any post':' on this post'));if(c.t.dms)when.push('DMs '+(c.any_word?'you':'<b>'+esc(c.keywords.join(' or '))+'</b>'));if(c.t.story)when.push('replies to your Story');
- return '<div class="tl-card"><div class="dm-auto">'+(c.post_img&&!c.any_post?'<img class="dm-thumb" src="'+esc(c.post_img)+'" alt="">':'<span class="dm-thumb">💬</span>')+'<div class="tx"><b>'+esc(a.name)+'</b><small>When someone '+when.join(', or ')+'</small><div class="dm-nums">'+a.sent+' <span>DMs sent</span> '+a.clicks+' <span>link clicks</span></div></div><label class="dm-sw" title="On / off"><input type="checkbox" data-tog="'+a.id+'"'+(a.on?' checked':'')+'><i></i></label></div><div class="tl-acts"><button class="tl-btn2" data-edit="'+a.id+'">Edit</button><button class="tl-btn2" data-try="'+a.id+'">Try it</button><button class="dm-link" style="color:#b91c1c;margin-left:auto" data-del="'+a.id+'">Delete</button></div></div>';
-}
-
-function render(){ED=null;var h=banner()+acctCard();
- h+='<div class="dm-sec"><div class="dm-row" style="justify-content:space-between;margin:0 0 10px"><h2 style="margin:0">Your automations</h2>'+(S.autos.length?'<button class="tl-btn2" id="dmNew">+ New automation</button>':'')+'</div>';
- if(!S.autos.length){h+='<div class="tl-card"><p style="margin:0 0 12px;font-weight:700">Pick a starting point:</p><div class="dm-tpls">'+TPL.map(function(t,i){return '<button class="dm-tpl" data-tpl="'+i+'"><span class="e">'+t.e+'</span><b>'+esc(t.n)+'</b><small>'+esc(t.d)+'</small></button>'}).join('')+'</div></div>'}
- else{if(S.tot.sent)h+='<div class="tl-card dm-big"><div><b>'+S.tot.sent+'</b><span>DMs sent</span></div><div><b>'+S.tot.clicks+'</b><span>people clicked your link</span></div></div>';h+=S.autos.map(autoCard).join('')}
- h+='</div>';
- if(S.activity.length){h+='<div class="dm-sec"><h2>Recent activity</h2><div class="tl-card">'+S.activity.map(function(x){return '<div class="dm-act"><div class="top"><b>'+esc(x.who)+'</b><span style="color:var(--muted)">'+ago(x.when)+'</span></div><div class="said">'+(x.trig==='comment'?'Commented':x.trig==='story'?'Replied to your Story':'Sent you a DM')+': “'+esc(x.said||'…')+'” · '+esc(x.auto)+'</div><div class="dm-res '+(x.ok?'ok':'no')+'">'+(x.ok?'✓ ':'')+esc(x.res)+'</div></div>'}).join('')+'</div></div>'}
- h+='<details class="tl-more"><summary>How it works & Instagram rules</summary><div class="tl-note">• Instagram allows one automatic DM per comment, within 7 days of the comment.<br>• When someone DMs you or replies to your Story, you can reply within 24 hours.<br>• Your own comments never trigger anything.<br>• The DM arrives in their message requests if they don\'t follow you, that\'s normal.<br>• Links are tracked so you can see how many people clicked.</div></details>';
- app.innerHTML=h;bind();}
-
-function bind(){var q=function(s){return app.querySelectorAll(s)};
- q('[data-tpl]').forEach(function(b){b.onclick=function(){edit(blank(TPL[+b.dataset.tpl]))}});
- var nb=app.querySelector('#dmNew');if(nb)nb.onclick=function(){chooseTpl()};
- q('[data-edit]').forEach(function(b){b.onclick=function(){var a=find(b.dataset.edit);var c=JSON.parse(JSON.stringify(a.cfg));c.id=a.id;c.name=a.name;edit(c)}});
- q('[data-try]').forEach(function(b){b.onclick=function(){var a=find(b.dataset.try);var c=JSON.parse(JSON.stringify(a.cfg));c.id=a.id;tryIt(c,b.closest('.tl-card'))}});
- q('[data-del]').forEach(function(b){b.onclick=function(){if(!confirm('Delete this automation? Its stats are deleted too.'))return;post('ir_dm_delete',{id:b.dataset.del}).then(load)}});
- q('[data-tog]').forEach(function(i){i.onchange=function(){post('ir_dm_toggle',{id:i.dataset.tog,on:i.checked?1:''}).then(function(r){if(!r.ok){alert(r.err);i.checked=!i.checked}})}});
- var d=app.querySelector('#dmDisc');if(d)d.onclick=function(){if(confirm('Disconnect your Instagram? Automations stop until you connect again.'))post('ir_dm_disconnect').then(load)};
-}
+ {e:'✏️',n:'Start blank',d:'Write your own',kw:[],msg:'Hey {name}! ',btn:'',pub:['Check your DMs {name} 💌']}];
+function blank(t,trig){t=t||TPL[3];var a=S.accts[0];return{id:0,name:'',acct:a?a.id:'',t:{comments:trig?trig==='comments':true,dms:trig==='dms',story:trig==='story'},any_post:!!trig&&trig!=='comments',post:'',post_img:'',keywords:t.kw.slice(),any_word:false,message:t.msg,link:'',button:t.btn,public_on:t.n!=='Start blank'&&(!trig||trig==='comments'),public:t.pub.slice()}}
+function load(){return post('ir_dm_state').then(function(r){if(!r.ok){R.innerHTML='<div class="rx-alert bad">'+esc(r.err)+'</div>';return}S=r;draw()})}
+function nav(){var t=[['home','Home','home'],['autos','Automations','chat'],['activity','Activity','list'],['profile','Profile','gear']];
+ return '<nav class="rx-nav">'+t.map(function(x){var on=TAB===x[0]&&!ED;return '<button data-tab="'+x[0]+'" class="'+(on?'on':'')+'" aria-label="'+x[1]+'">'+(on?'<i>'+I[x[2]]+'</i><span>'+x[1]+'</span>':I[x[2]])+'</button>'}).join('')+'</nav>'}
+function banner(){var h='';if(C.msg)h+='<div class="rx-alert ok">'+esc(C.msg)+'</div>';if(C.err)h+='<div class="rx-alert bad">'+esc(C.err)+'</div>';C.msg=C.err='';return h}
+function draw(){if(ED)return editor();var h='';
+ if(TAB==='home')h=home();else if(TAB==='autos')h=autos();else if(TAB==='activity')h=activity();else h=profile();
+ R.innerHTML=h+nav();bind();window.scrollTo(0,0)}
+function connectCard(){var a=S.accts;
+ if(!S.ready&&!a.length)return '<div class="rx-promo"><div class="row"><span class="rx-crown">'+I.crown+'</span><div><h3>Almost ready</h3><p>'+(S.me.admin?'Finish the one-time Meta setup first. You can build automations meanwhile.':'Instagram connection opens soon. You can build automations meanwhile.')+'</p></div></div>'+(S.me.admin?'<a class="rx-btn rx-wide" href="'+esc(C.setup)+'">Open setup</a>':'')+'</div>';
+ if(!a.length)return '<div class="rx-promo"><div class="row"><span class="rx-crown">'+I.crown+'</span><div><h3>Connect Instagram</h3><p>Business or Creator account. Log in, tap Allow, done.</p></div></div><a class="rx-btn rx-wide" href="'+esc(C.connect)+'">'+I.plus+' Connect Instagram</a></div>';
+ var bad=a.filter(function(x){return x.status!=='active'});
+ if(bad.length)return '<div class="rx-promo" style="background:linear-gradient(140deg,#FFD9C2,#FDBA8C)"><div class="row"><span class="rx-crown" style="background:#C2410C">'+I.crown+'</span><div><h3>@'+esc(bad[0].username)+' needs you</h3><p>Instagram logged it out. Reconnect to keep DMs flowing.</p></div></div><a class="rx-btn rx-wide" href="'+esc(C.connect)+'">Reconnect</a></div>';
+ return '<div class="rx-promo"><div class="row"><span class="rx-crown">'+I.crown+'</span><div><h3>'+S.tot.sent+' DMs sent</h3><p>'+S.autos.filter(function(x){return x.on}).length+' automation'+(S.autos.length===1?'':'s')+' live on '+a.map(function(x){return '@'+esc(x.username)}).join(', ')+'</p></div></div><button class="rx-btn rx-wide" data-new="">'+I.plus+' New automation</button></div>'}
+function home(){var h='<div class="rx-top"><button class="rx-hello" data-tab="profile">'+av(S.accts[0])+'<span>Hello, '+esc(S.me.name||'there')+'!</span></button><button class="rx-ib lime" data-new="" aria-label="New automation">'+I.spark+'</button><button class="rx-ib" data-tab="profile" aria-label="Menu">'+I.menu+'</button></div>';
+ h+=banner()+'<h1 class="rx-hero">Turn your <span>comments</span><br>into clients today?</h1>';
+ h+='<div class="rx-chips"><button class="rx-pill" data-new="">New automation</button><button class="rx-ib" data-new="comments" aria-label="Comment trigger">'+I.chat+'</button><button class="rx-ib" data-new="dms" aria-label="DM trigger">'+I.dm+'</button><button class="rx-ib" data-new="story" aria-label="Story trigger">'+I.story+'</button></div>';
+ h+=connectCard();
+ h+='<div class="rx-tiles"><button class="rx-tile" data-new="comments"><span class="rx-ic">'+I.chat+'</span>Comment to DM</button><button class="rx-tile on" data-new="dms"><span class="rx-ic g">'+I.dm+'</span>DM keyword</button><button class="rx-tile" data-new="story"><span class="rx-ic b">'+I.story+'</span>Story reply</button></div>';
+ h+='<div class="rx-sec"><h2>Recent activity</h2><button data-tab="activity">View all</button></div>';
+ h+=S.activity.length?S.activity.slice(0,4).map(actItem).join(''):'<div class="rx-item"><span class="rx-ic k">'+I.bolt+'</span><div class="t"><b>Nothing yet</b><small>When someone comments your word, it shows up here.</small></div></div>';
+ return h}
+function actItem(x){return '<div class="rx-item"><span class="rx-ic '+(x.ok?'g':'o')+'">'+(x.trig==='comment'?I.chat:x.trig==='story'?I.story:I.dm)+'</span><div class="t"><b>'+esc(x.who)+' · '+esc(x.said||'…')+'</b><small>'+(x.ok?'✓ DM sent':esc(x.res))+' · '+ago(x.when)+'</small></div><span class="rx-go">'+I.arrow+'</span></div>'}
+function acctOf(id){return S.accts.filter(function(a){return a.id===String(id)})[0]||S.accts[0]}
+function autos(){var h='<div class="rx-head"><h1>Automations</h1><button class="rx-ib lime" data-new="">'+I.plus+'</button></div>'+banner();
+ if(!S.autos.length)return h+'<div class="rx-card rx-pad"><p style="margin:0 0 12px;font-weight:700">Pick a starting point</p>'+tpls()+'</div>';
+ return h+S.autos.map(function(a){var c=a.cfg,ac=acctOf(c.acct),w=[];if(c.t.comments)w.push('comments '+(c.any_word?'anything':c.keywords.join(' / ')));if(c.t.dms)w.push('DMs '+(c.any_word?'you':c.keywords.join(' / ')));if(c.t.story)w.push('replies to your Story');
+  return '<div class="rx-card rx-pad" style="margin:0 0 12px"><div class="rx-row">'+(c.post_img&&!c.any_post?'<img class="rx-thumb" src="'+esc(c.post_img)+'" alt="">':'<span class="rx-thumb">💬</span>')+'<div style="flex:1;min-width:0"><b style="display:block">'+esc(a.name)+'</b><small class="rx-muted">When someone '+esc(w.join(', or '))+(ac&&S.accts.length>1?' · @'+esc(ac.username):'')+'</small><div style="font-size:13px;font-weight:700;margin-top:4px">'+a.sent+' <span class="rx-muted">sent</span> · '+a.clicks+' <span class="rx-muted">clicks</span></div></div><label class="rx-sw"><input type="checkbox" data-tog="'+a.id+'"'+(a.on?' checked':'')+'><i></i></label></div>'+
+  '<div class="rx-row" style="margin-top:12px"><button class="rx-btn rx-dark" style="padding:10px 16px" data-edit="'+a.id+'">Edit</button><button class="rx-btn" style="padding:10px 16px;border:1px solid var(--line)" data-try="'+a.id+'">Try it</button><button class="rx-link rx-red" style="margin-left:auto" data-del="'+a.id+'">Delete</button></div><div data-tryout="'+a.id+'"></div></div>'}).join('')}
+function tpls(){return '<div class="rx-tpls">'+TPL.map(function(t,i){return '<button class="rx-tpl" data-tpl="'+i+'"><span class="e">'+t.e+'</span><b>'+esc(t.n)+'</b><small>'+esc(t.d)+'</small></button>'}).join('')+'</div>'}
+function activity(){return '<div class="rx-head"><h1>Activity</h1><button class="rx-ib" data-reload="1" aria-label="Refresh">'+I.bolt+'</button></div>'+(S.activity.length?'<div class="rx-card rx-pad">'+S.activity.map(function(x){return '<div class="rx-act"><div class="rx-row" style="justify-content:space-between"><b>'+esc(x.who)+'</b><small class="rx-muted">'+ago(x.when)+'</small></div><div class="rx-muted" style="font-size:14px">'+(x.trig==='comment'?'Commented':x.trig==='story'?'Replied to your Story':'Sent you a DM')+': “'+esc(x.said||'…')+'” · '+esc(x.auto)+'</div><div class="r '+(x.ok?'ok':'no')+'">'+(x.ok?'✓ ':'')+esc(x.res)+'</div></div>'}).join('')+'</div>':'<div class="rx-alert info">No activity yet. New comments are checked every 2 minutes.</div>')}
+function profile(){var a=S.accts,live=S.autos.filter(function(x){return x.on}).length;
+ var h='<div class="rx-head"><button class="rx-ib" data-tab="home">'+I.back+'</button><h1>Profile</h1>'+(S.me.admin?'<a class="rx-ib" href="'+esc(C.setup)+'" aria-label="Setup">'+I.gear+'</a>':'<span style="width:48px"></span>')+'</div>'+banner();
+ h+='<div class="rx-prof"><div class="rx-card me">'+av(a[0])+'<h2>'+esc(S.me.name||'You')+'</h2><span class="rx-badge">★ '+live+' live automation'+(live===1?'':'s')+'</span><div class="rx-muted" style="font-size:12px">'+esc(S.me.email)+'</div></div><div class="rx-mini"><div class="rx-card"><span class="rx-ic">'+I.dm+'</span><div><b>'+S.tot.sent+'</b><small>DMs sent</small></div></div><div class="rx-card"><span class="rx-ic g">'+I.link+'</span><div><b>'+S.tot.clicks+'</b><small>Link clicks</small></div></div></div></div>';
+ h+='<div class="rx-card rx-stats"><div><span class="rx-ic">'+I.chat+'</span><small>Automations</small><b>'+S.autos.length+'</b></div><div><span class="rx-ic b">'+I.crown.replace('#fff','currentColor').replace('fill="#fff"','fill="currentColor"')+'</span><small>Accounts</small><b>'+a.length+'</b></div><div><span class="rx-ic o">'+I.bolt+'</span><small>Triggers</small><b>'+S.activity.length+'</b></div></div>';
+ h+='<div class="rx-promo"><div class="row"><span class="rx-crown">'+I.crown+'</span><div><h3>'+(a.length?'Add another account':'Connect Instagram')+'</h3><p>Run automations on several Instagram accounts from one place.</p></div></div><a class="rx-btn rx-wide" href="'+esc(C.connect)+'">'+I.plus+' '+(a.length?'Add Instagram account':'Connect Instagram')+'</a></div>';
+ if(a.length)h+='<div class="rx-sec"><h2>Your accounts</h2></div>'+a.map(function(x){return '<div class="rx-item">'+av(x)+'<div class="t"><b>@'+esc(x.username)+'</b><small>'+(x.status==='active'?'<span style="color:#3E7B16;font-weight:700">● Connected</span>':'<span class="rx-red" style="font-weight:700">Needs reconnecting</span>')+'</small></div>'+(x.status==='active'?'<button class="rx-link rx-red" data-disc="'+esc(x.id)+'">Remove</button>':'<a class="rx-link" href="'+esc(C.connect)+'">Reconnect</a>')+'</div>'}).join('');
+ h+='<details class="rx-card rx-pad" style="margin:12px 0"><summary>How it works & Instagram rules</summary><p class="rx-muted" style="margin:10px 0 0;font-size:14px;line-height:1.6">• One automatic DM per comment, within 7 days of the comment.<br>• DM and Story replies within 24 hours of their message.<br>• Your own comments never trigger anything.<br>• New comments are checked every 2 minutes.<br>• Links are tracked so you can see clicks.</p></details>';
+ h+='<a class="rx-btn rx-wide" style="border:1px solid var(--line)" href="'+esc(C.logout)+'">Sign out</a>';return h}
 function find(id){return S.autos.filter(function(a){return String(a.id)===String(id)})[0]}
-function chooseTpl(){app.innerHTML='<div class="tl-card"><h2>New automation</h2><p style="margin:0 0 12px">Pick a starting point (you can change everything):</p><div class="dm-tpls">'+TPL.map(function(t,i){return '<button class="dm-tpl" data-tpl="'+i+'"><span class="e">'+t.e+'</span><b>'+esc(t.n)+'</b><small>'+esc(t.d)+'</small></button>'}).join('')+'</div><button class="dm-link" id="dmBack" style="margin-top:12px">← Back</button></div>';
- app.querySelectorAll('[data-tpl]').forEach(function(b){b.onclick=function(){edit(blank(TPL[+b.dataset.tpl]))}});app.querySelector('#dmBack').onclick=render;window.scrollTo(0,0)}
-
+function bind(){var q=function(s){return R.querySelectorAll(s)};
+ q('[data-tab]').forEach(function(b){b.onclick=function(){TAB=b.dataset.tab;ED=null;draw()}});
+ q('[data-new]').forEach(function(b){b.onclick=function(){var t=b.dataset.new;if(t){edit(blank(TPL[t==='comments'?0:3],t))}else{TAB='autos';R.innerHTML='<div class="rx-head"><button class="rx-ib" data-tab="autos">'+I.back+'</button><h1>New automation</h1><span style="width:48px"></span></div><div class="rx-card rx-pad">'+tpls()+'</div>'+nav();bind()}}});
+ q('[data-tpl]').forEach(function(b){b.onclick=function(){edit(blank(TPL[+b.dataset.tpl]))}});
+ q('[data-edit]').forEach(function(b){b.onclick=function(){var a=find(b.dataset.edit),c=JSON.parse(JSON.stringify(a.cfg));c.id=a.id;c.name=a.name;if(!c.acct&&S.accts[0])c.acct=S.accts[0].id;edit(c)}});
+ q('[data-try]').forEach(function(b){b.onclick=function(){var a=find(b.dataset.try),c=JSON.parse(JSON.stringify(a.cfg));c.id=a.id;tryIt(c,R.querySelector('[data-tryout="'+a.id+'"]'))}});
+ q('[data-del]').forEach(function(b){b.onclick=function(){if(!confirm('Delete this automation?'))return;post('ir_dm_delete',{id:b.dataset.del}).then(load)}});
+ q('[data-tog]').forEach(function(i){i.onchange=function(){post('ir_dm_toggle',{id:i.dataset.tog,on:i.checked?1:''}).then(function(r){if(!r.ok){alert(r.err);i.checked=!i.checked}else load()})}});
+ q('[data-disc]').forEach(function(b){b.onclick=function(){if(confirm('Remove this Instagram account? Its automations stop.'))post('ir_dm_disconnect',{ig:b.dataset.disc}).then(load)}});
+ q('[data-reload]').forEach(function(b){b.onclick=load})}
 /* ---------- editor ---------- */
-function edit(c){ED=c;window.scrollTo(0,0);
- var h='<div style="margin:0 0 12px"><button class="dm-link" id="dmBack">← All automations</button></div>';
- h+='<div class="tl-card dm-step"><h3><span class="dm-num">1</span>Which post?</h3><div id="dmPosts"></div></div>';
- h+='<div class="tl-card dm-step"><h3><span class="dm-num">2</span>What word should they comment?</h3><label class="tl-f"><input id="dmKw" placeholder="e.g. GUIDE" value="'+esc(c.keywords.join(', '))+'" autocapitalize="characters"><small>Capital letters, emojis and dots don\'t matter. Add more words with a comma: GUIDE, LINK</small></label><label class="dm-chk"><input type="checkbox" id="dmAny"'+(c.any_word?' checked':'')+'><span>Reply to <b>every</b> comment (no word needed)</span></label></div>';
- h+='<div class="tl-card dm-step"><h3><span class="dm-num">3</span>The DM they get</h3><div><span class="dm-pill" data-ins="{name}">+ Their @name</span><span class="dm-pill" data-ins="{link}">+ Your link</span></div><label class="tl-f"><textarea id="dmMsg" rows="5" maxlength="1000">'+esc(c.message)+'</textarea></label><label class="tl-f"><span>Your link <em>(optional)</em></span><input id="dmLink" type="url" inputmode="url" placeholder="https://yourwebsite.com/offer" value="'+esc(c.link)+'"><small>Your guide, booking page, WhatsApp link, anything. We count the clicks for you.</small></label><label class="dm-chk"><input type="checkbox" id="dmBtnOn"'+(c.button?' checked':'')+'><span>Show the link as a button</span></label><label class="tl-f" id="dmBtnBox"'+(c.button?'':' hidden')+'><span>Button text</span><input id="dmBtn" maxlength="20" value="'+esc(c.button||'Open link')+'"></label></div>';
- h+='<div class="tl-card dm-step"><h3><span class="dm-num">4</span>Reply under their comment too?</h3><label class="dm-chk"><input type="checkbox" id="dmPubOn"'+(c.public_on?' checked':'')+'><span>Yes, also reply publicly (shows others it works, and gets more comments)</span></label><label class="tl-f" id="dmPubBox"'+(c.public_on?'':' hidden')+'><textarea id="dmPub" rows="3">'+esc(c.public.join('\n'))+'</textarea><small>One reply per line. We pick a different one each time so it looks natural.</small></label></div>';
- h+='<details class="tl-card tl-more"'+(c.t.dms||c.t.story||!c.t.comments?' open':'')+'><summary>More ways to trigger it (optional)</summary><label class="dm-chk"><input type="checkbox" id="dmTc"'+(c.t.comments?' checked':'')+'><span>When someone <b>comments</b> the word on my post</span></label><label class="dm-chk"><input type="checkbox" id="dmTd"'+(c.t.dms?' checked':'')+'><span>When someone <b>sends me a DM</b> with the word</span></label><label class="dm-chk"><input type="checkbox" id="dmTs"'+(c.t.story?' checked':'')+'><span>When someone <b>replies to my Story</b> with the word</span></label></details>';
- h+='<div class="tl-card"><h3 style="margin:0 0 10px;font-size:17px">Preview</h3><div class="dm-phone" id="dmPrev"></div></div>';
- h+='<label class="tl-f"><span>Name <em>(optional, just for you)</em></span><input id="dmName" placeholder="e.g. Free guide giveaway" value="'+esc(c.name||'')+'"></label>';
- h+='<div class="tl-err" id="dmErr" hidden></div><button class="tl-go ig" id="dmSave">'+(c.id?'Save changes':'Save and switch on')+'</button><div class="tl-acts" style="justify-content:center"><button class="tl-btn2" id="dmTry">Try it first</button></div><div id="dmTryOut"></div>';
- app.innerHTML=h;posts();
- var $=function(s){return app.querySelector(s)};
- $('#dmBack').onclick=function(){render()};
- app.querySelectorAll('[data-ins]').forEach(function(p){p.onclick=function(){var t=$('#dmMsg'),v=p.dataset.ins,s=t.selectionStart||t.value.length;t.value=t.value.slice(0,s)+v+t.value.slice(t.selectionEnd||s);t.focus();prev()}});
- $('#dmBtnOn').onchange=function(){$('#dmBtnBox').hidden=!this.checked;prev()};
- $('#dmPubOn').onchange=function(){$('#dmPubBox').hidden=!this.checked};
- ['#dmKw','#dmMsg','#dmLink','#dmBtn','#dmAny'].forEach(function(s){$(s).addEventListener('input',prev);$(s).addEventListener('change',prev)});
- $('#dmSave').onclick=save;$('#dmTry').onclick=function(){tryIt(collect(),null,$('#dmTryOut'))};prev();
-}
-function collect(){var $=function(s){return app.querySelector(s)},c=ED;
- c.keywords=$('#dmKw').value.split(',').map(function(s){return s.trim()}).filter(Boolean);c.any_word=$('#dmAny').checked;c.message=$('#dmMsg').value;c.link=$('#dmLink').value.trim();
- c.button=$('#dmBtnOn').checked?($('#dmBtn').value.trim()||'Open link'):'';c.public_on=$('#dmPubOn').checked;c.public=$('#dmPub').value.split('\n').map(function(s){return s.trim()}).filter(Boolean);
- c.t={comments:$('#dmTc').checked,dms:$('#dmTd').checked,story:$('#dmTs').checked};c.name=$('#dmName').value.trim();return c}
-function prev(){var c=collect(),link=c.link?'https://ighoreuben.com/dmlink/…':'',btn=!!(c.link&&c.button);
+function edit(c){ED=c;TAB='autos';editor()}
+function editor(){var c=ED,h='<div class="rx-head"><button class="rx-ib" id="rxBack">'+I.back+'</button><h1>'+(c.id?'Edit automation':'New automation')+'</h1><span style="width:48px"></span></div>';
+ if(S.accts.length>1)h+='<div class="rx-card rx-pad rx-step"><h3><span class="rx-num">@</span>Which account?</h3><div>'+S.accts.map(function(a){return '<button class="rx-tag'+(c.acct===a.id?' on':'')+'" data-acct="'+esc(a.id)+'">'+(a.pic?'<img src="'+esc(a.pic)+'" alt="" onerror="this.remove()">':'')+'@'+esc(a.username)+'</button>'}).join('')+'</div></div>';
+ h+='<div class="rx-card rx-pad rx-step"><h3><span class="rx-num">1</span>When should it run?</h3><label class="rx-chk"><input type="checkbox" id="rxTc"'+(c.t.comments?' checked':'')+'><span>Someone <b>comments</b> on my post</span></label><label class="rx-chk"><input type="checkbox" id="rxTd"'+(c.t.dms?' checked':'')+'><span>Someone <b>sends me a DM</b> with the word</span></label><label class="rx-chk" style="margin:0"><input type="checkbox" id="rxTs"'+(c.t.story?' checked':'')+'><span>Someone <b>replies to my Story</b></span></label></div>';
+ h+='<div class="rx-card rx-pad rx-step" id="rxPostBox"'+(c.t.comments?'':' hidden')+'><h3><span class="rx-num">2</span>Which post?</h3><div id="rxPosts"></div></div>';
+ h+='<div class="rx-card rx-pad rx-step"><h3><span class="rx-num">3</span>Trigger word</h3><label class="rx-f"><input id="rxKw" placeholder="e.g. GUIDE" value="'+esc(c.keywords.join(', '))+'" autocapitalize="characters"><small>Capitals, emojis and dots don\'t matter. Add more with a comma.</small></label><label class="rx-chk" style="margin:0"><input type="checkbox" id="rxAny"'+(c.any_word?' checked':'')+'><span>Reply to <b>every</b> comment or message</span></label></div>';
+ h+='<div class="rx-card rx-pad rx-step"><h3><span class="rx-num">4</span>The DM they get</h3><div style="margin:0 0 8px"><button class="rx-tag" data-ins="{name}">+ Their @name</button><button class="rx-tag" data-ins="{link}">+ Your link</button></div><label class="rx-f"><textarea id="rxMsg" rows="5" maxlength="1000">'+esc(c.message)+'</textarea></label><label class="rx-f"><span>Your link <small>(optional, clicks are counted)</small></span><input id="rxLink" type="url" inputmode="url" placeholder="https://yourwebsite.com/offer" value="'+esc(c.link)+'"></label><label class="rx-chk"><input type="checkbox" id="rxBtnOn"'+(c.button?' checked':'')+'><span>Show the link as a button</span></label><label class="rx-f" id="rxBtnBox"'+(c.button?'':' hidden')+' style="margin:0"><span>Button text</span><input id="rxBtn" maxlength="20" value="'+esc(c.button||'Open link')+'"></label></div>';
+ h+='<div class="rx-card rx-pad rx-step" id="rxPubBox"'+(c.t.comments?'':' hidden')+'><h3><span class="rx-num">5</span>Reply under the comment?</h3><label class="rx-chk"><input type="checkbox" id="rxPubOn"'+(c.public_on?' checked':'')+'><span>Yes, reply publicly too</span></label><label class="rx-f" id="rxPubTxt"'+(c.public_on?'':' hidden')+' style="margin:0"><textarea id="rxPub" rows="3">'+esc(c.public.join('\n'))+'</textarea><small>One per line. A different one is picked each time.</small></label></div>';
+ h+='<div class="rx-card rx-pad rx-step"><h3><span class="rx-num">👀</span>Preview</h3><div class="rx-phone" id="rxPrev"></div></div>';
+ h+='<label class="rx-f"><span>Name <small>(just for you)</small></span><input id="rxName" placeholder="e.g. Free guide giveaway" value="'+esc(c.name||'')+'"></label>';
+ h+='<div class="rx-err" id="rxErr" hidden></div><button class="rx-btn rx-dark rx-wide" id="rxSave" style="padding:17px">'+(c.id?'Save changes':'Save and switch on')+'</button><button class="rx-btn rx-wide" id="rxTry" style="margin-top:10px;border:1px solid var(--line)">Try it first</button><div id="rxTryOut"></div>';
+ R.innerHTML=h+nav();
+ var $=function(s){return R.querySelector(s)};
+ $('#rxBack').onclick=function(){ED=null;draw()};
+ R.querySelectorAll('[data-tab]').forEach(function(b){b.onclick=function(){ED=null;TAB=b.dataset.tab;draw()}});
+ R.querySelectorAll('[data-acct]').forEach(function(b){b.onclick=function(){collect();ED.acct=b.dataset.acct;ED.post='';ED.post_img='';editor()}});
+ R.querySelectorAll('[data-ins]').forEach(function(p){p.onclick=function(){var t=$('#rxMsg'),v=p.dataset.ins,s=t.selectionStart||t.value.length;t.value=t.value.slice(0,s)+v+t.value.slice(t.selectionEnd||s);t.focus();prev()}});
+ $('#rxTc').onchange=function(){$('#rxPostBox').hidden=!this.checked;$('#rxPubBox').hidden=!this.checked};
+ $('#rxBtnOn').onchange=function(){$('#rxBtnBox').hidden=!this.checked;prev()};
+ $('#rxPubOn').onchange=function(){$('#rxPubTxt').hidden=!this.checked};
+ ['#rxKw','#rxMsg','#rxLink','#rxBtn','#rxAny'].forEach(function(s){$(s).addEventListener('input',prev);$(s).addEventListener('change',prev)});
+ $('#rxSave').onclick=save;$('#rxTry').onclick=function(){tryIt(collect(),$('#rxTryOut'))};
+ posts();prev();window.scrollTo(0,0)}
+function collect(){var $=function(s){return R.querySelector(s)},c=ED;
+ c.keywords=$('#rxKw').value.split(',').map(function(s){return s.trim()}).filter(Boolean);c.any_word=$('#rxAny').checked;c.message=$('#rxMsg').value;c.link=$('#rxLink').value.trim();
+ c.button=$('#rxBtnOn').checked?($('#rxBtn').value.trim()||'Open link'):'';c.public_on=$('#rxPubOn').checked;c.public=$('#rxPub').value.split('\n').map(function(s){return s.trim()}).filter(Boolean);
+ c.t={comments:$('#rxTc').checked,dms:$('#rxTd').checked,story:$('#rxTs').checked};c.name=$('#rxName').value.trim();return c}
+function prev(){var c=collect(),link=c.link?location.origin+'/dmlink/…':'',btn=!!(c.link&&c.button);
  var m=c.message.replace(/\{name\}|\{username\}/gi,'@their_name').replace(/\{keyword\}/gi,c.keywords[0]||'');
- if(link&&!btn){m=/\{link\}/i.test(m)?m.replace(/\{link\}/gi,link):m+'\n'+link}else{m=m.replace(/[ \t]*\{link\}[ \t]*/gi,' ')}m=m.replace(/[ \t]+\n/g,'\n').replace(/\n{3,}/g,'\n\n')
- app.querySelector('#dmPrev').innerHTML='<div class="dm-in">'+esc(c.any_word?'Love this! 😍':(c.keywords[0]||'GUIDE'))+'</div><div class="dm-out">'+esc(m.trim()||'…')+(btn?'<div class="dm-bt">'+esc(c.button)+'</div>':'')+'</div>'}
-function posts(){var box=app.querySelector('#dmPosts'),c=ED;
- var anyBtn='<button class="dm-post dm-any'+(c.any_post?' on':'')+'" data-any="1">🌐<br>Any post<br><small style="font-weight:600;color:var(--muted)">incl. new ones</small></button>';
- if(!S.acct){c.any_post=true;box.innerHTML='<div class="dm-grid">'+anyBtn.replace('dm-post dm-any','dm-post dm-any on')+'</div><small style="color:var(--muted)">Connect your Instagram to pick one specific post. For now it works on any post.</small>';return}
- box.innerHTML='<div class="tl-status"><span class="tl-spin"></span><span>Loading your posts…</span></div>';
- var draw=function(){box.innerHTML='<div class="dm-grid">'+anyBtn+(MEDIA||[]).map(function(m){return '<button class="dm-post'+(!c.any_post&&c.post===m.id?' on':'')+'" data-id="'+esc(m.id)+'" data-img="'+esc(m.img)+'" title="'+esc(m.cap)+'">'+(m.img?'<img src="'+esc(m.img)+'" alt="" loading="lazy">':'')+'</button>'}).join('')+'</div><small style="color:var(--muted)">Tap the post people will comment on.</small>';
-  box.querySelectorAll('.dm-post').forEach(function(b){b.onclick=function(){if(b.dataset.any){c.any_post=true;c.post='';c.post_img=''}else{c.any_post=false;c.post=b.dataset.id;c.post_img=b.dataset.img}draw()}})};
- if(MEDIA)return draw();post('ir_dm_media').then(function(r){MEDIA=r.ok?r.media:[];if(!r.ok)box.innerHTML='<div class="tl-err">'+esc(r.err)+'</div>';else draw()})}
-function save(){var c=collect(),b=app.querySelector('#dmSave'),e=app.querySelector('#dmErr');b.disabled=true;b.textContent='Saving…';e.hidden=true;
+ if(link&&!btn){m=/\{link\}/i.test(m)?m.replace(/\{link\}/gi,link):m+'\n'+link}else{m=m.replace(/[ \t]*\{link\}[ \t]*/gi,' ')}
+ m=m.replace(/[ \t]+\n/g,'\n').replace(/\n{3,}/g,'\n\n');
+ R.querySelector('#rxPrev').innerHTML='<div class="rx-in">'+esc(c.any_word?'Love this! 😍':(c.keywords[0]||'GUIDE'))+'</div><div class="rx-out">'+esc(m.trim()||'…')+(btn?'<div class="rx-bt">'+esc(c.button)+'</div>':'')+'</div>'}
+function posts(){var box=R.querySelector('#rxPosts'),c=ED;if(!box)return;
+ var anyB='<button class="rx-post any'+(c.any_post?' on':'')+'" data-any="1">🌐<br>Any post<br><small class="rx-muted">incl. new ones</small></button>';
+ if(!S.accts.length){c.any_post=true;box.innerHTML='<div class="rx-grid">'+anyB.replace('rx-post any','rx-post any on')+'</div><small class="rx-muted">Connect Instagram to pick one post.</small>';return}
+ var key=c.acct||S.accts[0].id;
+ var paint=function(){box.innerHTML='<div class="rx-grid">'+anyB+(MEDIA[key]||[]).map(function(m){return '<button class="rx-post'+(!c.any_post&&c.post===m.id?' on':'')+'" data-id="'+esc(m.id)+'" data-img="'+esc(m.img)+'" title="'+esc(m.cap)+'">'+(m.img?'<img src="'+esc(m.img)+'" alt="" loading="lazy">':'')+'</button>'}).join('')+'</div>';
+  box.querySelectorAll('.rx-post').forEach(function(b){b.onclick=function(){if(b.dataset.any){c.any_post=true;c.post='';c.post_img=''}else{c.any_post=false;c.post=b.dataset.id;c.post_img=b.dataset.img}paint()}})};
+ if(MEDIA[key])return paint();box.innerHTML='<div class="rx-load" style="height:120px"><i></i></div>';
+ post('ir_dm_media',{ig:key}).then(function(r){MEDIA[key]=r.ok?r.media:[];if(!r.ok)box.innerHTML='<div class="rx-alert bad">'+esc(r.err)+'</div>';else paint()})}
+function save(){var c=collect(),b=R.querySelector('#rxSave'),e=R.querySelector('#rxErr');b.disabled=true;b.textContent='Saving…';e.hidden=true;
  post('ir_dm_save',{cfg:JSON.stringify(c)}).then(function(r){b.disabled=false;b.textContent=c.id?'Save changes':'Save and switch on';
   if(!r.ok){e.textContent=r.err;e.hidden=false;e.scrollIntoView({behavior:'smooth',block:'center'});return}
-  C.msg=c.id?'Saved.':(S.acct?'Your automation is on! Comment the word from another account to see it work.':'Saved! It switches on as soon as you connect your Instagram.');load()})}
-
-/* ---------- try it ---------- */
-function tryIt(c,card,out){if(!out){out=document.createElement('div');card.appendChild(out)}
- out.innerHTML='<div class="tl-card" style="margin-top:12px;background:var(--soft)"><b>Try it</b><p style="margin:6px 0 10px;color:var(--muted);font-size:14px">Type a comment like your followers would. Nothing is sent.</p><div class="dm-row"><input class="dmTryIn" style="flex:1;min-width:0;font:inherit;font-size:16px;padding:12px;border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--text)" value="'+esc((c.keywords[0]||'Love this')+' please! 🙏')+'"><button class="tl-btn2 dmTryGo">Test</button></div><div class="dmTryRes" style="margin-top:12px"></div></div>';
- var go=function(){var res=out.querySelector('.dmTryRes');res.innerHTML='<div class="tl-status"><span class="tl-spin"></span></div>';
-  post('ir_dm_test',{cfg:JSON.stringify(c),text:out.querySelector('.dmTryIn').value}).then(function(r){if(!r.ok){res.innerHTML='<div class="tl-err">'+esc(r.err)+'</div>';return}
-   if(!r.match){res.innerHTML='<div class="dm-res no">'+esc(r.why)+'</div>';return}
-   res.innerHTML='<div class="dm-res ok" style="margin:0 0 8px">✓ This comment would get your DM:</div><div class="dm-phone"><div class="dm-out">'+esc(r.dm)+(r.button?'<div class="dm-bt">'+esc(r.button)+'</div>':'')+'</div></div>'+(r.pub?'<p style="margin:10px 0 0;font-size:14px"><b>Public reply:</b> '+esc(r.pub)+'</p>':'')})};
- out.querySelector('.dmTryGo').onclick=go;go()}
-
+  C.msg=c.id?'Saved.':(S.accts.length?'Your automation is live! Comment the word from another account to test it.':'Saved. It goes live when you connect Instagram.');ED=null;TAB='autos';load()})}
+function tryIt(c,out){out.innerHTML='<div class="rx-card rx-pad" style="margin-top:12px;background:var(--soft)"><b>Try it</b><p class="rx-muted" style="margin:4px 0 10px;font-size:14px">Type a comment like a follower would. Nothing is sent.</p><div class="rx-row"><input class="rxTi" style="flex:1;min-width:0;font-size:16px;padding:12px 14px;border:1.5px solid var(--line);border-radius:16px;background:#fff" value="'+esc((c.keywords[0]||'Love this')+' please! 🙏')+'"><button class="rx-btn rx-dark rxTg" style="padding:12px 16px">Test</button></div><div class="rxTr" style="margin-top:12px"></div></div>';
+ var go=function(){var res=out.querySelector('.rxTr');res.innerHTML='<div class="rx-load" style="height:60px"><i></i></div>';
+  post('ir_dm_test',{cfg:JSON.stringify(c),text:out.querySelector('.rxTi').value}).then(function(r){if(!r.ok){res.innerHTML='<div class="rx-alert bad">'+esc(r.err)+'</div>';return}
+   if(!r.match){res.innerHTML='<div class="rx-alert bad">'+esc(r.why)+'</div>';return}
+   res.innerHTML='<div class="rx-alert ok" style="margin-bottom:8px">✓ This comment gets your DM</div><div class="rx-phone"><div class="rx-out">'+esc(r.dm)+(r.button?'<div class="rx-bt">'+esc(r.button)+'</div>':'')+'</div></div>'+(r.pub?'<p style="margin:10px 0 0;font-size:14px"><b>Public reply:</b> '+esc(r.pub)+'</p>':'')})};
+ out.querySelector('.rxTg').onclick=go;go()}
 load();
 })();
 JS;
@@ -1069,8 +1223,8 @@ JS;
 
 add_action( 'admin_menu', function () {
 	global $submenu;
-	add_menu_page( 'DM Automation', 'DM Automation', 'manage_options', 'ir-dm', 'ir_dm_admin', 'dashicons-instagram', 58 );
-	add_submenu_page( 'ir-dm', 'DM Automation setup', 'Setup', 'manage_options', 'ir-dm', 'ir_dm_admin' );
+	add_menu_page( IR_DM_NAME, IR_DM_NAME, 'manage_options', 'ir-dm', 'ir_dm_admin', 'dashicons-instagram', 58 );
+	add_submenu_page( 'ir-dm', IR_DM_NAME . ' setup', 'Setup', 'manage_options', 'ir-dm', 'ir_dm_admin' );
 	$submenu['ir-dm'][] = [ 'Open the app ↗', 'manage_options', ir_dm_url() ];
 } );
 
@@ -1085,6 +1239,7 @@ add_action( 'admin_post_ir_dm_save', function () {
 		if ( $v !== '' ) { $o[ $k ] = ir_dm_enc( $v ); }
 		if ( ! empty( $_POST[ $k . '_clear' ] ) ) { $o[ $k ] = ''; }
 	}
+	$o['access'] = in_array( $_POST['access'] ?? '', [ 'everyone', 'members', 'admin' ], true ) ? (string) $_POST['access'] : 'everyone';
 	$o['graph'] = preg_match( '/^v\d+\.\d+$/', (string) ( $_POST['graph'] ?? '' ) ) ? (string) $_POST['graph'] : 'v25.0';
 	$o['cap_private'] = max( 1, min( 750, (int) ( $_POST['cap_private'] ?? 750 ) ) );
 	$o['cap_dm'] = max( 1, min( 1000, (int) ( $_POST['cap_dm'] ?? 200 ) ) );
@@ -1105,7 +1260,7 @@ function ir_dm_admin() {
 	$copy = function ( $v ) { return '<code style="user-select:all;padding:4px 8px">' . esc_html( $v ) . '</code>'; };
 	echo '<div class="wrap" style="max-width:900px"><h1>DM Automation</h1>';
 	if ( isset( $_GET['saved'] ) ) { echo '<div class="notice notice-success"><p>Saved.</p></div>'; }
-	echo '<p><a class="button button-primary button-hero" href="' . esc_url( ir_dm_url() ) . '">Open DM Automation →</a></p><p>Your private app lives at <a href="' . esc_url( ir_dm_url() ) . '">' . esc_html( ir_dm_url() ) . '</a> (only admins can open it). This page is the one-time Meta setup.</p>';
+	echo '<p><a class="button button-primary button-hero" href="' . esc_url( ir_dm_url() ) . '">Open ' . esc_html( IR_DM_NAME ) . ' →</a></p><p>The app lives at <a href="' . esc_url( ir_dm_url() ) . '">' . esc_html( ir_dm_url() ) . '</a>. This page is the one-time Meta setup.</p>';
 	echo '<h2>Status</h2><table class="widefat striped" style="max-width:900px"><tbody>';
 	echo '<tr><td>' . $ok( ir_dm_ready() ) . ' Meta app details saved</td><td>' . ( ir_dm_ready() ? 'You can connect Instagram in the app.' : 'Fill in the form below.' ) . '</td></tr>'; // phpcs:ignore
 	echo '<tr><td>' . $ok( $last > 0 ) . ' Webhooks arriving from Meta</td><td>' . ( $last ? 'Last one ' . esc_html( human_time_diff( $last ) ) . ' ago' : 'None yet' ) . ( $bad && $bad > $last ? ' · <b style="color:#dc2626">A webhook was rejected (wrong app secret?) ' . esc_html( human_time_diff( $bad ) ) . ' ago</b>' : '' ) . '</td></tr>'; // phpcs:ignore
@@ -1127,6 +1282,8 @@ function ir_dm_admin() {
 	echo '<tr><th>Facebook app secret</th><td><input name="fb_secret" type="password" class="regular-text" placeholder="' . ( ! empty( $o['fb_secret'] ) ? '•••••••• saved (leave blank to keep)' : '' ) . '" autocomplete="off"><p class="description">App settings › Basic › App secret. Used to check webhook signatures (and for Unified login).</p></td></tr>';
 	echo '<tr><th>Meta app ID</th><td><input name="meta_app_id" class="regular-text" value="' . esc_attr( $o['meta_app_id'] ?? '' ) . '"><p class="description">Unified login only. App settings › Basic › App ID.</p></td></tr>';
 	echo '<tr><th>Login configuration ID</th><td><input name="config_id" class="regular-text" value="' . esc_attr( $o['config_id'] ?? '' ) . '"><p class="description">Unified login only. Include instagram_basic, instagram_manage_messages, instagram_manage_comments and business_management.</p></td></tr>';
+	$acc = ir_dm_opt( 'access', 'everyone' );
+	echo '<tr><th>Who can use ' . esc_html( IR_DM_NAME ) . '</th><td><select name="access"><option value="everyone"' . selected( $acc, 'everyone', false ) . '>Anyone who signs up</option><option value="members"' . selected( $acc, 'members', false ) . '>AI Profit System / Cold Outreach members</option><option value="admin"' . selected( $acc, 'admin', false ) . '>Only me (admins)</option></select><p class="description">Sign-up page: ' . esc_html( ir_dm_url() ) . '. Note: until Meta approves your app (App Review), only Instagram accounts added as testers on your Meta app can connect.</p></td></tr>';
 	echo '<tr><th>Graph API version</th><td><input name="graph" value="' . esc_attr( ir_dm_graph_ver() ) . '" style="width:90px"></td></tr>';
 	echo '<tr><th>Hourly limits per account</th><td>Comment DMs <input name="cap_private" type="number" value="' . (int) ir_dm_opt( 'cap_private', 750 ) . '" style="width:80px"> &nbsp; DM/Story replies <input name="cap_dm" type="number" value="' . (int) ir_dm_opt( 'cap_dm', 200 ) . '" style="width:80px"></td></tr>';
 	echo '</tbody></table>';
