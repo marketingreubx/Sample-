@@ -1,0 +1,28 @@
+# Public HTTPS on your own server (VPS). Caddy gets a free Let's Encrypt certificate.
+# Requirements: a domain whose DNS A record points at this server, ports 80 + 443 open.
+#   In .env set: DOMAIN=dm.yourdomain.com, APP_URL=https://dm.yourdomain.com, DEMO_MODE=false (+ Meta vars)
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+services:
+  web:
+    ports: !reset []
+    environment:
+      TRUST_PROXY: "true"
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      DOMAIN: ${DOMAIN:?Set DOMAIN in .env}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - web
+
+volumes:
+  caddy_data:
+  caddy_config:

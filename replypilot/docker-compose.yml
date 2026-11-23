@@ -1,0 +1,66 @@
+# Local / single-server stack: PostgreSQL, Redis, web app, background worker.
+#   cp .env.example .env   (fill it in; DEMO_MODE=true works with no Meta credentials)
+#   docker compose up -d --build
+# Then open http://localhost:3000. For public HTTPS add docker-compose.prod.yml (Caddy).
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: replypilot
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-replypilot}
+      POSTGRES_DB: replypilot
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U replypilot"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes", "--maxmemory-policy", "noeviction"]
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  web:
+    build: .
+    image: replypilot:latest
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      DATABASE_URL: postgresql://replypilot:${POSTGRES_PASSWORD:-replypilot}@postgres:5432/replypilot
+      REDIS_URL: redis://redis:6379
+    ports:
+      - "${WEB_PORT:-3000}:3000"
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+
+  worker:
+    image: replypilot:latest
+    restart: unless-stopped
+    command: ["node", "dist/worker/index.js"]
+    env_file: .env
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      DATABASE_URL: postgresql://replypilot:${POSTGRES_PASSWORD:-replypilot}@postgres:5432/replypilot
+      REDIS_URL: redis://redis:6379
+    healthcheck:
+      disable: true
+    depends_on:
+      web: { condition: service_started }
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+
+volumes:
+  pgdata:
+  redisdata:
