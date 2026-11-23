@@ -1,0 +1,119 @@
+## whatsapp-business-messaging | WhatsApp Business Messaging | whatsapp-community-marketing | Ten prompts for WhatsApp Business: catalogues, broadcasts, replies and groups.
+Business profile and catalogue | WhatsApp Business setup specialist | A profile and catalogue that make buying easy. | business; products or services; prices; hours | write the business description; write catalogue item names and descriptions; write the greeting message; write the away message
+Quick reply library | customer care writer | A set of saved replies for common questions. | top 10 customer questions; prices; policies; tone | write 15 quick replies with shortcuts; add one that qualifies the customer; add one that closes
+Broadcast that people read | broadcast copywriter | Broadcasts that are useful and not spammy. | audience; offer; frequency; call to action | write 5 broadcasts; add subject style first lines; add an opt out line
+New customer onboarding flow | onboarding writer | A flow that welcomes new customers. | business; first purchase; next step; tone | write 4 messages over 3 days
+Abandoned inquiry follow up | follow up writer | Follow ups to people who asked but did not buy. | what they asked; price; days passed; offer | write 4 follow ups
+WhatsApp group rules and welcome | group admin | Rules and a welcome for a customer group. | group purpose; rules; benefits; moderation | write the welcome; write the rules; write a monthly reminder
+Voice note sales scripts | voice sales coach | Short voice notes for selling. | offer; objections; audience; call to action | write 5 scripts under 40 seconds
+Status marketing plan | status marketer | A week of WhatsApp Status content. | business; offers; audience; call to action | plan 7 days; write each status; add a call to reply
+Click to WhatsApp ad copy | ad copywriter | Copy for ads that open WhatsApp. | offer; audience; platform; first message | write 5 ads and the pre filled message
+Customer service escalation | support lead | Handling complaints on WhatsApp. | common issues; fixes; compensation rules; tone | write 8 replies; add an escalation script
+
+## building-an-online-community | Building An Online Community | whatsapp-community-marketing | Ten prompts for starting and growing a paid or free community.
+Community concept | community strategist | A clear community idea. | audience; transformation; format; platform | write the promise; define member types; plan the first month
+Founding members offer | launch strategist | Getting the first 50 members. | community; price; benefits; deadline | write the offer; write the invitation; write the follow up
+Weekly community rituals | community manager | Weekly activities that keep members engaged. | community; schedule; topics; tools | design 5 rituals; write posts for each
+Welcome sequence | onboarding writer | A welcome for new members. | community; rules; first task; links | write 3 messages
+Member spotlight | community storyteller | Highlighting members. | member; story; result; platform | write the spotlight
+Moderation guide | moderator | Handling conflict and spam. | rules; common issues; tone; escalation | write the guide
+Paid membership pricing | membership pricing advisor | Pricing a community. | value; competitors; audience; costs | give 3 price options
+Churn prevention | retention strategist | Keeping members. | cancel reasons; benefits; messages; offers | write 5 messages
+Events and challenges | event planner | Monthly events. | community; goals; schedule; rewards | plan 3 events
+Community launch announcement | announcement writer | An announcement. | community; benefits; price; link | write posts for 3 platforms
+
+## personal-brand-foundations | Personal Brand Foundations | personal-branding | Ten prompts to define who you are, what you stand for and how you show up.
+Brand positioning | personal brand strategist | A clear position. | skills; audience; values; proof | write a positioning statement; write a one line pitch; list 3 proof points
+Brand story | storyteller | My story in 3 lengths. | background; turning points; values; mission | write 50, 150 and 400 word versions
+Bio library | bio writer | Bios for every platform. | name; role; achievements; tone | write bios for Instagram, LinkedIn, speaker and email signature
+Content pillars | content strategist | Pillars for my brand. | skills; audience; stories; offers | define 4 pillars; give 10 ideas each
+Values and voice | brand voice coach | My voice and values. | values; examples; audience; things to avoid | define the voice; give examples
+Credibility inventory | credibility auditor | Listing proof. | experience; results; certificates; clients | organise proof
+Visual identity brief | visual brand briefer | A brief for visuals. | brand; mood; colours; audience | write the brief
+Signature talk topics | speaker coach | Topics. | expertise; audience; stories; goals | write 5 topics with titles
+Headshot and photo plan | photo planner | A shoot plan. | brand; outfits; locations; uses | write the shot list
+Brand audit | brand auditor | An audit. | profiles; content; audience; goals | score and fix
+
+## personal-brand-visibility | Personal Brand Visibility | personal-branding | Ten prompts to get seen, remembered and invited.
+LinkedIn profile rewrite | LinkedIn profile writer | A profile that attracts. | role; skills; achievements; audience | write the headline; write the about; write featured section ideas
+Thought leadership posts | thought leadership writer | Posts. | topic; opinion; story; audience | write 5 posts
+Guest content pitches | pitch writer | Pitches to publications. | publication; topic; angle; proof | write 3 pitches
+Podcast guest pitch | podcast guest pitcher | A pitch. | podcast; topic; proof; ask | write the pitch
+Speaking proposal | speaker proposal writer | A proposal. | event; topic; audience; outcome | write the proposal
+Newsletter concept | newsletter strategist | A newsletter. | audience; promise; frequency; format | write the concept and first issue
+Networking plan | networking coach | A plan. | goals; targets; events; time | plan 90 days
+Collaboration ideas | collaboration strategist | Collaboration ideas. | audience; partners; offer; goal | list 10 ideas
+Press page | press page writer | A press page. | bio; achievements; topics; contact | write the page
+Visibility tracking | visibility analyst | Tracking progress. | goals; channels; metrics; time | design a tracker
+
+## irresistible-offer-design | Irresistible Offer Design | offer-creation-positioning | Ten prompts to design offers people understand quickly and want.
+Offer from skills | offer designer | An offer from my skills. | skills; audience; result; time | write 5 offer ideas; pick 1; write the promise
+Offer stack | offer stack builder | Bonuses and extras. | core offer; bonuses; price; audience | design the stack
+Guarantee design | risk reversal writer | A guarantee. | offer; risk; terms; tone | write 3 options
+Naming the offer | offer namer | Names. | offer; audience; result; tone | write 20 names
+Pricing the offer | pricing strategist | A price. | costs; value; market; audience | recommend a price
+One line offer statement | offer statement writer | A clear statement. | audience; result; method; time | write 10 statements
+Offer page outline | offer page planner | A page. | offer; audience; proof; price | write the outline
+Beta offer | beta launch planner | A beta offer. | offer; limit; price; feedback | write the plan
+Offer for existing clients | upsell designer | An upsell. | clients; needs; price; timing | write the offer
+Offer test plan | offer tester | Testing demand. | offer; channels; audience; time | design the test
+
+## positioning-and-niche-choice | Positioning And Niche Choice | offer-creation-positioning | Ten prompts to choose a niche and stand out from competitors.
+Niche shortlist | niche strategist | Choosing a niche. | skills; interests; market; goals | give 5 niches; score them
+Ideal client profile | ICP builder | A profile of the best client. | past clients; niche; budget; problems | write the profile
+Competitor map | competitive analyst | Competitors. | niche; competitors; prices; positioning | map the market
+Unique angle | angle finder | A fresh angle. | niche; strengths; gaps; audience | give 10 angles
+Positioning statement | statement writer | A statement. | audience; result; method; proof | write 5
+Customer language mining | language researcher | Words customers use. | reviews pasted; niche; problems; goals | extract phrases
+Niche validation | validation coach | Testing a niche. | niche; audience; offer; test | write a 2 week test
+Messaging hierarchy | messaging strategist | Messaging. | audience; benefits; proof; tone | write the hierarchy
+Repositioning plan | repositioning coach | Changing positioning. | current; new; audience; risks | write the plan
+Elevator pitch | pitch coach | Short pitches. | business; audience; result; tone | write 10 pitches
+
+## email-sequences-that-sell | Email Sequences That Sell | email-marketing | Ten prompts for welcome, nurture, launch and win back sequences.
+Welcome sequence | welcome email writer | A welcome sequence. | business; lead magnet; offer; tone | write 5 emails
+Nurture sequence | nurture writer | A nurture sequence. | audience; value; offer; length | write 7 emails
+Sales sequence | sales email writer | A sales sequence. | offer; price; deadline; proof | write 5 emails
+Cart or booking reminder | reminder writer | Reminders. | offer; barriers; deadline; link | write 3 emails
+Post purchase sequence | post purchase writer | After purchase. | product; use; review; upsell | write 4 emails
+Re engagement sequence | win back writer | Win back. | audience; time; offer; tone | write 3 emails
+Newsletter series | newsletter writer | A series. | topic; audience; format; call to action | write 4 issues
+Webinar sequence | webinar email writer | Webinar emails. | webinar; date; offer; reminders | write 6 emails
+Birthday and milestone emails | milestone writer | Milestones. | audience; offer; tone; timing | write 4 emails
+Plain text vs designed emails | email advisor | Choosing format. | audience; goal; brand; tool | give guidance
+
+## email-deliverability-and-lists | Email Deliverability And Lists | email-marketing | Ten prompts to grow a healthy email list and keep it out of spam.
+Opt in form copy | form copywriter | Form copy. | offer; audience; fields; privacy | write 5 versions
+Double opt in message | confirmation writer | A confirmation. | list; benefit; link; tone | write 3 versions
+Segmentation plan | segmentation strategist | Segments. | audience; behaviours; offers; tool | define segments
+Subject line testing | testing coach | Testing. | audience; goal; subject lines; sample size | design test
+Spam trigger check | deliverability advisor | Checking an email. | email text; links; images; domain | list risks
+Unsubscribe page | unsubscribe writer | An unsubscribe page. | list; options; tone; feedback | write the page
+List cleaning plan | list hygiene specialist | Cleaning a list. | list; inactive; rules; tool | write the plan
+Email signature | signature writer | A signature. | name; role; links; goal | write 3 options
+Newsletter growth plan | list growth strategist | Growing a list. | audience; channels; lead magnet; goal | plan 30 days
+Email reporting | email analyst | Reading stats. | opens; clicks; revenue; goals | give actions
+
+## keep-clients-longer | Keep Clients Longer | client-retention-upselling | Ten prompts for loyalty, renewals and referrals.
+Client check in schedule | client success manager | A check in plan. | clients; services; frequency; channels | design the schedule; write messages
+Early warning signs | churn analyst | Spotting at risk clients. | behaviours; reasons; signals; actions | write a checklist
+Win back message | win back writer | A message to a lost client. | history; reason; offer; tone | write 3 versions
+Loyalty rewards | loyalty designer | Rewards. | clients; budget; goals; rules | design the program
+Surprise and delight | delight designer | Small gestures. | clients; budget; calendar; personality | give 20 ideas
+Renewal reminder | renewal writer | Renewals. | contract; results; price; date | write 3 messages
+Upgrade offer | upgrade writer | An upgrade. | current plan; benefits; price; timing | write the offer
+Referral program | referral designer | Referrals. | clients; reward; process; tracking | design it
+Client feedback loop | feedback designer | A loop. | questions; timing; actions; tools | design it
+Anniversary message | anniversary writer | A milestone message. | client; time together; results; offer | write 3 versions
+
+## upsells-and-cross-sells | Upsells And Cross Sells | client-retention-upselling | Ten prompts to increase the value of each customer ethically.
+Upsell ideas | revenue strategist | Ideas. | offers; customers; prices; costs | list 15 ideas
+Cross sell messages | cross sell writer | Messages. | purchase; related offer; benefit; price | write 5 messages
+Bundle design | bundle designer | Bundles. | products; prices; margins; audience | design 3 bundles
+Order bump copy | order bump writer | A bump. | main offer; bump; price; reason | write 5 versions
+Post purchase upsell | post purchase upsell writer | After purchase. | purchase; next step; offer; timing | write the message
+Subscription offer | subscription designer | A subscription. | product; frequency; price; benefits | design it
+Premium tier | premium offer designer | A premium tier. | current offer; extras; price; audience | design it
+Price anchoring | pricing psychologist | Anchoring. | options; prices; benefits; audience | write the layout
+Upsell objection replies | objection handler | Replies. | upsell; price; fear; tone | write 6 replies
+Customer lifetime value plan | LTV analyst | Increasing LTV. | customers; spend; frequency; goals | write the plan

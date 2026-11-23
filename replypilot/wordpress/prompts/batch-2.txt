@@ -1,0 +1,119 @@
+## smm-client-retention | Keeping Social Media Clients | smm-toolkit | Ten prompts to keep clients happy, paid and staying.
+Client feedback request | client success manager | A short survey that gets honest feedback. | client; services; month count; goals | write 6 questions; add a friendly intro; suggest how to act on answers
+Handling an angry client | conflict resolution coach | A calm reply to a frustrated client. | what they said; what happened; what I can fix; relationship value | write the reply; own what is mine; propose a fix and timeline
+Scope creep reply | boundary setter | A polite no to extra work not in scope. | the request; my scope; extra price option; client mood | write 3 replies; add a paid add on offer
+Late payment message | accounts receivable specialist | Reminders for late invoices. | invoice amount; days late; contract terms; relationship | write 3 escalating messages; keep tone respectful
+Client ghosting recovery | re engagement specialist | Getting a silent client talking again. | last message; days of silence; pending work; offer | write 3 messages; add a deadline that is fair
+Testimonial request | review collector | Asking for a testimonial without awkwardness. | client result; platform for review; format; incentive none | write the ask; add 3 guiding questions; add a thank you
+Referral request | referral strategist | Asking happy clients for introductions. | client; their network; what I offer; reward | write the message; add a simple script for them to forward
+Offboarding a client | professional exit planner | Ending a contract smoothly. | reason; notice; handover items; relationship | write the message; list the handover; leave the door open
+Annual review conversation | account strategist | A yearly review that leads to renewal. | year results; goals next year; budget; capacity | write an agenda; prepare talking points; write the follow up
+Client appreciation ideas | customer delight designer | Low cost ways to make clients feel valued. | client types; budget; calendar; my personality | give 15 ideas; sort by effort; write 3 sample messages
+
+## esthetician-growth-prompts | Esthetician Growth Prompts | niche-playbooks | Ten prompts built for estheticians and skincare studios.
+Treatment menu copy | skincare marketing copywriter | Treatment descriptions that sell. | treatments; skin concerns; price; duration | write a name and 2 sentence description for each; add who it is for
+Facial before and after captions | skincare content writer | Captions for results photos with consent. | treatment; client concern; sessions; timeframe | write 3 captions; add a disclaimer line; add a call to action
+Skin education posts | licensed style educator | Educational posts that build trust. | concerns; ingredients; myths; audience | plan 10 posts; write captions; add visuals
+Skincare Reel ideas | beauty video strategist | Reel ideas that attract booking clients. | studio; treatments; audience; city | list 20 ideas; write 3 full scripts
+Consultation form questions | intake specialist | A client intake form. | treatments; skin concerns; allergies; consent | write the questions; add a consent block; add a privacy note
+Aftercare messages | client care coordinator | Aftercare texts to send after a treatment. | treatments; do and do not; products; follow up date | write one message per treatment; add a check in
+Package and membership ideas | beauty business consultant | Packages that increase repeat visits. | treatments; prices; capacity; costs | design 3 packages; price them; write the pitch
+Reviews and Google profile | local SEO writer | A profile that ranks and converts. | studio; city; services; hours | write the description; list keywords; suggest photos
+Instagram bio for an esthetician | profile copywriter | Bio options that fill the calendar. | name; city; specialty; booking link | write 5 bios; recommend one
+Booking DM script | appointment setter | A DM flow from inquiry to booked. | inquiry types; prices; deposit rule; calendar | write the replies; add deposit message; add reminder
+
+## salon-and-hair-business | Salon And Hair Business | niche-playbooks | Ten prompts for hairstylists, salons and braiding businesses.
+Service menu and prices | salon manager | A clear service menu. | services; prices; durations; add ons | write the menu; add a deposit policy; add booking steps
+Hair transformation captions | hair content writer | Captions for transformation posts. | hairstyle; client goal; time taken; products | write 3 captions; add hashtags; add booking line
+Booking and deposit policy | policy writer | Rules that protect your time. | cancellations; lateness; deposits; refunds | write the policy; write a short Story version
+Reel ideas for stylists | hair video strategist | Reels that attract clients. | styles offered; audience; trends; city | list 20 ideas; write 3 scripts
+Product recommendation posts | retail advisor | Posts that sell hair care products. | products; hair types; benefits; price | write 5 posts; add a call to action
+Client appointment reminders | reminder writer | Reminder messages. | appointment type; time; prep; cancellation rule | write 3 reminders; add a confirm reply
+Salon opening promo | grand opening marketer | A launch promotion. | location; date; offers; audience | write the plan; write 5 posts; write DM replies
+Hair care education | hair educator | Educational content. | hair types; routines; mistakes; products | plan 10 posts; write captions
+Fully booked and waitlist messages | scheduler | Handling a full calendar. | availability; waitlist rule; price; next openings | write messages; add a reward for flexible clients
+Referral program | loyalty program designer | A referral idea for a salon. | reward; customers; tracking; budget | design the program; write the announcement
+
+## restaurant-and-food-business | Restaurant And Food Business | niche-playbooks | Ten prompts for restaurants, caterers, bakers and food vendors.
+Menu descriptions | food copywriter | Mouth watering menu text. | dishes; ingredients; price; tone | write descriptions; add a bestseller tag line
+Food photo captions | food content creator | Captions for food photos. | dish; story; price; ordering method | write 3 captions per dish; add hashtags
+Order by DM script | order taker | A DM flow for taking orders. | menu; delivery areas; payment; time | write the replies; add confirmation message
+Daily special posts | daily promotions writer | Specials that create urgency. | special; quantity; time; price | write 3 posts; write a Story
+Catering package | event caterer | Catering packages for events. | event types; guest counts; menu; price | design 3 packages; write the pitch
+Customer review replies | reputation manager | Replies to reviews. | positive review; negative review; business; tone | write 4 replies
+Food Reel ideas | food video strategist | Reels that sell. | cuisine; kitchen; audience; location | list 20 ideas; write 3 scripts
+Loyalty offer | loyalty marketer | A repeat customer offer. | average order; frequency; reward; cost | design the offer; write the announcement
+Festive season promos | seasonal promotions planner | Promotions for holidays. | holiday; menu; capacity; budget | plan 2 weeks; write posts
+Delivery and pickup policy | operations writer | Clear delivery rules. | areas; fees; timing; refunds | write the policy; write a Story
+
+## real-estate-and-property | Real Estate And Property | niche-playbooks | Ten prompts for property agents, developers and landlords.
+Listing description | property copywriter | A listing that gets inquiries. | property; features; location; price | write the description; add a headline; add call to action
+Property Reel script | property video scriptwriter | A walk through Reel. | property; highlights; price; contact | write the script; add on screen text
+Lead qualifying questions | lead qualifier | Questions to qualify buyers. | budget; timeline; location; financing | write 10 questions; add a score guide
+Client follow up | follow up writer | Follow ups after a viewing. | property; viewing date; objections; next step | write 3 messages
+Neighbourhood guide post | local expert writer | Content about an area. | area; amenities; prices; audience | write a post and a carousel
+Rental inquiry replies | letting agent | Replies to rental questions. | property; rent; terms; availability | write the replies
+Testimonial and case study | proof writer | A closing story. | client; problem; solution; outcome | write the case study
+Open house promotion | event promoter | An open house campaign. | property; date; audience; channels | write the plan and posts
+Market update post | market analyst | A short market update. | market data; trend; audience; advice | write a post
+Investor pitch message | investment advisor | A pitch to investors. | property; yield; risks; process | write the message and the follow up
+
+## fitness-coach-business | Fitness Coach Business | niche-playbooks | Ten prompts for personal trainers, gyms and wellness coaches.
+Coaching offer | fitness business coach | A clear coaching offer. | audience; result; duration; price | write the offer; write the promise carefully; write the pitch
+Workout Reel scripts | fitness video scriptwriter | Short workout Reels. | workout; level; equipment; goal | write 5 scripts with cues
+Client transformation posts | results storyteller | Transformation posts with consent. | client; timeline; method; result | write the caption; add disclaimers
+Free trial DM script | sales conversation coach | A DM from trial to paid. | trial offer; price; objections; next step | write the flow
+Nutrition tips content | wellness educator | Educational posts that stay within scope. | topics; audience; credentials; disclaimers | write 10 post ideas and 3 captions
+Challenge launch | challenge designer | A 7 day challenge. | goal; daily tasks; audience; offer | design the plan; write posts
+Membership retention | gym retention manager | Keeping members. | membership; drop off; rewards; communication | write 5 messages
+Gym promotion | local gym marketer | Promotions for a gym. | offer; audience; location; budget | write the campaign
+Client onboarding form | health intake specialist | An intake form. | goals; health history; consent; schedule | write the questions
+Accountability messages | accountability coach | Daily check ins. | client goal; schedule; tone; problem areas | write 14 messages
+
+## fashion-and-boutique-business | Fashion And Boutique Business | niche-playbooks | Ten prompts for fashion brands, tailors and online boutiques.
+Product descriptions | fashion copywriter | Descriptions that sell clothes. | product; fabric; fit; price | write descriptions; add sizing note
+New arrival posts | retail marketer | Posts for new arrivals. | collection; pieces; drop date; ordering | write 5 posts; write a Story
+Lookbook ideas | stylist | Lookbook outfit ideas. | brand style; season; audience; pieces | write 10 outfits
+Customer order DM flow | order management specialist | An order DM flow. | products; sizes; payment; delivery | write the replies
+Sizing and returns policy | policy writer | Clear sizing and return rules. | sizes; returns; exchanges; shipping | write the policy
+Fashion Reel scripts | fashion video creator | Reels for a brand. | collection; trend; audience; ordering | write 5 scripts
+Pre order campaign | pre order strategist | A pre order launch. | product; date; deposit; delivery | write the plan
+Customer styling tips | personal stylist | Styling posts. | pieces; occasions; body types; price | write 10 ideas
+Brand story | brand storyteller | A brand story. | founder; why; values; products | write the story
+Black Friday and festive sales | sales event planner | A sales campaign. | offers; dates; stock; budget | write the plan
+
+## beauty-and-makeup-business | Beauty And Makeup Business | niche-playbooks | Ten prompts for makeup artists, lash techs, nail techs and beauty brands.
+Service menu | beauty business manager | A menu of services. | services; prices; duration; add ons | write the menu
+Bridal makeup package | bridal specialist | Bridal packages. | services; prices; travel; trial | write the package and the pitch
+Before and after posts | beauty content writer | Captions. | service; client goal; result; permission | write 3 captions
+Booking and deposit DMs | appointment setter | Booking DM scripts. | services; deposit; calendar; policy | write the flow
+Tutorial Reel scripts | makeup educator | Tutorial Reels. | look; products; skill level; length | write 5 scripts
+Product recommendations | beauty advisor | Product posts. | products; skin type; price; reason | write posts
+Lash and nail aftercare | aftercare writer | Aftercare messages. | service; do and do not; refill timing; contact | write messages
+Portfolio captions | portfolio writer | Captions for portfolio posts. | looks; clients; style; booking | write captions
+Mobile service policy | service policy writer | Rules for travel. | areas; fees; timing; safety | write the policy
+Collaboration pitch | brand collaboration pitcher | A collaboration message. | brand; audience; offer; request | write the pitch
+
+## nigerian-small-business-playbook | Nigerian Small Business Playbook | niche-playbooks | Ten prompts shaped for businesses selling in Nigeria on Instagram and WhatsApp.
+Selling on WhatsApp and Instagram | Nigerian sales coach | A selling system for DMs and WhatsApp. | products; prices in naira; delivery areas; payment methods | write the customer journey; write the message scripts; add a follow up
+Greeting customers | customer care writer | Warm greetings for different times and customers. | business; customer types; tone; language mix | write greetings for morning, afternoon and evening; add respectful forms
+Price list and payment instructions | order desk writer | A price list with payment steps. | products; prices; account details; delivery | write the list; add a safe payment note
+Dealing with Pay on delivery doubts | trust builder | Answers to trust questions. | business; proof; delivery; refunds | write replies
+Delivery messages | logistics communicator | Delivery updates. | areas; fees; times; rider | write 6 messages
+Negotiating prices politely | negotiation coach | Replies to can you reduce. | price; floor; value; customer | write 5 replies
+Restock and sold out messages | inventory communicator | Messages for stock changes. | products; restock date; waitlist; offer | write messages
+Collecting customer reviews | review specialist | Asking for reviews. | customers; platform; incentive none; format | write the ask
+Business registration and trust content | credibility writer | Content that builds trust. | business; proof; registration; team | write posts
+Festive sales | seasonal marketer | Sales for festive periods. | offers; dates; stock; budget | write the plan
+
+## cold-dm-scripts-by-industry | Cold DM Scripts By Industry | lead-generation | Ten cold DM approaches that sound human and get replies.
+Cold DM to a salon owner | outreach copywriter | A DM that offers social media help. | their business; what I noticed; my offer; call to action | write 3 versions; add a follow up; add a polite close
+Cold DM to a restaurant | outreach copywriter | A DM that offers content help. | their business; observation; offer; call to action | write 3 versions; add follow up
+Cold DM to an esthetician | outreach copywriter | A DM that offers booking growth. | their business; observation; offer; call to action | write 3 versions; add follow up
+Cold DM to a fitness coach | outreach copywriter | A DM that offers lead generation. | their business; observation; offer; call to action | write 3 versions; add follow up
+Cold DM to a real estate agent | outreach copywriter | A DM that offers content that brings inquiries. | their business; observation; offer; call to action | write 3 versions; add follow up
+Cold DM to a boutique | outreach copywriter | A DM that offers sales content. | their business; observation; offer; call to action | write 3 versions; add follow up
+Cold DM with a free audit | value first prospector | A DM that leads with a free audit. | their handle; 3 observations; my offer; next step | write the DM; write the audit outline; write the follow up
+Cold DM after engaging with their content | warm outreach specialist | A DM that mentions a real post. | their post; my comment; my offer; goal | write 3 versions
+Cold DM with voice note | voice outreach coach | A short voice note script. | their business; hook; offer; call to action | write 3 scripts
+Respectful close out message | outreach manager | Ending a conversation politely. | history; days; offer; door left open | write 3 messages

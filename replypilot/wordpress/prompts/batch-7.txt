@@ -1,0 +1,119 @@
+## small-business-daily-operations | Small Business Daily Operations | small-business-operations | Ten prompts to run a small business with less stress.
+Weekly operations plan | operations manager | A weekly plan for running the business. | business; tasks; team; goals | plan 7 days; set priorities; add a Friday review
+Customer service policy | policy writer | Clear policies. | business; returns; delivery; payment | write the policy and a short version for customers
+Pricing review | pricing analyst | Checking prices against costs. | products; costs; competitors; margin goal | calculate margins; suggest changes; write the announcement
+Supplier negotiation | procurement coach | Talking to suppliers. | supplier; order; goal; leverage | write the message and 5 negotiation points
+Inventory tracking sheet | inventory planner | A simple stock system. | products; reorder points; suppliers; tools | design the sheet; write the rules
+Cash flow plan | cash flow coach | A basic cash flow routine. | income; expenses; payment delays; goals | design a weekly routine; flag risks
+Hiring a first employee | hiring coach | A hiring plan. | role; tasks; pay; culture | write the job brief and interview questions
+Staff handbook outline | handbook writer | A short handbook. | business; rules; roles; benefits | outline sections
+Customer complaint log | quality manager | Learning from complaints. | complaints; causes; fixes; owners | design a log and review process
+Business goals for 90 days | goal setting coach | Quarterly goals. | business; revenue; constraints; team | set 3 goals; define weekly actions
+
+## small-business-growth-and-marketing | Small Business Growth And Marketing | small-business-operations | Ten prompts for simple, low budget marketing that works locally.
+Local marketing plan | local marketing strategist | A 30 day plan. | business; area; budget; goal | plan weekly actions; add costs
+Google Business Profile posts | local SEO writer | Posts. | business; offers; events; keywords | write 8 posts
+Flyers and posters | print marketer | Flyer copy. | offer; audience; location; contact | write 3 versions
+Partnership outreach | partnership writer | A partnership message. | business; partner; benefit; ask | write 3 messages
+Customer referral cards | referral designer | A referral card. | reward; process; brand; tone | write the card
+Loyalty card idea | loyalty designer | A loyalty program. | purchase pattern; reward; cost; tracking | design it
+Community event | event planner | An event. | business; audience; budget; goal | plan it
+Local press pitch | PR writer | A pitch. | business; story; angle; contact | write the pitch
+Online review growth | review strategist | More reviews. | platforms; customers; ask; timing | write messages
+Marketing budget split | budget advisor | A budget. | budget; channels; goals; results | recommend a split
+
+## online-store-product-pages | Online Store Product Pages | e-commerce-dropshipping | Ten prompts for product pages and store copy that convert.
+Product page copy | e-commerce copywriter | A product page. | product; features; benefits; price | write title, bullets and description
+Product title optimisation | marketplace SEO writer | Titles. | product; keywords; platform; limits | write 10 titles
+Bullet points | bullet point writer | Benefit bullets. | product; features; audience; proof | write 10 bullets
+FAQ for a product | product FAQ writer | FAQs. | product; objections; shipping; returns | write 10 FAQs
+Collection page copy | collection writer | A collection. | category; products; audience; keywords | write the intro
+Shipping and returns page | policy writer | Policies. | shipping; returns; fees; times | write the page
+About page for a store | store storyteller | An about page. | story; values; products; promise | write the page
+Review request email | review requester | Review emails. | product; timing; link; tone | write 3 emails
+Abandoned cart emails | cart recovery writer | Cart emails. | product; offer; deadline; link | write 3 emails
+Product launch announcement | launch writer | A launch. | product; date; audience; offer | write posts and an email
+
+## ecommerce-ads-and-sales | E Commerce Ads And Sales | e-commerce-dropshipping | Ten prompts for ads, offers and customer service in online stores.
+Ad hooks for a product | product ad writer | Ad hooks. | product; audience; pain; benefit | write 20 hooks
+UGC video scripts | UGC scriptwriter | Scripts for creators. | product; audience; demo; call to action | write 5 scripts
+Creator brief | creator briefer | A brief. | product; message; rules; deliverables | write the brief
+Offer and discount plan | promotion planner | Offers. | margins; goals; audience; calendar | design 5 offers
+Customer service replies | support writer | Replies. | issues; policy; tone; fixes | write 10 replies
+Bundle and upsell | bundle strategist | Bundles. | products; margins; audience; price | design 3
+Email flows | e-commerce email planner | Email flows. | store; products; segments; goals | plan 5 flows
+Store audit | conversion auditor | An audit. | store; traffic; conversion; issues | give fixes
+Supplier outreach | sourcing writer | Messages. | product; supplier; quantity; terms | write 3 messages
+Black Friday plan | seasonal planner | A plan. | products; margins; stock; audience | plan 4 weeks
+
+## funnels-that-turn-followers-into-buyers | Funnels That Turn Followers Into Buyers | sales-funnel-building | Ten prompts to map and write a simple funnel.
+Funnel map | funnel strategist | A funnel plan. | offer; audience; channels; price | map steps from content to sale
+Landing page copy | landing page copywriter | A page. | offer; audience; benefits; proof | write sections
+Thank you page | thank you page writer | A page after sign up. | offer; next step; bonus; tone | write the page
+Tripwire offer | tripwire designer | A low price offer. | audience; product; price; upsell | design it
+Order form copy | checkout writer | Checkout text. | offer; price; guarantee; payment | write it
+Upsell page | upsell page writer | An upsell. | main offer; upsell; price; benefit | write it
+Webinar funnel | webinar funnel planner | A webinar funnel. | topic; audience; offer; emails | plan it
+DM funnel | DM funnel designer | A DM funnel. | keyword; resource; follow ups; offer | write the messages
+Funnel metrics | funnel analyst | Metrics. | traffic; sign ups; sales; costs | define KPIs
+Funnel troubleshooting | funnel doctor | Finding leaks. | steps; numbers; offer; audience | diagnose and fix
+
+## launch-and-promotion-planning | Launch And Promotion Planning | sales-funnel-building | Ten prompts for launches and time limited promotions.
+Launch timeline | launch planner | A launch timeline. | offer; dates; audience; channels | plan 4 weeks
+Launch announcement posts | announcement writer | Posts. | offer; benefits; deadline; link | write 7 posts
+Waitlist page and emails | waitlist writer | A waitlist. | offer; benefit; bonus; date | write copy
+Cart open emails | launch email writer | Emails. | offer; price; proof; deadline | write 5
+Cart close urgency | urgency writer | Honest urgency. | deadline; bonus; scarcity; tone | write 5 messages
+Launch Stories | story writer | Stories. | offer; days; audience; keyword | write 10 slides
+Launch review | launch analyst | A review. | numbers; lessons; goals; next | write the questions
+Early bird offer | early bird designer | An offer. | offer; limit; price; deadline | design it
+Bonus design | bonus designer | Bonuses. | offer; audience; costs; value | design 5
+Post launch follow up | post launch writer | Follow ups. | buyers; non buyers; offer; tone | write 5
+
+## meta-ads-creative-and-copy | Meta Ads Creative And Copy | meta-ads-facebook-instagram | Ten prompts for Instagram and Facebook ad creative.
+Ad angle brainstorm | ad strategist | Angles. | offer; audience; pains; proof | list 15 angles; rank
+Ad copy variations | ad copywriter | Copy. | offer; audience; angle; call to action | write 5 variations
+Video ad script | video ad scriptwriter | A video ad. | offer; hook; proof; call to action | write 3 scripts
+Image ad briefs | creative briefer | Briefs. | offer; audience; angle; format | write 5 briefs
+Carousel ad | carousel ad writer | A carousel ad. | offer; slides; benefits; proof | write it
+Testimonial ad | testimonial ad writer | Testimonial ads. | testimonial; offer; audience; call to action | write 3
+Lead ad form | lead ad designer | A form. | offer; questions; privacy; follow up | write it
+Retargeting copy | retargeting writer | Copy. | audience; offer; objection; deadline | write 5
+Ad naming and tracking | ad ops specialist | Naming. | campaigns; angles; audiences; tools | design the system
+Ad policy safe copy | ad policy reviewer | Safe copy. | offer; claims; industry; audience | rewrite safely
+
+## meta-ads-strategy-and-testing | Meta Ads Strategy And Testing | meta-ads-facebook-instagram | Ten prompts for structuring, testing and reading Meta ad campaigns.
+Campaign structure | media buyer | A structure. | budget; goal; audiences; offers | design campaigns and ad sets
+Testing plan | testing strategist | A plan. | variables; budget; time; goal | design tests
+Budget scaling | scaling advisor | Scaling. | results; budget; limits; goals | write rules
+Audience building | audience strategist | Audiences. | customers; interests; lookalikes; location | list audiences
+Metrics explained | analytics teacher | Metrics. | metrics; goals; offer; stage | explain
+Weekly ad review | ad reviewer | A review. | stats; changes; issues; goals | write actions
+Creative fatigue | creative analyst | Fatigue. | ads; frequency; results; options | give fixes
+Local business ads | local ad strategist | Local ads. | business; area; budget; offer | plan
+Ad account setup checklist | setup specialist | A checklist. | business; pixel; payment; policies | write it
+Client ad report | ad reporter | A report. | results; spend; learnings; next | write it
+
+## influencer-and-ugc-partnerships | Influencer And UGC Partnerships | influencer-marketing | Ten prompts to find, pitch and manage creator partnerships.
+Influencer outreach | outreach writer | A message to a creator. | creator; product; offer; ask | write 3 versions
+Creator brief | creator briefer | A brief. | product; message; rules; deliverables | write the brief
+Pitch to a brand | brand pitch writer | A pitch to a brand. | my audience; stats; idea; ask | write the pitch
+Rate card | rate card writer | A rate card. | services; prices; terms; audience | write it
+Contract points | contract advisor | Points to include. | deliverables; rights; payment; timeline | write a checklist
+UGC portfolio | UGC portfolio writer | A portfolio. | niche; samples; services; contact | write copy
+Gifting message | gifting writer | A gifting note. | creator; product; ask; tone | write 3
+Campaign report | campaign reporter | A report. | results; content; costs; lessons | write it
+Micro influencer list | influencer researcher | Choosing creators. | niche; audience; budget; goals | write criteria
+Affiliate offer for creators | affiliate designer | An affiliate offer. | product; commission; terms; audience | design it
+
+## local-seo-and-search-visibility | Local SEO And Search Visibility | seo | Ten prompts to get found on Google by people ready to buy.
+Local keyword map | local SEO strategist | Keywords for each service and area. | services; city; neighbourhoods; competitors | map keywords to pages
+Service page copy | service page writer | A page that ranks and converts. | service; city; proof; call to action | write the page
+Google profile optimisation | profile optimiser | A profile. | business; categories; services; photos | write the plan
+Citation checklist | citation specialist | A listing checklist. | business; directories; details; country | write the list
+Review response templates | review responder | Replies. | reviews; tone; policy; offers | write 8
+Local content ideas | local content writer | Content. | area; events; services; audience | write 20 ideas
+Schema and technical checklist | technical SEO helper | A checklist. | site; platform; pages; goals | write it
+Link building ideas | link builder | Ideas. | business; community; content; partners | write 15
+Rank tracking plan | rank tracker | Tracking. | keywords; tools; frequency; goals | design it
+SEO audit report | SEO auditor | A report. | site; issues; priorities; goals | write it

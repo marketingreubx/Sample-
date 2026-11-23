@@ -1,0 +1,143 @@
+## facebook-page-and-group-content | Facebook Page And Group Content | facebook-marketing | Ten prompts for Facebook pages, groups and local audiences.
+Page about section | page copywriter | An About section that explains what I do and for whom. | business; audience; services; contact | write a short and a long version; add a call to action
+Weekly post plan | Facebook content planner | A week of Facebook posts. | business; audience; offers; goal | plan 7 posts; write 3 captions
+Group welcome post | group manager | A welcome post for a group. | group purpose; rules; audience; call to action | write the post; write 5 rules
+Engagement posts for groups | community engagement writer | Posts that get replies. | group topic; audience; tone; goal | write 15 posts
+Facebook event page | event promoter | An event page. | event; date; audience; ticket info | write the copy
+Facebook Live script | live host | A Live. | topic; audience; offer; length | write the outline
+Facebook Marketplace listing | listing writer | A listing. | product; price; condition; location | write 3 versions
+Reply to messages | Messenger responder | Messenger replies. | business; FAQs; offers; tone | write saved replies
+Local community posts | local marketer | Posts for local groups. | business; area; offer; rules | write 5 posts
+Page audit | Facebook auditor | A page audit. | page; content; stats; goals | list fixes
+
+## facebook-ads-and-groups-growth | Facebook Ads And Groups Growth | facebook-marketing | Ten prompts for Facebook ads, lead forms and group growth.
+Ad copy variations | Facebook ad copywriter | Primary text and headlines. | offer; audience; objective; proof | write 5 primary texts and 10 headlines
+Lead form questions | lead form designer | A lead form. | offer; qualification; privacy; follow up | write questions
+Retargeting ads | retargeting strategist | Ads for people who visited. | audience; offer; objection; proof | write 3 ads
+Audience ideas | audience researcher | Audience targeting ideas. | niche; location; interests; offer | list 10 audiences
+Ad creative briefs | creative director | Briefs for ad visuals. | offer; audience; angle; format | write 5 briefs
+Budget plan | ad budget planner | A test budget. | budget; goal; offer; timeline | plan the test
+Group growth plan | group growth strategist | Growing a group. | topic; audience; rules; offer | plan 30 days
+Group content calendar | group calendar writer | A group calendar. | topic; audience; engagement; offer | plan 4 weeks
+Ad results review | ad analyst | Reading results. | stats; offer; audience; budget | give actions
+Ad policy check | policy reviewer | Checking an ad against policy. | ad text; offer; claims; audience | flag risks
+
+## facebook-sales-and-customer-care | Facebook Sales And Customer Care | facebook-marketing | Ten prompts that turn Facebook messages into sales.
+Inquiry replies | sales responder | Replies to inquiries. | offer; prices; questions; next step | write saved replies
+Order confirmation | order specialist | Confirmations. | product; payment; delivery; date | write messages
+Complaint handling | support specialist | Replies to complaints. | complaint; fix; tone; policy | write replies
+Follow up after purchase | post purchase writer | Follow ups. | product; usage; review; offer | write 3 messages
+Review request | review requester | Asking for recommendations. | customers; page; format; thanks | write the ask
+FAQ for the page | FAQ writer | FAQs. | business; questions; answers; call to action | write the FAQ
+Promotion announcement | promotions writer | An announcement. | offer; dates; audience; call to action | write posts
+Customer appreciation post | appreciation writer | A thank you post. | customers; milestone; offer; tone | write 3 versions
+Referral post | referral marketer | A referral post. | reward; process; audience; deadline | write the post
+Seasonal promo | seasonal promoter | A seasonal campaign. | season; offers; audience; budget | write posts
+
+## canva-templates-and-layouts | Canva Templates And Layouts | canva-graphic-design | Ten prompts for designing posts, covers and templates in Canva.
+Carousel layout | carousel designer | A Canva carousel layout. | topic; brand colours; fonts; slides | describe each slide layout; list elements; add text
+Instagram post templates | template designer | A template set. | brand; post types; colours; fonts | design 5 templates
+Story templates | story designer | Story templates. | brand; use cases; colours; fonts | design 5 templates
+Reel cover templates | cover designer | Covers. | niche; colours; fonts; text | design 5 covers
+Price list design | price list designer | A price list. | prices; brand; layout; contact | design the layout
+Flyer design | flyer designer | A flyer. | event; offer; brand; contact | design the layout
+Logo ideas | logo designer | Logo concepts. | brand; values; colours; audience | give 5 concepts
+Brand kit setup | brand kit builder | A brand kit. | brand; colours; fonts; logo | define the kit
+Quote graphics | quote designer | Quote graphics. | quotes; brand; style; platform | write designs
+Highlight covers | highlight designer | Highlight covers. | highlights; style; colours; icons | design 8 covers
+
+## canva-design-tips-and-workflow | Canva Design Tips And Workflow | canva-graphic-design | Ten prompts to design faster and more professionally.
+Colour palette | colour consultant | A palette. | brand; mood; audience; competitors | give 3 palettes
+Font pairing | typography advisor | Fonts. | brand; mood; platform; readability | give 5 pairings
+Visual hierarchy fixes | design critic | Fixing layout. | design described; goal; audience; problem | give fixes
+Design for mobile | mobile designer | Mobile friendly design. | design; text; platform; audience | give rules
+Batch design workflow | workflow coach | Designing in batches. | content; tools; time; team | write a workflow
+Client design brief | brief writer | A design brief. | client; goal; audience; style | write the brief
+Design feedback replies | feedback handler | Handling feedback. | feedback; revisions; scope; tone | write replies
+Text overlay copy | overlay writer | Short on image text. | message; image; audience; length | write 15 options
+Image prompts for AI art | image prompt writer | Prompts for AI images. | concept; style; platform; colours | write 10 prompts
+Design checklist | quality checker | A checklist. | design; platform; brand; goal | write the checklist
+
+## canva-for-business-assets | Canva For Business Assets | canva-graphic-design | Ten prompts for ebooks, presentations and sales materials.
+Ebook layout | ebook designer | An ebook layout. | topic; pages; brand; audience | outline the pages
+Lead magnet design | lead magnet designer | A lead magnet design. | topic; format; brand; audience | design layout
+Pitch deck | pitch deck designer | A pitch deck. | business; audience; ask; slides | outline slides
+Proposal design | proposal designer | A proposal. | service; client; price; brand | design layout
+Invoice design | invoice designer | An invoice. | business; fields; brand; payment | design layout
+Menu design | menu designer | A menu. | items; prices; brand; size | design layout
+Business card | card designer | A card. | name; role; brand; contact | design layout
+Email header | header designer | Headers. | brand; campaigns; size; style | design 3
+Social proof graphics | proof designer | Testimonial graphics. | testimonials; brand; style; size | design 5
+Course slides | course slide designer | Slides. | course; lessons; brand; style | design layout
+
+## freelancing-client-acquisition | Freelancing Client Acquisition | freelancing-agency-growth | Ten prompts for finding and winning your first and next clients.
+Positioning statement | positioning coach | A clear statement of who I help and how. | skills; ideal client; result; proof | write 5 statements; pick one
+Portfolio descriptions | portfolio writer | Words for my portfolio. | projects; results; skills; clients | write case descriptions
+Proposal template | proposal writer | A proposal template. | services; process; price; terms | write the template
+Pitching on platforms | platform pitch writer | Pitches for job platforms. | job post; my skills; proof; price | write 3 pitches
+Cold outreach plan | outreach planner | An outreach plan. | niche; channels; messages; time | plan 30 days
+Referral system | referral designer | A referral process. | clients; reward; ask; tracking | design the system
+Networking messages | networking writer | Messages. | person; context; ask; tone | write 5 messages
+Introductory call script | intro call coach | A first call. | prospect; goals; questions; close | write the script
+Case study | case study writer | A case study. | project; challenge; solution; result | write it
+Testimonial request | testimonial requester | Asking clients. | client; project; format; thanks | write the ask
+
+## freelancing-operations-and-pricing | Freelancing Operations And Pricing | freelancing-agency-growth | Ten prompts to run a freelance business professionally.
+Pricing model | pricing advisor | Setting rates. | skills; market; costs; goals | recommend rates
+Contract outline | contract drafter | A plain contract. | services; terms; payment; rights | outline clauses
+Invoice message | invoice writer | Invoice emails. | invoice; amount; date; method | write 3
+Time tracking | productivity coach | A system. | clients; tools; hours; goals | design the system
+Weekly plan | planner | A weekly plan. | clients; tasks; hours; goals | plan the week
+Client boundaries | boundary coach | Setting boundaries. | situations; rules; tone; options | write scripts
+Saying no | decline writer | Declining work. | request; reason; alternative; tone | write replies
+Handling revisions | revision manager | Revision rules. | scope; rounds; fees; tone | write the policy
+Tax and savings reminders | finance helper | A money routine. | income; expenses; goals; country | design the routine
+Scaling to an agency | agency builder | A path to an agency. | services; team; clients; goals | plan 12 months
+
+## agency-systems-and-team | Agency Systems And Team | freelancing-agency-growth | Ten prompts to build repeatable systems and hire help.
+Standard operating procedures | SOP writer | An SOP. | task; steps; tools; owner | write the SOP
+Hiring brief | hiring manager | A job brief. | role; skills; pay; tasks | write the brief
+Interview questions | interviewer | Questions. | role; skills; values; tasks | write 15 questions
+Contractor onboarding | onboarding writer | Onboarding. | role; tools; rules; pay | write the pack
+Task delegation | delegation coach | Delegating. | tasks; people; deadlines; quality | write instructions
+Quality control checklist | QA specialist | A checklist. | deliverables; standards; clients; rounds | write it
+Team communication | team communicator | Rules. | tools; hours; updates; escalation | write the rules
+Client reporting system | reporting designer | A process. | clients; metrics; tools; schedule | design it
+Agency offer ladder | offer designer | An offer ladder. | services; prices; clients; goals | design it
+Monthly agency review | agency reviewer | A review. | revenue; clients; team; goals | write the questions
+
+## chatgpt-workflows-for-business | ChatGPT Workflows For Business | ai-tools-automation | Ten repeatable AI workflows that save hours every week.
+Weekly content workflow | AI workflow designer | A weekly workflow using AI. | business; content; tools; time | design steps; write prompts; add checks
+Customer reply assistant | support workflow designer | AI assisted replies. | customer questions; tone; policies; tools | write the setup and prompts
+Meeting notes to actions | meeting assistant | Turning notes into actions. | notes pasted; goals; owners; deadlines | extract actions; write follow ups
+Research assistant | research assistant | Researching a topic. | topic; goal; sources; format | write a research brief
+Proposal assistant | proposal assistant | AI proposals. | client; service; price; style | write the process
+Email triage | inbox assistant | Sorting email. | email types; priorities; tone; rules | design rules
+Document summariser | summariser | Summaries. | document; audience; length; goal | write summaries
+Spreadsheet helper | spreadsheet assistant | Formulas. | data; goal; tool; problem | write formulas
+Brand voice prompt | brand voice prompt writer | A prompt that keeps my tone. | samples; voice traits; rules; examples | write the prompt
+Prompt improver | prompt engineer | Improving a prompt. | my prompt; goal; output; problems | rewrite and explain
+
+## automation-and-no-code-tools | Automation And No Code Tools | ai-tools-automation | Ten prompts for automating repetitive work with simple tools.
+Automation ideas | automation consultant | Finding what to automate. | tasks; time spent; tools; goals | list 15 candidates; rank by value
+Zapier or Make scenario | no code builder | A scenario plan. | trigger; actions; tools; data | write the steps
+Lead capture to email list | lead automation builder | Lead flow. | form; email tool; follow up; tags | design the flow
+Booking to reminder flow | booking automation builder | Booking automation. | booking tool; messages; timing; rules | design it
+Invoice automation | finance automation builder | Invoices. | tool; triggers; reminders; rules | design it
+Social posting workflow | posting workflow designer | Posting. | tools; content; schedule; approvals | design it
+Reporting dashboard | dashboard designer | A dashboard. | data; metrics; tools; audience | design it
+Chatbot setup | chatbot designer | A chatbot. | business; FAQs; escalation; tone | write the script
+Instagram DM automation setup | DM automation planner | A comment to DM campaign. | post; keyword; reply; follow up | write the plan and messages
+Automation safety checklist | risk reviewer | Checking automations. | automation; data; failures; rules | write the checklist
+
+## ai-image-video-and-voice-prompts | AI Image Video And Voice Prompts | ai-tools-automation | Ten prompts for creating visuals, video and voice content with AI tools.
+Product photo prompts | AI image prompt writer | Prompts for product images. | product; style; setting; platform | write 10 prompts
+Social post image prompts | image prompter | Prompts for posts. | topic; brand; style; format | write 10 prompts
+Avatar and character prompts | character designer | Characters. | brand; personality; style; use | write 5 prompts
+AI video script and shots | AI video planner | A video plan. | topic; length; style; tool | write the shot list
+Voiceover scripts | voiceover writer | Scripts for voice. | topic; tone; length; call to action | write 3 scripts
+Thumbnail prompts | thumbnail prompter | Thumbnails. | video; style; emotion; text | write 10 prompts
+Image editing instructions | editor | Editing steps. | image; goal; tool; style | write steps
+Consistent style guide for AI art | art director | A style guide. | brand; mood; colours; rules | write the guide
+Text to video prompts | video prompter | Prompts. | scene; style; motion; length | write 10 prompts
+Checking AI content quality | quality reviewer | Review checklist. | content; claims; brand; platform | write the checklist

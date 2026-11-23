@@ -1,0 +1,131 @@
+## prospect-research-prompts | Prospect Research | lead-generation | Ten prompts to research a business and find the real problem before you pitch.
+Instagram profile diagnosis | social media auditor | A diagnosis of a prospect's profile with specific, true observations. | prospect handle; what I can see in the bio; last 9 posts described; their offer | list what they do well; list the 5 biggest gaps with evidence from what I pasted; rank them by revenue impact; write one observation I can mention in a DM
+Website diagnosis | conversion consultant | A review of a prospect's website for a pitch. | website text pasted; their audience; their goal; my service | check headline, offer, proof, contact and mobile; list problems with evidence; give 3 quick fixes; write a pitch angle
+Google Business Profile review | local SEO analyst | A review of a prospect's Google profile. | business name; category; review count and rating; photos and hours | list profile gaps; compare to a strong profile; list 5 fixes; write a pitch angle
+Competitor comparison | competitive analyst | How a prospect compares to local competitors. | prospect; 3 competitors; platforms; what I can see | compare on 6 factors; find where the prospect is behind; write the gap in plain words
+Pain point finder | customer insight researcher | The likely problems a niche business faces. | niche; size of business; location; my service | list 10 pains; rank by urgency; match each to a service I offer
+Personalised opening line | outreach copywriter | A first line that proves I looked. | prospect handle; one true observation; my niche; tone | write 10 opening lines; mark which are best for DMs, emails and calls
+Business snapshot sheet | research assistant | A one page sheet on a prospect. | prospect; links described; contact info found; notes | organise into a snapshot; add questions to ask; add a next step
+Decision maker finder | prospect researcher | Who to talk to inside a business. | business type; size; public info; my service | list likely decision makers; suggest ways to find them; write an approach for each
+Verify before you pitch | fact checker | A checklist so I never claim something false about a prospect. | what I plan to say; what I actually saw; links; doubts | check each claim against evidence; flag anything unverified; rewrite safely
+Prospect list prioritiser | sales ops specialist | A ranked list of who to contact first. | list of prospects with notes; my ideal client; capacity; goal | score each prospect; rank them; suggest the first 10 contacts
+
+## lead-magnets-that-attract-buyers | Lead Magnets That Attract Buyers | lead-generation | Ten lead magnet ideas and the copy to promote them.
+Lead magnet ideas | lead magnet strategist | Lead magnet ideas that attract buyers, not freebie hunters. | niche; audience pain; my paid offer; format preference | give 15 ideas; score each for buyer intent; pick the top 3; outline the best one
+Checklist lead magnet | checklist designer | A checklist that solves one problem fast. | topic; audience; 10 items; paid offer | write the title; write the checklist; add a next step page
+Mini guide | guide writer | A short guide that builds trust. | topic; audience; key lessons; paid offer | outline 8 pages; write the intro; write the closing offer
+Template pack | template designer | A set of templates people will use. | niche; templates to include; audience; offer | list the templates; write instructions for each; write the page copy
+Free audit offer | audit offer writer | A free audit as a lead magnet. | service; what is audited; time cost; limit | write the offer; write the intake form; write the delivery email
+Quiz funnel | quiz designer | A quiz that segments leads. | niche; 5 questions; 3 results; offers | write the quiz; write each result; write the follow up
+Webinar offer | webinar strategist | A free workshop that sells. | topic; audience; outline; paid offer | write the title and promise; outline 45 minutes; write the pitch
+Lead magnet landing page | landing page writer | A landing page for the freebie. | lead magnet; audience; benefits; form fields | write headline; write bullets; add proof; write button text
+Delivery and nurture emails | email sequence writer | The emails after someone downloads. | lead magnet; paid offer; audience; tone | write 5 emails; add subject lines; add call to action
+Promote the lead magnet | content promoter | Content that drives sign ups. | lead magnet; platforms; audience; keyword | write 5 posts; write a Story sequence; write a DM keyword reply
+
+## follow-up-and-nurture-system | Follow Up And Nurture System | lead-generation | Ten prompts to follow up with leads until they say yes or no.
+5 touch follow up sequence | follow up strategist | A sequence of follow ups over two weeks. | first message; offer; prospect type; channel | write 5 messages; space them; vary the angle; add a final polite close
+Follow up after a call | sales follow up writer | A message after a discovery call. | call summary; prospect need; proposal; next step | write the message; add a recap; add a clear question
+Follow up after sending a proposal | proposal follow up writer | Nudges after a proposal. | proposal; price; days passed; objections | write 3 messages
+Follow up that adds value | value adding communicator | Follow ups that give something useful. | prospect; useful tip or resource; my offer; tone | write 5 messages that each give value
+Re engage a cold lead | re engagement specialist | Waking up a lead who went quiet. | history; time since; new reason; offer | write 3 messages
+Follow up on WhatsApp | WhatsApp sales coach | Follow ups suited to WhatsApp. | history; offer; tone; time | write 5 messages and 2 voice note scripts
+Follow up on email | email follow up writer | Email follow ups with subject lines. | history; offer; goal; tone | write 4 emails with subjects
+Lead tracking sheet | sales ops designer | A simple tracker for leads. | channels; stages; follow up days; tools | design the columns; define stages; add rules for removing leads
+Break up message | professional closer | A final message that often gets replies. | history; offer; deadline; tone | write 3 versions
+Referral request from leads | referral writer | Asking leads who say no for introductions. | lead; reason for no; relationship; ask | write 3 messages
+
+## lead-generation-content | Lead Generation Content | lead-generation | Ten content pieces that bring leads to you instead of chasing them.
+Posts that attract ideal clients | attraction content strategist | Posts that make the right people reach out. | ideal client; their problem; my solution; call to action | plan 10 posts; write 3 captions; add a DM keyword
+Authority content | thought leadership writer | Content that positions me as the expert. | niche; strong opinion; proof; audience | write 5 opinion posts; add a call to action
+Content that answers buying questions | search intent writer | Content for people about to buy. | questions; offer; objections; platform | list 15 questions; write 3 posts
+Social proof posts | proof strategist | Turning proof into posts. | results; testimonials; permission; offer | write 5 proof posts
+Offer announcement posts | announcement writer | Announcing an offer. | offer; price; deadline; call to action | write 3 posts and a Story
+Lead capture Reels | direct response video writer | Reels that capture leads. | lead magnet; hook; audience; keyword | write 3 scripts
+Comment to DM campaign plan | comment to DM strategist | A campaign using keyword comments. | post; keyword; free resource; follow up | design the campaign; write the DM; write the follow up
+Engagement pods vs real engagement | growth advisor | A plan to engage with prospects honestly. | niche; time; targets; goal | design a daily routine
+Weekly lead gen plan | weekly planner | A weekly plan. | goals; channels; time; offer | plan 7 days
+Monthly lead gen review | analytics reviewer | A review of lead sources. | numbers; sources; cost; goal | write the review questions and actions
+
+## sales-call-scripts | Sales Call Scripts | sales-closing | Ten call and conversation scripts for discovery, pitch and close.
+Discovery call script | discovery call coach | A discovery call that uncovers the real need. | prospect; service; questions to ask; goal | write the opening; write 12 questions; write transitions; write the close
+Pitch after discovery | pitch writer | A pitch that mirrors what they said. | what they told me; my offer; price; proof | write the pitch; add a price reveal; add a close
+Closing the sale | closing coach | Closing language that is not pushy. | offer; price; objection; next step | write 5 closing lines
+Handling I need to think about it | objection handler | Replies to a stall. | offer; price; prospect; context | write 5 replies
+Handling too expensive | objection handler | Replies to price objections. | price; value; budget; options | write 6 replies
+Handling I need to ask my partner | objection handler | Replies for shared decisions. | offer; decision makers; price; timeline | write 4 replies
+Cold call opener | cold call coach | A cold call opening. | prospect; reason for calling; offer; goal | write 3 openers and a voicemail
+Video call checklist | call preparation coach | A prep checklist. | call; prospect; goal; materials | write the checklist
+Call recap email | follow up writer | A recap after the call. | call; agreed next steps; pricing; date | write the email
+Voicemail scripts | voicemail writer | Short voicemails. | prospect; reason; call back number; offer | write 3 scripts
+
+## whatsapp-closing-messages | WhatsApp Closing Messages | sales-closing | Ten WhatsApp message flows that move people from interest to payment.
+First reply to an inquiry | WhatsApp sales coach | A first reply that gets a second message. | product or service; price rule; goal; tone | write 3 replies; add a qualifying question
+Sending prices | pricing communicator | How to send prices in WhatsApp. | prices; value; payment details; next step | write the message
+Confirming an order | order specialist | Order confirmation messages. | order; payment; delivery; date | write the messages
+Handling negotiation | negotiator | Replies to can you reduce the price. | price; limit; value; customer | write 5 replies
+Following up on payment | payment follow up writer | Payment reminders. | order; amount; deadline; method | write 3 reminders
+Delivery and thank you | customer care writer | Messages after delivery. | order; delivery; follow up; review | write 3 messages
+Broadcast list messages | broadcast writer | Broadcast messages that do not annoy. | audience; offer; frequency; call to action | write 5 broadcasts
+WhatsApp Status content | status marketer | Status ideas that sell. | business; offers; audience; call to action | write 14 status ideas
+Group chat etiquette | community manager | Rules and welcome message. | group purpose; rules; welcome; offer | write the messages
+Voice note sales scripts | voice sales coach | Voice notes under 40 seconds. | offer; objection; customer; call to action | write 5 scripts
+
+## objection-handling-playbook | Objection Handling Playbook | sales-closing | Ten prompts to answer the hesitations that stop people from buying.
+Build your objection list | sales trainer | A list of my top 10 objections. | my offer; price; customer types; past conversations | list the objections; rank them; explain the real fear behind each
+Reframe price objections | value communicator | Reframing price using value. | price; results; cost of not buying; customer | write 5 reframes
+Trust objections | trust builder | Answers to why should I trust you. | proof; experience; guarantee; process | write 5 replies
+Timing objections | timing coach | Answers to not now. | offer; seasonality; cost of waiting; options | write 5 replies
+Competitor comparison objections | competitive positioning writer | Answers to someone else is cheaper. | competitor; my difference; proof; price | write 5 replies
+Fear of failure objections | confidence builder | Answers to what if it does not work. | offer; guarantee; process; proof | write 5 replies
+Objection handling roleplay | roleplay partner | A practice session. | offer; hardest objections; my style; goal | run a 5 round roleplay; give feedback
+Objection FAQ page | FAQ writer | An FAQ that pre handles objections. | offer; 10 objections; honest answers; call to action | write the FAQ
+Objections in DMs | DM sales coach | Short replies for DMs. | objections; tone; offer; next step | write 10 replies under 40 words
+Turning a no into a later yes | long game seller | A graceful way to keep the door open. | the no; reason; follow up date; offer | write 3 messages
+
+## headlines-and-hooks-lab | Headlines And Hooks Lab | copywriting | Ten prompts that produce headlines and hooks you can use today.
+50 headline ideas | headline writer | A big bank of headline ideas. | product; audience; benefit; proof | write 50 headlines in 5 styles; rank the top 5
+Hooks for ads | ad copywriter | Hooks for paid ads. | offer; audience; platform; pain | write 20 hooks; mark best fits
+Email subject lines | subject line specialist | Subject lines. | email goal; audience; offer; tone | write 25 subject lines; add preview text for the top 5
+Landing page headlines | landing page copywriter | Headlines for a landing page. | offer; audience; result; proof | write 15 headlines and subheads
+Hook formulas | hook coach | Reusable formulas. | niche; audience; content type; topic | explain 10 formulas; fill each with my topic
+Curiosity gap hooks | curiosity writer | Hooks that create curiosity honestly. | topic; payoff; audience; format | write 10 hooks
+Contrarian hooks | contrarian writer | Hooks with a fresh angle. | topic; common belief; my view; proof | write 10 hooks
+Story hooks | story writer | Story first lines. | story; lesson; audience; format | write 10 hooks
+Headline testing plan | testing strategist | A plan to test headlines. | headlines; channel; traffic; goal | design the test
+Rewrite a weak headline | copy editor | Fixing a headline. | current headline; audience; problem; goal | diagnose and rewrite in 10 ways
+
+## sales-page-copy-prompts | Sales Page Copy Prompts | copywriting | Ten prompts that write each section of a sales page.
+Full sales page | direct response copywriter | A complete sales page draft. | product; price; audience; proof | write the headline; write the problem; write the solution; write offer stack; add FAQ
+Above the fold section | landing page copywriter | The first screen. | product; audience; promise; call to action | write headline; subhead; bullets
+Problem and agitation section | problem agitator | A section that names the pain honestly. | audience; pain; consequences; tone | write the section
+Offer and bonuses section | offer stack writer | Presenting the offer. | offer; bonuses; price; guarantee | write the section
+Testimonial section | testimonial editor | Shaping testimonials. | raw testimonials; permission; results; format | edit and format
+FAQ section | FAQ writer | FAQs that sell. | offer; objections; honest answers; call to action | write 10 questions and answers
+Guarantee copy | risk reversal writer | A guarantee. | offer; guarantee; terms; tone | write 3 versions
+Call to action buttons | button copywriter | Button text. | offer; audience; action; tone | write 15 options
+Sales page audit | page auditor | A review of my page. | page text; goal; traffic; conversion | score sections and rewrite the weakest
+Short sales page | short form copywriter | A one screen page. | product; price; audience; action | write the page
+
+## email-and-dm-copy-prompts | Email And DM Copy Prompts | copywriting | Ten prompts for emails and DMs that get answered.
+Cold email | cold email writer | A cold email. | prospect; observation; offer; call to action | write 3 versions and subject lines
+Warm intro email | relationship email writer | An email to a warm contact. | contact; connection; ask; tone | write 3 versions
+Newsletter | newsletter writer | A newsletter issue. | topic; audience; story; call to action | write the issue
+Promotional email | promotional writer | A sales email. | offer; deadline; proof; call to action | write the email
+Re engagement email | win back writer | A win back email. | audience; time away; offer; tone | write 3 emails
+Thank you email | thank you writer | A thank you. | situation; reason; next step; tone | write 3 versions
+Apology email | apology writer | An honest apology. | situation; cause; fix; tone | write 3 versions
+DM opener | DM copywriter | DM openers. | prospect; context; goal; tone | write 10 openers
+DM reply to interest | reply writer | Replies when someone shows interest. | situation; next step; qualification; tone | write 5 replies
+LinkedIn message | LinkedIn outreach writer | A LinkedIn message. | prospect; reason; offer; call to action | write 3 versions
+
+## storytelling-and-brand-voice | Storytelling And Brand Voice | copywriting | Ten prompts to define a voice and tell stories that connect.
+Brand voice guide | brand voice strategist | A guide to how my brand sounds. | brand values; audience; samples of my writing; words to avoid | define 5 voice traits; give do and dont lists; write sample lines
+Founder story | founder storyteller | A founder story. | my story; turning point; lesson; offer | write the story in 3 lengths
+Customer story | customer storyteller | A customer story. | customer; problem; solution; result | write the story
+Origin of the business | origin writer | An about page story. | why I started; challenge; values; vision | write the section
+Tone adjustment | tone editor | Rewriting a draft in my tone. | draft; voice traits; audience; goal | rewrite and explain changes
+Words to use and avoid | language coach | A vocabulary guide. | brand; audience; competitors; tone | write lists
+Metaphor and analogy bank | analogy writer | Analogies that explain my work. | service; audience; hard idea; tone | write 10 analogies
+Values into content | values communicator | Content that shows values. | values; stories; posts; audience | write 10 ideas
+Story prompts weekly | story coach | Weekly story prompts. | life events; lessons; audience; platform | write 20 prompts
+Voice in different channels | multichannel writer | Adapting voice per channel. | channels; voice; audience; examples | write guidance for each
