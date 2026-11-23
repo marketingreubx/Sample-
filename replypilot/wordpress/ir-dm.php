@@ -154,7 +154,7 @@ function ir_dm_remove_acct( $uid, $ig ) {
 }
 function ir_dm_acct_public( $a ) {
 	if ( ! $a ) { return null; }
-	return [ 'id' => (string) $a['id'], 'username' => $a['username'], 'name' => $a['name'] ?? '', 'pic' => $a['pic'] ?? '', 'status' => $a['status'] ?? 'active', 'expires' => $a['expires'] ?? 0, 'subscribed' => ! empty( $a['subscribed'] ) ];
+	return [ 'id' => (string) $a['id'], 'username' => $a['username'], 'name' => $a['name'] ?? '', 'pic' => $a['pic'] ?? '', 'status' => $a['status'] ?? 'active', 'expires' => $a['expires'] ?? 0, 'subscribed' => ! empty( $a['subscribed'] ), 'warn' => (string) ( $a['warn'] ?? '' ) ];
 }
 function ir_dm_owner( $ig_id ) {
 	$u = get_users( [ 'meta_key' => 'ir_dm_ig_id', 'meta_value' => (string) $ig_id, 'number' => 1, 'fields' => 'ID' ] );
@@ -165,6 +165,12 @@ function ir_dm_mark_acct( $uid, $status, $detail = '', $ig = null ) {
 	$a = ir_dm_acct( $uid, $ig ); if ( ! $a ) { return; }
 	$a['status'] = $status; $a['detail'] = $detail;
 	ir_dm_save_acct( $uid, $a );
+}
+/** A problem on the Instagram side the owner must fix (account stays live, e.g. message access switched off). */
+function ir_dm_warn_acct( $ig, $warn ) {
+	$uid = ir_dm_owner( $ig ); $a = $uid ? ir_dm_acct( $uid, $ig ) : null;
+	if ( ! $a || (string) ( $a['warn'] ?? '' ) === (string) $warn ) { return; }
+	$a['warn'] = (string) $warn; ir_dm_save_acct( $uid, $a );
 }
 /** Who may use the app: admins always; everyone else depends on the Access setting. */
 function ir_dm_can( $uid = 0 ) {
@@ -274,12 +280,18 @@ function ir_dm_reason_text( $r ) {
 		'not_following'   => 'Asked them to follow you first.',
 		'asked_again'     => 'Asked them again for their email.',
 		'no_email'        => 'They did not send an email address.',
+		'handoff'         => 'The AI agent handed this chat to you. Reply to them yourself in Instagram.',
+		'human_active'    => 'You were already chatting with them yourself, so the AI stayed quiet.',
+		'no_reply_needed' => 'No reply needed (the AI decided their message did not need an answer).',
+		'ai_limit'        => 'The AI agent already replied to them a lot today, so it waited for you.',
 	];
 	return $map[ $r ] ?? $r;
 }
 function ir_dm_friendly( $err ) {
 	$err = (string) $err;
 	if ( $err === '' ) { return ''; }
+	if ( stripos( $err, 'disabled access to Instagram Direct' ) !== false ) { return 'Message access is switched off on this Instagram account. In the Instagram app: Settings > Messages and story replies > Message controls > Connected tools > turn ON "Allow access to messages".'; }
+	if ( strpos( $err, 'AI:' ) === 0 ) { return 'The AI agent could not answer this time. It will try again by itself.'; }
 	if ( strpos( $err, 'code=190' ) !== false ) { return 'Instagram logged you out. Tap Reconnect at the top of this page.'; }
 	if ( strpos( $err, '2534037' ) !== false ) { return 'Another app (like ManyChat) controls your DMs. Remove it in Meta Business Suite > Settings > Integrations, then try again.'; }
 	if ( preg_match( '/code=551\b|2534022|2018278|2018108/', $err ) ) { return "Instagram won't let you message this person right now."; }
@@ -308,7 +320,7 @@ function ir_dm_err( $j, $http ) {
 
 function ir_dm_api( $acct, $method, $path, $body = null ) {
 	$base = ( $acct['login'] ?? 'instagram' ) === 'unified' ? 'https://graph.facebook.com/' : 'https://graph.instagram.com/';
-	$args = [ 'method' => $method, 'timeout' => 20, 'headers' => [ 'Authorization' => 'Bearer ' . ir_dm_dec( $acct['token'] ), 'Content-Type' => 'application/json' ] ];
+	$args = [ 'method' => $method, 'timeout' => (int) ( $GLOBALS['ir_dm_to'] ?? 20 ), 'headers' => [ 'Authorization' => 'Bearer ' . ir_dm_dec( $acct['token'] ), 'Content-Type' => 'application/json' ] ];
 	if ( $body !== null ) { $args['body'] = wp_json_encode( $body ); }
 	$r = wp_remote_request( $base . ir_dm_graph_ver() . '/' . ltrim( $path, '/' ), $args );
 	if ( is_wp_error( $r ) ) { return new WP_Error( 'transient', 'Network: ' . $r->get_error_message() ); }
@@ -492,6 +504,7 @@ function ir_dm_job( $e, $n = 0 ) {
 	if ( ! is_array( $e ) || empty( $e['id'] ) ) { return; }
 	$lock = ir_dm_lock( $e['id'] );
 	if ( ! $lock ) { if ( function_exists( 'as_schedule_single_action' ) ) { as_schedule_single_action( time() + 30, 'ir_dm_job', [ $e, $n ], 'ir-dm' ); } return; }
+	$GLOBALS['ir_dm_carry'] = [];
 	try {
 		$res = $e['k'] === 'comment' ? ir_dm_do_comment( $e ) : ( $e['k'] === 'postback' ? ir_dm_do_postback( $e ) : ir_dm_do_message( $e ) );
 	} catch ( Throwable $t ) {
@@ -501,7 +514,7 @@ function ir_dm_job( $e, $n = 0 ) {
 		delete_option( $lock );
 	}
 	if ( ! function_exists( 'as_schedule_single_action' ) || ! is_array( $res ) ) { return; }
-	if ( ! empty( $res['defer'] ) ) { as_schedule_single_action( time() + (int) $res['defer'], 'ir_dm_job', [ $e, $n ], 'ir-dm' ); }
+	if ( ! empty( $res['defer'] ) ) { $e = array_merge( $e, (array) ( $GLOBALS['ir_dm_carry'] ?? [] ) ); as_schedule_single_action( time() + (int) $res['defer'], 'ir_dm_job', [ $e, $n ], 'ir-dm' ); }
 	elseif ( ! empty( $res['retry'] ) && $n < IR_DM_MAX_ATTEMPTS ) { as_schedule_single_action( time() + [ 60, 300, 900, 1800, 3600 ][ min( $n, 4 ) ], 'ir_dm_job', [ $e, $n + 1 ], 'ir-dm' ); }
 }
 
@@ -547,7 +560,29 @@ function ir_dm_send( $acct, $recipient, $m ) {
 		$m = [ 'text' => ir_dm_trunc( $m['text'] . "\n" . $m['button']['url'] ) ];
 		$r = ir_dm_api( $acct, 'POST', $acct['id'] . '/messages', [ 'recipient' => $recipient, 'message' => ir_dm_msg_body( $m ) ] );
 	}
+	if ( is_wp_error( $r ) && stripos( $r->get_error_message(), 'disabled access to Instagram Direct' ) !== false ) { ir_dm_warn_acct( $acct['id'], 'msg_access' ); }
+	elseif ( ! is_wp_error( $r ) && ! empty( $acct['warn'] ) ) { ir_dm_warn_acct( $acct['id'], '' ); }
 	return [ $r, $m ];
+}
+
+/**
+ * Pacing: at least 2 minutes (plus a little random time) between automated sends on the same account, so a burst
+ * of comments or DMs goes out slowly and naturally instead of all at once. Returns 0 (send now) or seconds to wait;
+ * a waiting job keeps its reserved turn in $GLOBALS['ir_dm_carry']['slot'].
+ */
+function ir_dm_gate( &$e ) {
+	$k = 'ir_dm_slot_' . $e['ig'];
+	$gap = max( 120, (int) ir_dm_opt( 'gap', 120 ) );
+	$now = time();
+	if ( ! empty( $e['slot'] ) && $now >= (int) $e['slot'] - 5 ) { // our reserved turn has come
+		if ( (int) get_option( $k ) < $now + $gap ) { update_option( $k, $now + $gap + wp_rand( 0, 20 ), false ); }
+		$e['slot'] = $now; return 0;
+	}
+	$at = max( $now, (int) get_option( $k ) );
+	update_option( $k, $at + $gap + wp_rand( 0, 20 ), false );
+	if ( $at <= $now ) { $e['slot'] = $now; return 0; }
+	$GLOBALS['ir_dm_carry']['slot'] = $at;
+	return $at - $now;
 }
 
 function ir_dm_do_comment( $e ) {
@@ -568,6 +603,8 @@ function ir_dm_do_comment( $e ) {
 		if ( $dm_done && $pub_done ) { continue; }
 		if ( ! $acct || ( $acct['status'] ?? 'active' ) !== 'active' ) { ir_dm_set( $log->id, [ 'status' => 'skipped', 'reason' => 'not_connected' ] ); continue; }
 		if ( $w = ir_dm_paused( $uid ) ) { $defer = max( $defer, $w ); continue; }
+		if ( ! $dm_done && time() - (int) $e['ts'] > IR_DM_PRIVATE_WINDOW ) { ir_dm_set( $log->id, [ 'status' => 'skipped', 'reason' => 'old_comment' ] ); $dm_done = true; if ( $pub_done ) { continue; } }
+		if ( $w = ir_dm_gate( $e ) ) { ir_dm_set( $log->id, [ 'error' => 'Waiting its turn (2 min between messages)' ] ); $defer = max( $defer, $w ); break; }
 
 		// 1) Optional public reply under the comment (independent of the DM).
 		if ( ! $pub_done ) {
@@ -618,7 +655,8 @@ function ir_dm_do_message( $e ) {
 	global $wpdb;
 	// First time this person writes to this account? (then a welcome automation may greet them)
 	$is_new = (bool) $wpdb->query( $wpdb->prepare( 'INSERT IGNORE INTO ' . ir_dm_t( 'contact' ) . ' (ig_id,igsid,first_seen) VALUES (%s,%s,%s)', $e['ig'], $e['from'], ir_dm_now() ) );
-	if ( $is_new && $wpdb->get_var( $wpdb->prepare( 'SELECT 1 FROM ' . ir_dm_t( 'log' ) . ' WHERE ig_id=%s AND sender_id=%s LIMIT 1', $e['ig'], $e['from'] ) ) ) { $is_new = false; }
+	if ( ! empty( $e['new'] ) ) { $is_new = true; } // a deferred run of a first message
+	elseif ( $is_new && $wpdb->get_var( $wpdb->prepare( 'SELECT 1 FROM ' . ir_dm_t( 'log' ) . ' WHERE ig_id=%s AND sender_id=%s LIMIT 1', $e['ig'], $e['from'] ) ) ) { $is_new = false; }
 	$hit = null;
 	foreach ( ir_dm_autos_for( $uid, $e['k'] === 'story' ? 'story' : 'dms', $e['ig'] ) as $a ) {
 		if ( empty( $a['cfg']['t'][ $e['k'] === 'story' ? 'story' : 'dms' ] ) ) { continue; }
@@ -628,7 +666,8 @@ function ir_dm_do_message( $e ) {
 	if ( ! $hit && $is_new ) {
 		foreach ( ir_dm_autos_for( $uid, 'welcome', $e['ig'] ) as $a ) { $hit = [ $a, '' ]; break; }
 	}
-	if ( ! $hit ) { return 'nomatch'; }
+	if ( $is_new ) { $GLOBALS['ir_dm_carry']['new'] = 1; }
+	if ( ! $hit ) { return ir_dm_agent_handle( $uid, $e ); }
 	list( $a, $kw ) = $hit;
 	$log = ir_dm_claim( $uid, $a['id'], $e, $kw );
 	if ( ! $log || in_array( $log->status, [ 'sent', 'skipped' ], true ) || (int) $log->attempts >= IR_DM_MAX_ATTEMPTS ) { return 'done'; }
@@ -644,6 +683,7 @@ function ir_dm_do_message( $e ) {
 		if ( time() + $w > (int) $e['ts'] + IR_DM_MSG_WINDOW ) { ir_dm_set( $log->id, [ 'status' => 'skipped', 'reason' => 'window' ] ); return 'done'; }
 		return [ 'defer' => $w ];
 	}
+	if ( $w = ir_dm_gate( $e ) ) { return [ 'defer' => $w ]; }
 	$name = '';
 	$u = ir_dm_api( $acct, 'GET', rawurlencode( $e['from'] ) . '?fields=username' );
 	if ( ! is_wp_error( $u ) && ! empty( $u['username'] ) ) { $name = (string) $u['username']; ir_dm_set( $log->id, [ 'sender_name' => mb_substr( $name, 0, 100 ) ] ); }
@@ -676,6 +716,7 @@ function ir_dm_do_email( $uid, $e, $w ) {
 		ir_dm_set( $log->id, is_wp_error( $r ) ? [ 'status' => 'failed', 'error' => $r->get_error_message() ] : [ 'status' => 'skipped', 'reason' => 'asked_again' ] );
 		return 'nudged';
 	}
+	if ( $w = ir_dm_gate( $e ) ) { return [ 'defer' => $w ]; }
 	$email = strtolower( sanitize_email( $mm[0] ) );
 	$name = '';
 	$u = ir_dm_api( $acct, 'GET', rawurlencode( $e['from'] ) . '?fields=username' );
@@ -701,6 +742,7 @@ function ir_dm_do_postback( $e ) {
 	$ev = $e; $ev['k'] = 'follow'; $ev['text'] = 'Tapped "' . ( ( $c['follow_btn'] ?? '' ) ?: 'Send it to me' ) . '"';
 	$log = ir_dm_claim( $uid, $p->ID, $ev, '' );
 	if ( ! $log || in_array( $log->status, [ 'sent', 'skipped' ], true ) ) { return 'done'; }
+	if ( $w = ir_dm_gate( $e ) ) { return [ 'defer' => $w ]; }
 	$u = ir_dm_api( $acct, 'GET', rawurlencode( $e['from'] ) . '?fields=username,is_user_follow_business' );
 	$name = ! is_wp_error( $u ) && ! empty( $u['username'] ) ? (string) $u['username'] : '';
 	if ( $name ) { ir_dm_set( $log->id, [ 'sender_name' => $name ] ); }
@@ -738,29 +780,77 @@ add_action( 'init', function () {
 	}
 }, 21 );
 add_action( 'ir_dm_poll', 'ir_dm_poll' );
+/* A run that the server killed (30 second limit) stays "in progress" and blocks the next check for 5 minutes:
+ * clear those after 90 seconds so checking never stalls. */
+add_action( 'init', function () {
+	if ( get_transient( 'ir_dm_stuckchk' ) || ! class_exists( 'ActionScheduler' ) ) { return; }
+	set_transient( 'ir_dm_stuckchk', 1, 90 );
+	global $wpdb; $t = $wpdb->prefix . 'actionscheduler_actions';
+	$ids = $wpdb->get_col( "SELECT action_id FROM $t WHERE hook IN ('ir_dm_poll','ir_dm_job') AND status='in-progress' AND last_attempt_gmt < UTC_TIMESTAMP() - INTERVAL 90 SECOND LIMIT 20" );
+	foreach ( $ids as $id ) { try { ActionScheduler::store()->mark_failure( (int) $id ); } catch ( Throwable $x ) {} }
+	if ( $ids ) { delete_transient( 'ir_dm_polling' ); }
+}, 20 );
+
+/** Check now (if the last check was over 40s ago) and send any paced messages that are due. Used by the app page and the server cron link. */
+function ir_dm_tick() {
+	@set_time_limit( 60 );
+	$found = 0; $ran = 0;
+	if ( (int) get_option( 'ir_dm_last_poll' ) < time() - 40 ) { $found = (int) ir_dm_poll(); }
+	if ( class_exists( 'ActionScheduler' ) ) {
+		global $wpdb; $t = $wpdb->prefix . 'actionscheduler_actions';
+		$ids = $wpdb->get_col( "SELECT action_id FROM $t WHERE hook='ir_dm_job' AND status='pending' AND scheduled_date_gmt <= UTC_TIMESTAMP() + INTERVAL 2 SECOND ORDER BY scheduled_date_gmt LIMIT 3" );
+		foreach ( $ids as $id ) { try { ActionScheduler::runner()->process_action( (int) $id, 'ir-dm-tick' ); $ran++; } catch ( Throwable $x ) {} }
+	}
+	return [ 'found' => $found, 'ran' => $ran ];
+}
+function ir_dm_tick_key() { $k = get_option( 'ir_dm_tick_key' ); if ( ! $k ) { $k = wp_generate_password( 24, false ); update_option( 'ir_dm_tick_key', $k, false ); } return $k; }
+function ir_dm_tick_url() { return add_query_arg( 'k', ir_dm_tick_key(), rest_url( 'ir-dm/v1/tick' ) ); }
+add_action( 'rest_api_init', function () {
+	register_rest_route( 'ir-dm/v1', '/tick', [ 'methods' => 'GET', 'permission_callback' => '__return_true', 'callback' => function ( WP_REST_Request $r ) {
+		if ( ! hash_equals( ir_dm_tick_key(), (string) $r->get_param( 'k' ) ) ) { return new WP_REST_Response( [ 'ok' => false ], 403 ); }
+		update_option( 'ir_dm_last_cron', time(), false );
+		return new WP_REST_Response( [ 'ok' => true ] + ir_dm_tick(), 200 );
+	} ] );
+} );
+
 function ir_dm_poll() {
 	if ( get_transient( 'ir_dm_polling' ) ) { return 0; }
-	set_transient( 'ir_dm_polling', 1, 55 );
+	set_transient( 'ir_dm_polling', 1, 45 );
+	@set_time_limit( 60 );
 	update_option( 'ir_dm_last_poll', time(), false );
+	$GLOBALS['ir_dm_to'] = 10; $GLOBALS['ir_dm_in_poll'] = 1; $t0 = microtime( true );
 	$found = 0;
-	foreach ( ir_dm_owners() as $uid ) { foreach ( ir_dm_accts( $uid ) as $a ) {
+	$list = [];
+	foreach ( ir_dm_owners() as $uid ) { foreach ( ir_dm_accts( $uid ) as $a ) { $list[] = [ $uid, $a ]; } }
+	shuffle( $list ); // no account is always last when time runs short
+	foreach ( $list as $pair ) { list( $uid, $a ) = $pair;
 		if ( ( $a['status'] ?? '' ) !== 'active' ) { continue; }
+		if ( microtime( true ) - $t0 > 20 ) { break; }
 		ir_dm_poll_replies( $a );
 		ir_dm_poll_dms( $uid, $a );
 		$autos = ir_dm_autos_for( $uid, 'comments', $a['id'] );
 		if ( ! $autos ) { continue; }
 		$media = []; $any = false;
 		foreach ( $autos as $x ) { if ( ! empty( $x['cfg']['any_post'] ) ) { $any = true; } else { foreach ( ir_dm_post_ids( $x['cfg'] ) as $pid ) { $media[] = $pid; } } }
+		// Comments of many posts in one or two requests (fast) instead of one request per post.
+		$cf = 'comments.limit(50){id,text,timestamp,username,from}';
+		$got = [];
 		if ( $any ) {
-			$r = ir_dm_api( $a, 'GET', $a['id'] . '/media?fields=id&limit=10' );
-			if ( ! is_wp_error( $r ) ) { foreach ( (array) ( $r['data'] ?? [] ) as $m ) { $media[] = (string) $m['id']; } }
+			$r = ir_dm_api( $a, 'GET', $a['id'] . '/media?fields=id,' . $cf . '&limit=10' );
+			if ( is_wp_error( $r ) ) { if ( $r->get_error_code() === 'token' ) { ir_dm_mark_acct( $uid, 'expired', $r->get_error_message(), $a['id'] ); continue; } }
+			else { foreach ( (array) ( $r['data'] ?? [] ) as $m ) { $got[ (string) $m['id'] ] = (array) ( $m['comments']['data'] ?? [] ); } }
+		}
+		$rest = array_values( array_diff( array_unique( $media ), array_keys( $got ) ) );
+		foreach ( $rest as $mid ) { // chosen older posts: one request each
+			if ( microtime( true ) - $t0 > 22 ) { break; }
+			$r1 = ir_dm_api( $a, 'GET', $mid . '/comments?fields=id,text,timestamp,username,from&limit=50' );
+			if ( ! is_wp_error( $r1 ) ) { $got[ $mid ] = (array) ( $r1['data'] ?? [] ); }
 		}
 		$seen = get_user_meta( $uid, 'ir_dm_seen', true );
 		if ( ! is_array( $seen ) ) { $seen = []; }
-		foreach ( array_unique( $media ) as $mid ) {
-			$r = ir_dm_api( $a, 'GET', $mid . '/comments?fields=id,text,timestamp,username,from&limit=50' );
-			if ( is_wp_error( $r ) ) { if ( $r->get_error_code() === 'token' ) { ir_dm_mark_acct( $uid, 'expired', $r->get_error_message(), $a['id'] ); } continue; }
-			foreach ( (array) ( $r['data'] ?? [] ) as $c ) {
+		foreach ( $got as $mid => $list_c ) {
+			$mid = (string) $mid;
+			foreach ( $list_c as $c ) {
 				$cid = (string) ( $c['id'] ?? '' );
 				if ( $cid === '' || isset( $seen[ 'c' . $cid ] ) ) { continue; }
 				$seen[ 'c' . $cid ] = time();
@@ -775,14 +865,15 @@ function ir_dm_poll() {
 		}
 		if ( count( $seen ) > 3000 ) { $seen = array_slice( $seen, -3000, null, true ); }
 		update_user_meta( $uid, 'ir_dm_seen', $seen );
-	} }
+	}
+	unset( $GLOBALS['ir_dm_to'], $GLOBALS['ir_dm_in_poll'] );
 	delete_transient( 'ir_dm_polling' );
 	return $found;
 }
 
 /** Pick up new DMs when Meta is not sending notifications (app not Live). Only the latest message of recent chats. */
 function ir_dm_poll_dms( $uid, $a ) {
-	if ( ! ir_dm_autos_for( $uid, 'dms', $a['id'] ) && ! ir_dm_autos_for( $uid, 'story', $a['id'] ) && ! ir_dm_autos_for( $uid, 'welcome', $a['id'] ) ) { return; }
+	if ( empty( ir_dm_agent_cfg( $uid, $a['id'] )['on'] ) && ! ir_dm_autos_for( $uid, 'dms', $a['id'] ) && ! ir_dm_autos_for( $uid, 'story', $a['id'] ) && ! ir_dm_autos_for( $uid, 'welcome', $a['id'] ) ) { return; }
 	if ( (int) get_option( 'ir_dm_last_real_hook' ) > time() - 600 ) { return; } // webhooks are working, no need
 	$r = ir_dm_api( $a, 'GET', $a['id'] . '/conversations?platform=instagram&fields=updated_time,messages.limit(1){id,message,from,created_time}&limit=10' );
 	if ( is_wp_error( $r ) ) { return; }
@@ -814,6 +905,128 @@ function ir_dm_poll_replies( $a ) {
 		}
 	}
 }
+
+/* =========================================================================
+ * AI agent: answers DMs that no automation handles, using only what the owner taught it.
+ * Safe by design: replies only inside Instagram's 24h window, paced 2+ minutes apart, max 12 replies per person
+ * a day, stays quiet while the owner is chatting, and hands the chat to the owner when unsure.
+ * ========================================================================= */
+
+function ir_dm_agent_cfg( $uid, $ig ) {
+	$all = get_user_meta( $uid, 'ir_dm_agent', true );
+	return is_array( $all ) && isset( $all[ $ig ] ) && is_array( $all[ $ig ] ) ? $all[ $ig ] : [];
+}
+function ir_dm_agent_ok() { return function_exists( 'ir_ai_text' ) && function_exists( 'ir_ai_fast' ) && ir_ai_fast(); }
+
+/** Returns reply text, '' (no reply needed), ['handoff'=>text] or WP_Error. $hist = [[who, text], ...] oldest first, who = 'them'|'me'. */
+function ir_dm_agent_reply( $cfg, $acct_name, $hist ) {
+	if ( ! ir_dm_agent_ok() ) { return new WP_Error( 'noai', 'AI: no AI key is set up (Tools > AI settings).' ); }
+	$v = function ( $k, $d = 'Not given.' ) use ( $cfg ) { $x = trim( (string) ( $cfg[ $k ] ?? '' ) ); return $x !== '' ? $x : $d; };
+	$sys = 'You are the Instagram DM assistant for @' . $acct_name . ( ! empty( $cfg['name'] ) ? ', and your name is ' . $cfg['name'] : '' ) . ". You reply to direct messages for the owner.\n\n"
+		. "ABOUT THE BUSINESS:\n" . $v( 'about' ) . "\n\nFACTS, PRICES AND ANSWERS (your only source of truth):\n" . $v( 'faq' ) . "\n\n"
+		. "HOW THE OWNER WANTS YOU TO REPLY:\n" . $v( 'style', 'Friendly, warm and professional.' ) . "\n\n"
+		. 'Link to share when it helps (booking, website or offer): ' . $v( 'link', 'none' ) . "\n\n"
+		. "RULES (always):\n- Text like a real person on Instagram: 1 to 3 short sentences, under 60 words, plain words, no markdown, no lists, at most one emoji.\n"
+		. "- Use only the facts above. Never invent prices, dates, availability, results, guarantees or policies. If the answer is not above, say you will check and get back to them, and hand off.\n- Do not stretch or assume facts: if the facts above do not clearly say yes, do not say yes. Say you will confirm.\n"
+		. "- Never ask for passwords, card numbers or bank details. Never argue. Never pretend to be the owner in person.\n"
+		. "- Reply in the language they write in.\n"
+		. '- Hand off to the owner when: ' . $v( 'handoff', 'they want to book, pay, complain, ask something not covered above, or ask for a human' ) . ". To hand off, start your reply with [HANDOFF] then a short friendly line saying the owner will reply personally soon.\n"
+		. "- If their last message needs no answer (just ok, thanks, an emoji or a goodbye after the chat is finished), reply with exactly [SKIP].";
+	$lines = [];
+	foreach ( array_slice( $hist, -10 ) as $h ) { $lines[] = ( $h[0] === 'me' ? 'You: ' : 'Them: ' ) . mb_substr( preg_replace( '/\s+/', ' ', (string) $h[1] ), 0, 600 ); }
+	$r = ir_ai_text( $sys, "Chat so far (oldest first):\n" . implode( "\n", $lines ) . "\n\nWrite your next message to them. Only the message text.", [ 'temp' => 0.5, 'max' => 500, 'think' => 0, 'timeout' => 25, 'strict' => 1 ] );
+	if ( is_wp_error( $r ) ) { return new WP_Error( 'transient', 'AI: ' . $r->get_error_message() ); }
+	$t = trim( (string) ( is_array( $r ) ? ( $r['text'] ?? '' ) : $r ) );
+	$t = trim( preg_replace( [ '/^(you|me|assistant)\s*:\s*/i', '/\*\*|__|`/', '/\s*[—–]\s*/u' ], [ '', '', ', ' ], $t ), " \t\n\r\"'" );
+	if ( $t === '' ) { return new WP_Error( 'transient', 'AI: empty answer' ); }
+	if ( stripos( $t, '[SKIP]' ) !== false ) { return ''; }
+	if ( stripos( $t, '[HANDOFF]' ) !== false ) { $h = trim( str_ireplace( '[HANDOFF]', '', $t ) ); return [ 'handoff' => ir_dm_trunc( $h ?: 'Thanks for your message! I will get back to you personally very soon 🙏', 900 ) ]; }
+	return ir_dm_trunc( $t, 900 );
+}
+
+/** Called for a DM that no keyword or welcome automation answered. */
+function ir_dm_agent_handle( $uid, $e ) {
+	if ( ! in_array( $e['k'], [ 'dm', 'story' ], true ) ) { return 'nomatch'; }
+	$cfg = ir_dm_agent_cfg( $uid, $e['ig'] );
+	if ( empty( $cfg['on'] ) || trim( (string) $e['text'] ) === '' ) { return 'nomatch'; }
+	if ( get_transient( 'ir_dm_ho_' . md5( $e['ig'] . '|' . $e['from'] ) ) ) { return 'handed_off'; }
+	if ( ! empty( $GLOBALS['ir_dm_in_poll'] ) ) { return [ 'defer' => 1 ]; } // answer in its own run so the check stays fast
+	$acct = ir_dm_acct( $uid, $e['ig'] );
+	if ( ! $acct || ( $acct['status'] ?? 'active' ) !== 'active' ) { return 'nomatch'; }
+	$ev = $e; $ev['k'] = 'ai';
+	$log = ir_dm_claim( $uid, 0, $ev, '' );
+	if ( ! $log || in_array( $log->status, [ 'sent', 'skipped' ], true ) || (int) $log->attempts >= 3 ) { return 'done'; }
+	if ( time() - (int) $e['ts'] > IR_DM_MSG_WINDOW - 600 ) { ir_dm_set( $log->id, [ 'status' => 'skipped', 'reason' => 'window' ] ); return 'done'; }
+	global $wpdb; $L = ir_dm_t( 'log' );
+	$today = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM $L WHERE ig_id=%s AND sender_id=%s AND trig='ai' AND status='sent' AND sent_at > %s", $e['ig'], $e['from'], gmdate( 'Y-m-d H:i:s', time() - DAY_IN_SECONDS ) ) );
+	if ( $today >= 12 ) { ir_dm_set( $log->id, [ 'status' => 'skipped', 'reason' => 'ai_limit' ] ); return 'done'; }
+	if ( $w = ir_dm_paused( $uid ) ) { return [ 'defer' => $w ]; }
+	// The chat so far (newest first from Instagram).
+	$GLOBALS['ir_dm_to'] = 12;
+	$cv = ir_dm_api( $acct, 'GET', $e['ig'] . '/conversations?platform=instagram&user_id=' . rawurlencode( $e['from'] ) . '&fields=participants,messages.limit(12){id,message,from,created_time}' );
+	$msgs = is_wp_error( $cv ) ? [] : (array) ( $cv['data'][0]['messages']['data'] ?? [] );
+	$name = '';
+	foreach ( (array) ( is_wp_error( $cv ) ? [] : ( $cv['data'][0]['participants']['data'] ?? [] ) ) as $p ) { if ( (string) ( $p['id'] ?? '' ) === (string) $e['from'] ) { $name = (string) ( $p['username'] ?? '' ); } }
+	if ( $name ) { ir_dm_set( $log->id, [ 'sender_name' => mb_substr( $name, 0, 100 ) ] ); }
+	$hist = []; $mine = 0;
+	foreach ( array_reverse( $msgs ) as $m ) {
+		$txt = trim( (string) ( $m['message'] ?? '' ) ); if ( $txt === '' ) { continue; }
+		$me = (string) ( $m['from']['id'] ?? '' ) === (string) $e['ig'];
+		$t = strtotime( (string) ( $m['created_time'] ?? '' ) ) ?: 0;
+		if ( $me && $t > time() - 1200 ) {
+			// A recent message from the business that this app did not send = the owner is chatting personally.
+			$ours = $wpdb->get_var( $wpdb->prepare( "SELECT 1 FROM $L WHERE ig_id=%s AND sender_id=%s AND status='sent' AND dm_text LIKE %s LIMIT 1", $e['ig'], $e['from'], $wpdb->esc_like( mb_substr( $txt, 0, 40 ) ) . '%' ) );
+			if ( ! $ours ) { $mine++; }
+		}
+		if ( $me && $t >= (int) $e['ts'] ) { ir_dm_set( $log->id, [ 'status' => 'skipped', 'reason' => 'human_active' ] ); return 'done'; } // already answered
+		$hist[] = [ $me ? 'me' : 'them', $txt ];
+	}
+	if ( $mine ) { ir_dm_set( $log->id, [ 'status' => 'skipped', 'reason' => 'human_active' ] ); return 'done'; }
+	if ( ! $hist || end( $hist )[1] !== trim( (string) $e['text'] ) ) { $hist[] = [ 'them', (string) $e['text'] ]; }
+	if ( $w = ir_dm_gate( $e ) ) { return [ 'defer' => $w ]; }
+	$ans = ir_dm_agent_reply( $cfg, (string) $acct['username'], $hist );
+	$attempts = (int) $log->attempts + 1;
+	if ( is_wp_error( $ans ) ) { ir_dm_set( $log->id, [ 'attempts' => $attempts, 'status' => $attempts >= 3 ? 'failed' : 'pending', 'error' => $ans->get_error_message() ] ); return $attempts < 3 ? [ 'retry' => 1 ] : 'failed'; }
+	if ( $ans === '' ) { ir_dm_set( $log->id, [ 'status' => 'skipped', 'reason' => 'no_reply_needed' ] ); return 'done'; }
+	$hand = is_array( $ans ); $text = $hand ? $ans['handoff'] : $ans;
+	ir_dm_set( $log->id, [ 'attempts' => $attempts, 'dm_text' => $text ] );
+	list( $r ) = ir_dm_send( $acct, [ 'id' => $e['from'] ], [ 'text' => $text ] );
+	if ( is_wp_error( $r ) ) { $f = ir_dm_fail( $uid, $log->id, $r, $e['ig'] ); if ( ! empty( $f['defer'] ) ) { return $f; } return ( ! empty( $f['retry'] ) && $attempts < 3 ) ? [ 'retry' => 1 ] : 'failed'; }
+	ir_dm_set( $log->id, [ 'status' => 'sent', 'sent_at' => ir_dm_now(), 'error' => null, 'reason' => $hand ? 'handoff' : '' ] );
+	if ( $hand ) { set_transient( 'ir_dm_ho_' . md5( $e['ig'] . '|' . $e['from'] ), 1, DAY_IN_SECONDS ); }
+	return 'sent';
+}
+
+add_action( 'wp_ajax_ir_dm_agent_save', function () {
+	$uid = ir_dm_member_ok();
+	$ig = preg_replace( '/[^0-9]/', '', (string) ( $_POST['ig'] ?? '' ) );
+	if ( ! ir_dm_acct( $uid, $ig ) ) { wp_send_json( [ 'ok' => false, 'err' => 'Pick an account first.' ] ); }
+	$s = function ( $k, $max ) { return mb_substr( trim( sanitize_textarea_field( wp_unslash( (string) ( $_POST[ $k ] ?? '' ) ) ) ), 0, $max ); };
+	$cfg = [ 'on' => ! empty( $_POST['on'] ), 'name' => $s( 'name', 40 ), 'about' => $s( 'about', 4000 ), 'faq' => $s( 'faq', 8000 ), 'style' => $s( 'style', 1500 ), 'handoff' => $s( 'handoff', 600 ), 'link' => esc_url_raw( $s( 'link', 300 ) ) ];
+	if ( $cfg['on'] && mb_strlen( $cfg['about'] . $cfg['faq'] ) < 40 ) { wp_send_json( [ 'ok' => false, 'err' => 'Teach it a little first: tell it about your business and add a few answers (at least a couple of sentences).' ] ); }
+	if ( $cfg['on'] && ! ir_dm_agent_ok() ) { wp_send_json( [ 'ok' => false, 'err' => 'The AI is not set up on this site yet (Tools > AI settings).' ] ); }
+	$all = get_user_meta( $uid, 'ir_dm_agent', true ); if ( ! is_array( $all ) ) { $all = []; }
+	$all[ $ig ] = $cfg; update_user_meta( $uid, 'ir_dm_agent', $all );
+	wp_send_json( [ 'ok' => true ] );
+} );
+add_action( 'wp_ajax_ir_dm_agent_test', function () {
+	$uid = ir_dm_member_ok();
+	$ig = preg_replace( '/[^0-9]/', '', (string) ( $_POST['ig'] ?? '' ) );
+	$a = ir_dm_acct( $uid, $ig );
+	$s = function ( $k, $max ) { return mb_substr( trim( sanitize_textarea_field( wp_unslash( (string) ( $_POST[ $k ] ?? '' ) ) ) ), 0, $max ); };
+	$cfg = [ 'name' => $s( 'name', 40 ), 'about' => $s( 'about', 4000 ), 'faq' => $s( 'faq', 8000 ), 'style' => $s( 'style', 1500 ), 'handoff' => $s( 'handoff', 600 ), 'link' => $s( 'link', 300 ) ];
+	$hist = json_decode( wp_unslash( (string) ( $_POST['hist'] ?? '[]' ) ), true );
+	$hist = array_values( array_filter( array_map( function ( $h ) { return is_array( $h ) && isset( $h[0], $h[1] ) ? [ $h[0] === 'me' ? 'me' : 'them', mb_substr( (string) $h[1], 0, 600 ) ] : null; }, is_array( $hist ) ? $hist : [] ) ) );
+	if ( ! $hist ) { wp_send_json( [ 'ok' => false, 'err' => 'Type a message first.' ] ); }
+	$r = ir_dm_agent_reply( $cfg, $a ? (string) $a['username'] : 'yourbusiness', $hist );
+	if ( is_wp_error( $r ) ) { wp_send_json( [ 'ok' => false, 'err' => str_replace( 'AI: ', '', $r->get_error_message() ) ] ); }
+	wp_send_json( [ 'ok' => true, 'reply' => is_array( $r ) ? $r['handoff'] : $r, 'handoff' => is_array( $r ), 'skip' => $r === '' ] );
+} );
+add_action( 'wp_ajax_ir_dm_tick', function () {
+	ir_dm_member_ok();
+	$r = ir_dm_tick();
+	wp_send_json( [ 'ok' => true, 'changed' => $r['found'] + $r['ran'] ] );
+} );
 
 /* ---------- daily token refresh (Instagram-login tokens last 60 days) ---------- */
 
@@ -975,7 +1188,7 @@ add_action( 'wp_ajax_ir_dm_state', function () {
 	$act = array_map( function ( $r ) {
 		$res = $r->status === 'sent' ? 'Sent' : ( $r->status === 'skipped' ? 'Not sent: ' . ir_dm_reason_text( $r->reason ) : ( $r->status === 'failed' ? 'Not sent: ' . ir_dm_friendly( $r->error ) : 'Sending…' ) );
 		return [ 'when' => strtotime( $r->created_at . ' UTC' ), 'who' => $r->sender_name ? '@' . $r->sender_name : 'Someone', 'trig' => $r->trig, 'said' => (string) $r->incoming,
-			'auto' => (string) $r->name, 'ok' => $r->status === 'sent', 'res' => $res, 'dm' => (string) $r->dm_text, 'pub' => $r->public_status === 'sent' ? (string) $r->public_text : '' ];
+			'auto' => $r->trig === 'ai' ? 'AI agent' : (string) $r->name, 'ok' => $r->status === 'sent', 'res' => $res, 'dm' => (string) $r->dm_text, 'pub' => $r->public_status === 'sent' ? (string) $r->public_text : '' ];
 	}, $rows );
 	$tot = [ 'sent' => array_sum( array_column( $autos, 'sent' ) ), 'clicks' => array_sum( array_column( $autos, 'clicks' ) ) ];
 	$tot['leads'] = (int) $wpdb->get_var( $wpdb->prepare( 'SELECT COUNT(*) FROM ' . ir_dm_t( 'lead' ) . ' WHERE user_id=%d', $uid ) );
@@ -983,9 +1196,12 @@ add_action( 'wp_ajax_ir_dm_state', function () {
 	foreach ( $wpdb->get_results( $wpdb->prepare( 'SELECT ig_id, SUM(status=\'sent\') n FROM ' . ir_dm_t( 'log' ) . ' WHERE user_id=%d GROUP BY ig_id', $uid ) ) as $x ) { $per[ $x->ig_id ] = (int) $x->n; }
 	$leads = $wpdb->get_results( $wpdb->prepare( 'SELECT email, username, auto_id, created_at FROM ' . ir_dm_t( 'lead' ) . ' WHERE user_id=%d ORDER BY id DESC LIMIT 100', $uid ) );
 	$u = wp_get_current_user();
-	$accts = array_values( array_map( function ( $a ) use ( $per, $autos ) { $p = ir_dm_acct_public( $a ); $p['sent'] = $per[ $p['id'] ] ?? 0; $first = (string) ( ir_dm_acct( $uid )['id'] ?? '' ); $p['autos'] = count( array_filter( $autos, function ( $x ) use ( $p, $first ) { $ac = (string) ( $x['cfg']['acct'] ?? '' ); return $ac === $p['id'] || ( $ac === '' && $p['id'] === $first ); } ) ); return $p; }, ir_dm_accts( $uid ) ) );
+	$agents = [];
+	foreach ( ir_dm_accts( $uid ) as $x ) { $agents[ (string) $x['id'] ] = (object) ir_dm_agent_cfg( $uid, (string) $x['id'] ); }
+	$accts = array_values( array_map( function ( $a ) use ( $per, $autos, $uid ) { $p = ir_dm_acct_public( $a ); $p['sent'] = $per[ $p['id'] ] ?? 0; $first = (string) ( ir_dm_acct( $uid )['id'] ?? '' ); $p['autos'] = count( array_filter( $autos, function ( $x ) use ( $p, $first ) { $ac = (string) ( $x['cfg']['acct'] ?? '' ); return $ac === $p['id'] || ( $ac === '' && $p['id'] === $first ); } ) ); return $p; }, ir_dm_accts( $uid ) ) );
 	wp_send_json( [ 'ok' => true, 'ready' => ir_dm_ready(), 'accts' => $accts, 'autos' => $autos, 'activity' => $act, 'tot' => $tot,
 		'leads' => array_map( function ( $l ) { return [ 'email' => $l->email, 'who' => $l->username ? '@' . $l->username : '', 'auto' => get_the_title( (int) $l->auto_id ), 'when' => strtotime( $l->created_at . ' UTC' ) ]; }, $leads ),
+		'agents' => (object) $agents, 'ai_ok' => ir_dm_agent_ok(),
 		'hook' => (string) get_user_meta( $uid, 'ir_dm_hook', true ), 'instant' => (int) get_option( 'ir_dm_last_real_hook' ) > time() - 7 * DAY_IN_SECONDS,
 		'me' => [ 'name' => $u->first_name ?: $u->display_name, 'email' => $u->user_email, 'admin' => user_can( $uid, 'manage_options' ) ] ] );
 } );
@@ -1378,6 +1594,14 @@ body{background:radial-gradient(900px 600px at 0% 0%,rgba(22,96,232,.10),transpa
 .rx-accst{display:grid;grid-template-columns:1fr 1fr;gap:8px}.rx-accst>div{background:color-mix(in srgb,var(--soft) 80%,transparent);border-radius:16px;padding:10px 12px}.rx-accst b{display:block;font-size:20px}.rx-accst small{color:var(--muted);font-size:12px}
 .rx-acc .rx-row .rx-btn{flex:1;padding:11px 12px;font-size:14px}.rx-ghost{background:transparent;border:1px solid var(--line)}
 [hidden]{display:none!important}
+.rx-pill.on{background:var(--acc);color:#fff}
+.rx-ag{display:flex;flex-direction:column;gap:14px}.rx-ag .rx-f{display:flex;flex-direction:column;gap:6px}.rx-ag .rx-f b{font-size:14.5px}
+.rx-chat{height:380px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;padding:12px;border:1px solid var(--line);border-radius:20px;background:var(--soft)}
+.rx-bb{max-width:82%;padding:10px 14px;border-radius:20px;font-size:14.5px;line-height:1.45;white-space:pre-wrap;word-wrap:break-word}
+.rx-bb.them{align-self:flex-start;background:var(--card);border:1px solid var(--line);border-bottom-left-radius:6px}
+.rx-bb.me{align-self:flex-end;background:linear-gradient(135deg,#1660E8,#3b7bff);color:#fff;border-bottom-right-radius:6px}
+.rx-bb.sys{align-self:center;max-width:95%;background:none;color:var(--muted);font-size:12.5px;text-align:center;padding:4px}
+@media(max-width:520px){.rx-nav{gap:4px;padding:5px}.rx-nav button{min-width:44px;height:48px;padding:0 12px}.rx-nav button span{display:none!important}.rx-nav button.on{padding:0 7px}.rx-chat{height:320px}}
 CSS;
 }
 
@@ -1420,8 +1644,10 @@ var TPL=[
  {e:'👋',n:'Welcome new contacts',d:'Greet people the first time they message you, with a freebie',kw:[],msg:'Hey {name}, welcome! 👋 So glad you reached out. Here is a little something for you:\n{link}',btn:'Get my freebie',pub:[],trig:'welcome'},
  {e:'✉️',n:'Collect emails',d:'Give a freebie for an email',kw:['GUIDE'],msg:'Thanks {name}! Here is your free guide 👇\n{link}',btn:'Get the guide',pub:['Check your DMs {name} 📩'],mode:'email'}];
 function blank(t,trig){t=t||TPL[3];trig=trig||t.trig;var a=S.accts[0];return{id:0,name:'',acct:a?a.id:'',t:{comments:trig?trig==='comments':true,dms:trig==='dms',story:trig==='story',welcome:trig==='welcome'},any_post:!!trig&&trig!=='comments',post:'',posts:[],post_img:'',keywords:t.kw.slice(),any_word:trig==='welcome',message:t.msg,link:'',button:t.btn,public_on:t.n!=='Start blank'&&(!trig||trig==='comments'),public:t.pub.slice(),follow:t.mode==='follow',follow_msg:'Hey {name}! Tap below and I will send it right over 👇',follow_btn:'Send it to me',ask_email:t.mode==='email',email_ask:'Hey {name}! What is the best email to send it to? 📩',email_thanks:''}}
+var TK=0;function tick(){if(document.hidden||TK)return;TK=1;post('ir_dm_tick').then(function(r){TK=0;if(r&&r.changed&&!ED&&(TAB==='home'||TAB==='activity'))load()})}
+setInterval(tick,45000);setTimeout(tick,4000);document.addEventListener('visibilitychange',function(){if(!document.hidden)tick()});
 function load(){return post('ir_dm_state').then(function(r){if(!r.ok){R.innerHTML='<div class="rx-alert bad">'+esc(r.err)+'</div>';return}S=r;draw()})}
-var TABS=[['home','Home','home'],['autos','Automations','chat'],['activity','Activity','list'],['leads','Leads','mail'],['profile','Profile','gear']];
+var TABS=[['home','Home','home'],['autos','Automations','chat'],['activity','Activity','list'],['agent','AI Agent','spark'],['leads','Leads','mail'],['profile','Profile','gear']];
 function side(){var on=function(t){return TAB===t&&!ED};
  return '<aside class="rx-side"><div class="rx-sbrand"><span class="rx-logo">'+I.logo+'</span><b class="rx-brand">'+esc(C.name)+'<small>AI DM automation</small></b></div>'+
  '<button class="rx-btn rx-lime rx-wide" data-new="">'+I.plus+' New automation</button>'+
@@ -1432,12 +1658,13 @@ function shell(h){return side()+'<main class="rx-main">'+h+'</main>'+nav()}
 function nav(){return '<nav class="rx-nav">'+TABS.map(function(x){var on=TAB===x[0]&&!ED;return '<button data-tab="'+x[0]+'" class="'+(on?'on':'')+'" aria-label="'+x[1]+'">'+(on?'<i>'+I[x[2]]+'</i><span>'+x[1]+'</span>':I[x[2]])+'</button>'}).join('')+'</nav>'}
 function banner(){var h='';if(C.msg)h+='<div class="rx-alert ok">'+esc(C.msg)+'</div>';if(C.err)h+='<div class="rx-alert bad">'+esc(C.err)+'</div>';C.msg=C.err='';return h}
 function draw(){if(ED)return editor();var h='';
- if(TAB==='home')h=home();else if(TAB==='autos')h=autos();else if(TAB==='activity')h=activity();else if(TAB==='leads')h=leads();else h=profile();
+ if(TAB==='home')h=home();else if(TAB==='autos')h=autos();else if(TAB==='activity')h=activity();else if(TAB==='leads')h=leads();else if(TAB==='agent')h=agent();else h=profile();
  R.innerHTML=shell(h);bind();window.scrollTo(0,0)}
 function connectCard(){var a=S.accts;
  if(!S.ready&&!a.length)return '<div class="rx-promo"><div class="row"><span class="rx-crown">'+I.crown+'</span><div><h3>Almost ready</h3><p>'+(S.me.admin?'Finish the one-time Meta setup first. You can build automations meanwhile.':'Instagram connection opens soon. You can build automations meanwhile.')+'</p></div></div>'+(S.me.admin?'<a class="rx-btn rx-wide" href="'+esc(C.setup)+'">Open setup</a>':'')+'</div>';
  if(!a.length)return '<div class="rx-promo"><div class="row"><span class="rx-crown">'+I.crown+'</span><div><h3>Connect Instagram</h3><p>Business or Creator account. Log in, tap Allow, done.</p></div></div><a class="rx-btn rx-wide" href="'+esc(C.connect)+'">'+I.plus+' Connect Instagram</a></div>';
- var bad=a.filter(function(x){return x.status!=='active'});
+ var bad=a.filter(function(x){return x.status!=='active'}),wn=a.filter(function(x){return x.warn==='msg_access'});
+ if(wn.length&&!bad.length)return '<div class="rx-promo warn"><div class="row"><span class="rx-crown">'+I.crown+'</span><div><h3>@'+esc(wn[0].username)+': turn on message access</h3><p>Instagram is blocking DMs from this app. In the Instagram app open <b>Settings → Messages and story replies → Message controls → Connected tools</b> and switch ON <b>Allow access to messages</b>. Then send a test comment.</p></div></div></div>';
  if(bad.length)return '<div class="rx-promo warn"><div class="row"><span class="rx-crown">'+I.crown+'</span><div><h3>@'+esc(bad[0].username)+' needs you</h3><p>Instagram logged it out. Reconnect to keep DMs flowing.</p></div></div><a class="rx-btn rx-wide" href="'+esc(C.connect)+'">Reconnect</a></div>';
  return '<div class="rx-promo"><div class="row"><span class="rx-crown">'+I.crown+'</span><div><h3>'+S.tot.sent+' DMs sent</h3><p>'+S.autos.filter(function(x){return x.on}).length+' automation'+(S.autos.length===1?'':'s')+' live on '+a.map(function(x){return '@'+esc(x.username)}).join(', ')+'</p></div></div><button class="rx-btn rx-wide" data-new="">'+I.plus+' New automation</button></div>'}
 function home(){var top='<div class="rx-top"><button class="rx-hello" data-tab="profile">'+av(S.accts[0])+'<span>Hello, '+esc(S.me.name||'there')+'!</span></button><button class="rx-ib lime" data-new="" aria-label="New automation">'+I.spark+'</button><button class="rx-ib rx-mob" onclick="rxTheme()" aria-label="Light or dark mode">'+I.moon+'</button></div>';
@@ -1463,7 +1690,7 @@ function profile(){var a=S.accts,live=S.autos.filter(function(x){return x.on}).l
  h+='<div class="rx-card rx-stats"><div><span class="rx-ic">'+I.chat+'</span><small>Automations</small><b>'+S.autos.length+'</b></div><div><span class="rx-ic b">'+I.crown.split('#fff').join('currentColor')+'</span><small>Accounts</small><b>'+a.length+'</b></div><div><span class="rx-ic o">'+I.bolt+'</span><small>Triggers</small><b>'+S.activity.length+'</b></div></div>';
  h+='</div><div>';
  h+='<div class="rx-promo"><div class="row"><span class="rx-crown">'+I.crown+'</span><div><h3>'+(a.length?'Add another account':'Connect Instagram')+'</h3><p>Run automations on several Instagram accounts from one place.</p></div></div><a class="rx-btn rx-wide" href="'+esc(C.connect)+'">'+I.plus+' '+(a.length?'Add Instagram account':'Connect Instagram')+'</a></div>';
- if(a.length)h+='<div class="rx-sec"><h2>Your accounts</h2></div><div class="rx-accs">'+a.map(function(x){var ok=x.status==='active';return '<div class="rx-acc rx-glass"><div class="rx-row">'+av(x,'big')+'<div style="flex:1;min-width:0"><b class="rx-ell">@'+esc(x.username)+'</b><span class="rx-pillst '+(ok?'ok':'bad')+'">'+(ok?'● Live':'● Reconnect needed')+'</span></div></div><div class="rx-accst"><div><b>'+(x.sent||0)+'</b><small>DMs sent</small></div><div><b>'+(x.autos||0)+'</b><small>Automations</small></div></div><div class="rx-row">'+(ok?'<a class="rx-btn rx-ghost" href="'+esc(C.connect)+'">Refresh</a>':'<a class="rx-btn rx-lime" href="'+esc(C.connect)+'">Reconnect</a>')+'<button class="rx-btn rx-ghost rx-red" data-disc="'+esc(x.id)+'">Remove</button></div></div>'}).join('')+'</div>';
+ if(a.length)h+='<div class="rx-sec"><h2>Your accounts</h2></div><div class="rx-accs">'+a.map(function(x){var ok=x.status==='active';return '<div class="rx-acc rx-glass"><div class="rx-row">'+av(x,'big')+'<div style="flex:1;min-width:0"><b class="rx-ell">@'+esc(x.username)+'</b><span class="rx-pillst '+(ok?(x.warn?'bad':'ok'):'bad')+'">'+(ok?(x.warn?'● Message access off':'● Live'):'● Reconnect needed')+'</span></div></div>'+(x.warn==='msg_access'?'<div class="rx-muted" style="font-size:12.5px;line-height:1.5;margin:8px 0">Instagram app → Settings → Messages and story replies → Message controls → Connected tools → turn ON <b>Allow access to messages</b>.</div>':'')+'<div class="rx-accst"><div><b>'+(x.sent||0)+'</b><small>DMs sent</small></div><div><b>'+(x.autos||0)+'</b><small>Automations</small></div></div><div class="rx-row">'+(ok?'<a class="rx-btn rx-ghost" href="'+esc(C.connect)+'">Refresh</a>':'<a class="rx-btn rx-lime" href="'+esc(C.connect)+'">Reconnect</a>')+'<button class="rx-btn rx-ghost rx-red" data-disc="'+esc(x.id)+'">Remove</button></div></div>'}).join('')+'</div>';
  h+='<details class="rx-card rx-pad" style="margin:12px 0"><summary>How it works & Instagram rules</summary><p class="rx-muted" style="margin:10px 0 0;font-size:14px;line-height:1.6">• One automatic DM per comment, within 7 days of the comment.<br>• DM and Story replies within 24 hours of their message.<br>• Your own comments never trigger anything.<br>• New comments are picked up within about a minute (instantly once your Meta app is Live).<br>• Links are tracked so you can see clicks.</p></details>';
  h+='<a class="rx-btn rx-wide rx-mob" style="border:1px solid var(--line)" href="'+esc(C.logout)+'">Sign out</a></div></div>';return h}
 function leads(){var h='<div class="rx-head"><h1>Leads</h1><a class="rx-btn rx-lime" style="padding:11px 16px" href="'+esc(C.aj)+'?action=ir_dm_leads_csv&n='+esc(C.n)+'">'+I.dl+' Export CSV</a></div>'+banner();
@@ -1472,8 +1699,38 @@ function leads(){var h='<div class="rx-head"><h1>Leads</h1><a class="rx-btn rx-l
  '<div class="rx-alert info" style="font-size:13.5px;font-weight:500">To collect emails, open an automation and switch on <b>Ask for their email first</b>.</div></div><div>';
  h+=S.leads.length?'<div class="rx-card rx-pad">'+S.leads.map(function(l){return '<div class="rx-act"><div class="rx-row" style="justify-content:space-between"><b>'+esc(l.email)+'</b><small class="rx-muted">'+ago(l.when)+'</small></div><div class="rx-muted" style="font-size:13.5px">'+esc(l.who||'')+(l.auto?' · '+esc(l.auto):'')+'</div></div>'}).join('')+'</div>':'<div class="rx-card rx-pad rx-center"><span class="rx-ic g" style="margin:0 auto 10px;width:56px;height:56px">'+I.mail+'</span><b style="display:block">No leads yet</b><small class="rx-muted">Emails people send through your automations appear here.</small></div>';
  return h+'</div></div>'}
+var AG='',AGH=[];
+function agent(){var a=S.accts,h='<div class="rx-head"><h1>AI Agent</h1><span style="width:48px"></span></div>'+banner();
+ if(!a.length)return h+'<div class="rx-alert info">Connect an Instagram account first, then teach your agent here.</div>';
+ if(!AG||!a.some(function(x){return x.id===AG}))AG=a[0].id;var g=S.agents[AG]||{};
+ var f=function(id,lab,tip,val,rows,ph){return '<label class="rx-f"><b>'+lab+'</b><small>'+tip+'</small>'+(rows?'<textarea id="'+id+'" rows="'+rows+'" placeholder="'+esc(ph)+'">'+esc(val||'')+'</textarea>':'<input id="'+id+'" value="'+esc(val||'')+'" placeholder="'+esc(ph)+'">')+'</label>'};
+ h+=(a.length>1?'<div class="rx-chips" style="margin-bottom:14px">'+a.map(function(x){return '<button class="rx-pill'+(x.id===AG?' on':'')+'" data-ag="'+esc(x.id)+'">@'+esc(x.username)+'</button>'}).join('')+'</div>':'');
+ if(!S.ai_ok)h+='<div class="rx-alert bad">The AI is not switched on for this site yet. Add an AI key in Tools → AI settings.</div>';
+ h+='<div class="rx-pgrid"><div><div class="rx-card rx-pad rx-glass" style="margin-bottom:14px"><div class="rx-row"><span class="rx-ic g">'+I.spark+'</span><div style="flex:1;min-width:0"><b style="display:block">Reply to DMs with AI</b><small class="rx-muted">Answers messages no automation handles, using only what you teach it. 2+ minutes between replies, stays quiet when you are chatting, hands hard questions to you.</small></div><label class="rx-sw"><input type="checkbox" id="agOn"'+(g.on?' checked':'')+'><i></i></label></div></div>'+
+ '<div class="rx-card rx-pad rx-ag">'+f('agName','Agent name (optional)','Shown only if someone asks who they are talking to.',g.name,0,'e.g. Ada from Reubx')+
+ f('agAbout','About your business','What you do, who you help, where you are, opening hours.',g.about,4,'I help estheticians get clients with social media management. Based in Lagos, I work with clients worldwide. Mon to Fri, 9am to 6pm.')+
+ f('agFaq','Answers it should know','Prices, packages, how to book, delivery, common questions. One per line. It will never make anything up.',g.faq,7,'Price: Social media management starts at $3,000/month\nWhat is included: 12 posts, 8 reels, stories, captions, monthly report\nHow to start: book a free call with the link')+
+ f('agStyle','How should it talk?','Tone, words to use or avoid, how long.',g.style,3,'Warm, confident, short. Use the person\'s name. Sound like me, not a robot.')+
+ f('agHand','When should it hand the chat to you?','It replies "I\'ll get back to you personally" and goes quiet for that person for 24 hours.',g.handoff,2,'They want a custom price, are ready to pay, complain, or ask something not covered above')+
+ f('agLink','Link to share (optional)','Booking page, website or offer.',g.link,0,'https://')+
+ '<div class="rx-alert bad" id="agErr" hidden></div><button class="rx-btn rx-lime rx-wide" id="agSave">Save agent</button></div></div>'+
+ '<div><div class="rx-card rx-pad"><div class="rx-row" style="justify-content:space-between;margin-bottom:10px"><b>Try your agent</b><button class="rx-link" id="agClear">Clear chat</button></div><div class="rx-muted" style="font-size:13px;margin-bottom:10px">Chat like a customer would. It uses what is typed on the left, even before you save.</div><div class="rx-chat" id="agChat">'+(AGH.length?AGH.map(function(m){return '<div class="rx-bb '+(m[0]==='me'?'me':'them')+'">'+esc(m[1])+'</div>'}).join(''):'<div class="rx-muted" style="font-size:13px;text-align:center;padding:24px 8px">Try: “How much is it?” or “Do you work with lash techs?”</div>')+'</div><div class="rx-row" style="margin-top:10px"><input id="agMsg" class="rx-in2" placeholder="Type a message…" autocomplete="off"><button class="rx-btn rx-dark" id="agSend" style="padding:12px 18px">Send</button></div></div></div></div>';
+ return h}
+function agVals(){var v=function(id){var e=R.querySelector('#'+id);return e?e.value:''};return{ig:AG,on:R.querySelector('#agOn').checked?1:'',name:v('agName'),about:v('agAbout'),faq:v('agFaq'),style:v('agStyle'),handoff:v('agHand'),link:v('agLink')}}
+function agBind(){if(TAB!=='agent'||!R.querySelector('#agSave'))return;var q=function(s){return R.querySelector(s)};
+ R.querySelectorAll('[data-ag]').forEach(function(b){b.onclick=function(){AG=b.dataset.ag;AGH=[];draw()}});
+ var saveAg=function(){var b=q('#agSave'),e=q('#agErr'),d=agVals();b.disabled=true;b.textContent='Saving…';e.hidden=true;
+  post('ir_dm_agent_save',d).then(function(r){b.disabled=false;b.textContent='Save agent';if(!r.ok){e.textContent=r.err;e.hidden=false;if(d.on&&q('#agOn'))q('#agOn').checked=false;return}S.agents[AG]={on:!!d.on,name:d.name,about:d.about,faq:d.faq,style:d.style,handoff:d.handoff,link:d.link};b.textContent='✓ Saved';setTimeout(function(){if(q('#agSave'))q('#agSave').textContent='Save agent'},1800)})};
+ q('#agSave').onclick=saveAg;q('#agOn').onchange=saveAg;
+ q('#agClear').onclick=function(){AGH=[];draw()};
+ var send=function(){var i=q('#agMsg'),t=i.value.trim();if(!t)return;AGH.push(['them',t]);i.value='';var c=q('#agChat');c.innerHTML=AGH.map(function(m){return '<div class="rx-bb '+(m[0]==='me'?'me':'them')+'">'+esc(m[1])+'</div>'}).join('')+'<div class="rx-bb me typing">…</div>';c.scrollTop=c.scrollHeight;
+  var d=agVals();d.hist=JSON.stringify(AGH);post('ir_dm_agent_test',d).then(function(r){var tp=c.querySelector('.typing');if(tp)tp.remove();
+   if(!r.ok){c.insertAdjacentHTML('beforeend','<div class="rx-bb sys">'+esc(r.err)+'</div>');return}
+   if(r.skip){c.insertAdjacentHTML('beforeend','<div class="rx-bb sys">(No reply needed, the agent stays quiet)</div>');return}
+   AGH.push(['me',r.reply]);c.insertAdjacentHTML('beforeend','<div class="rx-bb me">'+esc(r.reply)+'</div>'+(r.handoff?'<div class="rx-bb sys">Handed to you: the agent goes quiet for this person for 24h</div>':''));c.scrollTop=c.scrollHeight})};
+ q('#agSend').onclick=send;q('#agMsg').onkeydown=function(e){if(e.key==='Enter'){e.preventDefault();send()}}}
 function find(id){return S.autos.filter(function(a){return String(a.id)===String(id)})[0]}
-function bind(){var q=function(s){return R.querySelectorAll(s)};
+function bind(){var q=function(s){return R.querySelectorAll(s)};agBind();
  q('[data-tab]').forEach(function(b){b.onclick=function(){TAB=b.dataset.tab;ED=null;draw()}});
  q('[data-new]').forEach(function(b){b.onclick=function(){var t=b.dataset.new;if(t){edit(blank(TPL[t==='comments'?0:3],t))}else{TAB='autos';R.innerHTML=shell('<div class="rx-head"><button class="rx-ib" data-tab="autos">'+I.back+'</button><h1>New automation</h1><span style="width:48px"></span></div><div class="rx-card rx-pad rx-pick"><p style="margin:0 0 14px;font-weight:700">Pick a starting point. You can change everything.</p>'+tpls()+'</div>');bind()}}});
  q('[data-tpl]').forEach(function(b){b.onclick=function(){edit(blank(TPL[+b.dataset.tpl]))}});
@@ -1606,7 +1863,11 @@ function ir_dm_admin() {
 	echo '<tr><td>' . $ok( $last > 0 ) . ' Webhooks arriving from Meta</td><td>' . ( $last ? 'Last one ' . esc_html( human_time_diff( $last ) ) . ' ago' : 'None yet' ) . ( $bad && $bad > $last ? ' · <b style="color:#dc2626">A webhook was rejected (wrong app secret?) ' . esc_html( human_time_diff( $bad ) ) . ' ago</b>' : '' ) . '</td></tr>'; // phpcs:ignore
 	echo '<tr><td>' . $ok( function_exists( 'as_enqueue_async_action' ) ) . ' Background queue (Action Scheduler)</td><td>Retries and delayed sends.</td></tr>'; // phpcs:ignore
 	echo '<tr><td>Instagram accounts connected</td><td>' . (int) $members . '</td></tr><tr><td>Active automations</td><td>' . (int) $autos . '</td></tr><tr><td>DMs sent (7 days)</td><td>' . (int) $sent7 . '</td></tr>';
+	$lc = (int) get_option( 'ir_dm_last_cron' ); $lp = (int) get_option( 'ir_dm_last_poll' );
+	echo '<tr><td>' . $ok( $lp > time() - 180 ) . ' Checking for new comments and DMs</td><td>' . ( $lp ? 'Last check ' . esc_html( human_time_diff( $lp ) ) . ' ago' : 'Not yet' ) . '</td></tr>'; // phpcs:ignore
+	echo '<tr><td>' . $ok( $lc > time() - 300 ) . ' Always-on checker (server cron)</td><td>' . ( $lc > time() - 300 ? 'Working: checks every minute even when nobody visits your site.' : 'Not set up yet (see below).' ) . '</td></tr>'; // phpcs:ignore
 	echo '</tbody></table>';
+	echo '<h2>Fast replies, even when nobody is on your site</h2><p style="max-width:900px">Until your Meta app is Live, new comments and DMs are found by checking Instagram every minute. WordPress only runs that check when someone visits your site, so add this once in <b>Hostinger hPanel → Advanced → Cron Jobs</b>: choose <b>Custom</b>, paste the command below, set it to run <b>every minute</b>, and save.</p>' . $copy( 'wget -q -O /dev/null "' . ir_dm_tick_url() . '"' ); // phpcs:ignore
 	echo '<h2>Paste these into your Meta app</h2><table class="form-table"><tbody>';
 	echo '<tr><th>Webhook callback URL</th><td>' . $copy( ir_dm_webhook_url() ) . '</td></tr>'; // phpcs:ignore
 	echo '<tr><th>Webhook verify token</th><td>' . $copy( $o['verify'] ) . '<p class="description">Subscribe to the <b>comments</b> and <b>messages</b> fields.</p></td></tr>'; // phpcs:ignore
