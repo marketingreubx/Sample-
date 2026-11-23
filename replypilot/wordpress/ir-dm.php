@@ -302,8 +302,8 @@ function ir_dm_get( $url, $args = [] ) {
  * ========================================================================= */
 
 function ir_dm_webhook_url() { return rest_url( 'ir-dm/v1/webhook' ); }
-define( 'IR_DM_NAME', 'Replixa' );
-function ir_dm_url( $p = '' ) { return home_url( '/replixa/' . ( $p ? trim( $p, '/' ) . '/' : '' ) ); }
+define( 'IR_DM_NAME', 'Reubx DM' );
+function ir_dm_url( $p = '' ) { return home_url( '/reubxdm/' . ( $p ? trim( $p, '/' ) . '/' : '' ) ); }
 /* Registered in Meta as the OAuth redirect: keep it stable. */
 function ir_dm_redirect_uri() { return home_url( '/dm/callback/' ); }
 
@@ -918,16 +918,16 @@ function ir_dm_icon( $size = 26 ) {
 	return '<svg width="' . (int) $size . '" height="' . (int) $size . '" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3h11A2.5 2.5 0 0 1 20 5.5v8a2.5 2.5 0 0 1-2.5 2.5H10l-4.5 4v-4A1.5 1.5 0 0 1 4 14.5z"/><path d="M12.8 6.5 10 10.5h3.5l-2.6 4"/></svg>';
 }
 
-/* App routes: /replixa/ (app), /replixa/connect/, /dm/callback/ (OAuth, registered in Meta). /dm/ forwards to /replixa/. */
+/* App routes: /reubxdm/ (app), /reubxdm/connect/, /dm/callback/ (OAuth, registered in Meta). /dm/ and /replixa/ forward to /reubxdm/. */
 add_action( 'template_redirect', function () {
 	$path = trim( (string) wp_parse_url( $_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH ), '/' );
-	if ( ! preg_match( '#^(dm|replixa)(?:/(connect|callback))?$#', $path, $m ) ) { return; }
+	if ( ! preg_match( '#^(dm|replixa|reubxdm)(?:/(connect|callback))?$#', $path, $m ) ) { return; }
 	nocache_headers();
-	do_action( 'litespeed_control_set_nocache', 'replixa' );
+	do_action( 'litespeed_control_set_nocache', 'reubxdm' );
 	status_header( 200 );
 	header( 'X-Robots-Tag: noindex, nofollow', true );
 	$sub = $m[2] ?? '';
-	if ( $m[1] === 'dm' && $sub === '' ) { wp_safe_redirect( ir_dm_url() ); exit; }
+	if ( $m[1] !== 'reubxdm' && $sub === '' ) { wp_safe_redirect( ir_dm_url() ); exit; }
 	if ( ! is_user_logged_in() ) {
 		if ( $sub !== '' ) { wp_safe_redirect( ir_dm_url() ); exit; }
 		ir_dm_auth();
@@ -984,9 +984,9 @@ function ir_dm_auth() {
 	$signup = $mode === 'signup';
 	ob_start(); ?>
 <div class="rx-auth">
- <div class="rx-auth-top"><span class="rx-logo"><?php echo ir_dm_logo(); // phpcs:ignore ?></span><b><?php echo esc_html( IR_DM_NAME ); ?></b></div>
- <h1 class="rx-hero"><?php echo $signup ? 'Turn <span>comments</span><br>into clients.' : 'Welcome <span>back.</span>'; ?></h1>
- <p class="rx-muted">Someone comments your word, they get your DM. Automatically, 24/7.</p>
+ <div class="rx-auth-top"><span class="rx-logo"><?php echo ir_dm_logo(); // phpcs:ignore ?></span><b class="rx-brand"><?php echo esc_html( IR_DM_NAME ); ?><small>AI DM automation</small></b><button type="button" class="rx-ib" onclick="rxTheme()" aria-label="Light or dark mode"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button></div>
+ <h1 class="rx-hero"><?php echo $signup ? 'Let AI turn <span>comments</span><br>into clients.' : 'Welcome <span>back.</span>'; ?></h1>
+ <p class="rx-muted">Someone comments your word, your AI assistant sends them a DM. 24/7, on autopilot.</p>
  <form method="post" class="rx-card rx-pad rx-form">
   <input type="hidden" name="_n" value="<?php echo esc_attr( wp_create_nonce( 'ir_dm_auth' ) ); ?>">
   <input type="hidden" name="rx_act" value="<?php echo $signup ? 'signup' : 'login'; ?>">
@@ -1009,10 +1009,11 @@ function ir_dm_logo() {
 
 function ir_dm_shell( $title, $body, $script ) {
 	?><!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="robots" content="noindex,nofollow"><meta name="theme-color" content="#EEF2EC">
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="robots" content="noindex,nofollow"><meta name="theme-color" content="#F8FAFF">
 <title><?php echo esc_html( $title . ' · ' . IR_DM_NAME ); ?></title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script>(function(){var t=null;try{t=localStorage.getItem("ir-theme")}catch(e){}if(t!=="dark"&&t!=="light"){t=matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"}document.documentElement.setAttribute("data-theme",t);window.rxTheme=function(){var n=document.documentElement.getAttribute("data-theme")==="dark"?"light":"dark";document.documentElement.setAttribute("data-theme",n);try{localStorage.setItem("ir-theme",n)}catch(e){}};})();</script>
 <style><?php echo ir_dm_css(); // phpcs:ignore ?></style></head>
 <body><?php echo $body; // phpcs:ignore ?><?php echo $script; // phpcs:ignore ?></body></html>
 <?php
@@ -1028,54 +1029,61 @@ function ir_dm_page() {
 
 function ir_dm_css() {
 	return <<<'CSS'
-:root{--bg:#EEF2EC;--card:#fff;--ink:#141414;--ink2:#2B2D2A;--muted:#8B9188;--line:#E3E8E0;--lime:#B8EB78;--lime2:#9ADB58;--lime3:#E6F7D2;--soft:#F4F7F2;--red:#E5484D;--r:26px}
-*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}html,body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 "Plus Jakarta Sans",system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+:root{--bg:#F8FAFF;--card:#fff;--ink:#0A1633;--muted:#5B6B82;--line:#E5EBF6;--soft:#F1F5FF;--acc:#1660E8;--acc2:#0F4ACB;--accs:#EEF3FF;--or:#FF7A1A;--navy:#0B1A33;--ok:#16A34A;--red:#E5484D;--navbg:rgba(255,255,255,.78);--sh:rgba(11,26,51,.18);--r:26px;color-scheme:light}
+:root[data-theme="dark"]{--bg:#071233;--card:#0F1D45;--ink:#EEF3FF;--muted:#A9B6D0;--line:#22346A;--soft:#0B1A3A;--accs:#16285A;--navbg:rgba(15,29,69,.82);--sh:rgba(0,0,0,.5);color-scheme:dark}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}html,body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 Inter,system-ui,sans-serif;-webkit-font-smoothing:antialiased;transition:background .25s,color .25s}
+h1,h2,h3,b,.rx-hero,.rx-btn,.rx-pill,.rx-nav{font-family:"Plus Jakarta Sans",Inter,sans-serif}
 a{color:inherit}button{font:inherit;color:inherit;cursor:pointer}input,textarea,select{font:inherit;color:var(--ink)}
 .rx-app{max-width:480px;margin:0 auto;padding:18px 18px 120px;min-height:100vh}
-.rx-load{display:grid;place-items:center;height:70vh}.rx-load i{width:34px;height:34px;border-radius:50%;border:3px solid var(--line);border-top-color:var(--lime2);animation:rxs 1s linear infinite}@keyframes rxs{to{transform:rotate(360deg)}}
+.rx-load{display:grid;place-items:center;height:70vh}.rx-load i{width:34px;height:34px;border-radius:50%;border:3px solid var(--line);border-top-color:var(--acc);animation:rxs 1s linear infinite}@keyframes rxs{to{transform:rotate(360deg)}}
 .rx-top{display:flex;align-items:center;gap:10px;margin:4px 0 22px}.rx-hello{display:flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--line);border-radius:999px;padding:5px 14px 5px 5px;font-weight:600;font-size:14px;margin-right:auto}
-.rx-av img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}.rx-av{position:relative;overflow:hidden;width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#F9A8D4,#FDBA74);display:grid;place-items:center;font-weight:800;color:#fff;flex:none}
-.rx-ib{width:48px;height:48px;border-radius:50%;border:1px solid var(--line);background:var(--card);display:grid;place-items:center;flex:none}.rx-ib.lime{background:var(--lime);border-color:var(--lime)}
+.rx-av img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}.rx-av{position:relative;overflow:hidden;width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#1660E8,#FF7A1A);display:grid;place-items:center;font-weight:800;color:#fff;flex:none}
+.rx-ib{width:48px;height:48px;border-radius:50%;border:1px solid var(--line);background:var(--card);display:grid;place-items:center;flex:none;color:var(--ink);text-decoration:none}.rx-ib.lime{background:var(--acc);border-color:var(--acc);color:#fff;box-shadow:0 10px 22px -10px var(--acc)}
 .rx-ib svg,.rx-ic svg{width:20px;height:20px}
-.rx-hero{font-size:34px;line-height:1.08;letter-spacing:-1.2px;font-weight:700;margin:0 0 18px}.rx-hero span{color:#9AA097;font-weight:600}
+.rx-hero{font-size:34px;line-height:1.08;letter-spacing:-1.2px;font-weight:800;margin:0 0 18px}.rx-hero span{color:var(--acc)}.rx-hero em{font-style:normal;color:var(--muted);font-weight:600}
 .rx-chips{display:flex;gap:10px;margin:0 0 18px;overflow-x:auto;scrollbar-width:none}.rx-chips::-webkit-scrollbar{display:none}
-.rx-pill{border:1.5px solid var(--lime2);background:var(--card);border-radius:999px;padding:12px 18px;font-weight:600;white-space:nowrap}.rx-pill.ghost{border-color:var(--line)}
+.rx-pill{border:1.5px solid var(--acc);background:var(--card);color:var(--acc);border-radius:999px;padding:12px 18px;font-weight:700;white-space:nowrap}
 .rx-card{background:var(--card);border-radius:var(--r);border:1px solid var(--line)}.rx-pad{padding:18px}
-.rx-promo{background:linear-gradient(140deg,#CFF3A4,var(--lime) 60%,#A6E06A);border:0;border-radius:var(--r);padding:18px;margin:0 0 16px;box-shadow:0 14px 30px -18px #7fbf3d}
-.rx-promo .row{display:flex;gap:14px;align-items:flex-start;margin:0 0 14px}.rx-promo h3{margin:0;font-size:18px;letter-spacing:-.3px}.rx-promo p{margin:3px 0 0;font-size:13.5px;color:#3B4A2C}
-.rx-crown{width:50px;height:50px;border-radius:50%;background:#5E8F2F;display:grid;place-items:center;flex:none}.rx-crown svg{width:24px;height:24px}
+.rx-promo{position:relative;overflow:hidden;background:linear-gradient(140deg,#1660E8,#0F4ACB 55%,#0B1A33);color:#fff;border-radius:var(--r);padding:18px;margin:0 0 16px;box-shadow:0 18px 34px -18px rgba(22,96,232,.8)}
+.rx-promo:after{content:"";position:absolute;right:-40px;top:-40px;width:150px;height:150px;border-radius:50%;background:radial-gradient(circle,rgba(255,122,26,.55),transparent 70%)}
+.rx-promo .row{position:relative;z-index:1;display:flex;gap:14px;align-items:flex-start;margin:0 0 14px}.rx-promo h3{margin:0;font-size:18px;letter-spacing:-.3px}.rx-promo p{margin:3px 0 0;font-size:13.5px;color:rgba(255,255,255,.82)}.rx-promo .rx-btn{position:relative;z-index:1}
+.rx-promo.warn{background:linear-gradient(140deg,#FF7A1A,#E2560B)}
+.rx-crown{width:50px;height:50px;border-radius:50%;background:rgba(255,255,255,.18);display:grid;place-items:center;flex:none}.rx-crown svg{width:24px;height:24px}
 .rx-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:0;border-radius:999px;padding:14px 20px;font-weight:700;text-decoration:none;background:var(--card);color:var(--ink)}
-.rx-wide{width:100%}.rx-dark{background:var(--ink);color:#fff}.rx-lime{background:var(--lime)}.rx-btn[disabled]{opacity:.6}
+.rx-promo .rx-btn{background:#fff;color:#0A1633}
+.rx-wide{width:100%}.rx-dark{background:var(--navy);color:#fff}:root[data-theme="dark"] .rx-dark{background:var(--acc)}.rx-lime{background:var(--acc);color:#fff}.rx-btn[disabled]{opacity:.6}
 .rx-tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:0 0 22px}.rx-tile{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:16px 8px;display:flex;flex-direction:column;align-items:center;gap:10px;font-weight:600;font-size:13.5px;text-align:center}
-.rx-tile.on{background:#DFEAD6;border-color:#DFEAD6}.rx-ic{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;background:#F1E8FB}.rx-ic.g{background:#E5F4D9}.rx-ic.b{background:#DCEFF0}.rx-ic.o{background:#FDEBDD}.rx-ic.k{background:var(--soft)}
-.rx-sec{display:flex;justify-content:space-between;align-items:center;margin:4px 0 10px}.rx-sec h2{font-size:18px;margin:0;letter-spacing:-.3px;font-weight:600}.rx-sec button{border:0;background:none;color:var(--muted);font-size:13px;font-weight:600}
+.rx-tile.on{background:var(--accs);border-color:var(--accs)}.rx-ic{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;background:rgba(124,58,237,.13);color:#7C3AED}.rx-ic.g{background:rgba(22,96,232,.13);color:var(--acc)}.rx-ic.b{background:rgba(143,184,154,.25);color:#3F7A52}.rx-ic.o{background:rgba(255,122,26,.15);color:var(--or)}.rx-ic.k{background:var(--soft);color:var(--muted)}
+:root[data-theme="dark"] .rx-ic{color:#C4B5FD}:root[data-theme="dark"] .rx-ic.g{color:#7EA8FF}:root[data-theme="dark"] .rx-ic.b{color:#A7D3B4}
+.rx-sec{display:flex;justify-content:space-between;align-items:center;margin:4px 0 10px}.rx-sec h2{font-size:18px;margin:0;letter-spacing:-.3px;font-weight:700}.rx-sec button{border:0;background:none;color:var(--acc);font-size:13px;font-weight:700}
 .rx-item{display:flex;gap:12px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:20px;padding:12px 14px;margin:0 0 10px}.rx-item .t{flex:1;min-width:0}.rx-item b{display:block;font-weight:600;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.rx-item small{display:block;color:var(--muted);font-size:12.5px;line-height:1.35}
 .rx-go{width:34px;height:34px;border-radius:50%;border:1px solid var(--line);display:grid;place-items:center;flex:none;background:var(--card)}
-.rx-nav{position:fixed;left:50%;bottom:calc(16px + env(safe-area-inset-bottom));transform:translateX(-50%);display:flex;gap:6px;padding:6px;background:rgba(255,255,255,.75);backdrop-filter:blur(14px);border:1px solid var(--line);border-radius:999px;box-shadow:0 18px 40px -20px rgba(0,0,0,.35);z-index:9}
-.rx-nav button{height:52px;min-width:52px;border-radius:999px;border:1px solid var(--line);background:var(--card);display:flex;align-items:center;justify-content:center;gap:8px;padding:0 15px;font-weight:600}
-.rx-nav button svg{width:21px;height:21px}.rx-nav button.on{background:var(--ink);color:#fff;border-color:var(--ink);padding:0 20px 0 7px}.rx-nav button.on i{width:38px;height:38px;border-radius:50%;background:#fff;display:grid;place-items:center}.rx-nav button.on i svg{stroke:var(--ink)}.rx-nav button span{display:none}.rx-nav button.on span{display:inline}
-.rx-head{display:flex;align-items:center;justify-content:space-between;margin:4px 0 18px}.rx-head h1{font-size:19px;margin:0;font-weight:600}
+.rx-nav{position:fixed;left:50%;bottom:calc(16px + env(safe-area-inset-bottom));transform:translateX(-50%);display:flex;gap:6px;padding:6px;background:var(--navbg);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid var(--line);border-radius:999px;box-shadow:0 18px 40px -20px var(--sh);z-index:9}
+.rx-nav button{height:52px;min-width:52px;border-radius:999px;border:1px solid var(--line);background:var(--card);display:flex;align-items:center;justify-content:center;gap:8px;padding:0 15px;font-weight:700}
+.rx-nav button svg{width:21px;height:21px}.rx-nav button.on{background:var(--navy);color:#fff;border-color:var(--navy);padding:0 20px 0 7px}:root[data-theme="dark"] .rx-nav button.on{background:var(--acc);border-color:var(--acc)}.rx-nav button.on i{width:38px;height:38px;border-radius:50%;background:#fff;display:grid;place-items:center;color:#0A1633}.rx-nav button span{display:none}.rx-nav button.on span{display:inline}
+.rx-head{display:flex;align-items:center;justify-content:space-between;margin:4px 0 18px}.rx-head h1{font-size:19px;margin:0;font-weight:700}
 .rx-prof{display:grid;grid-template-columns:1.15fr 1fr;gap:10px;margin:0 0 12px}.rx-prof .me{padding:16px}.rx-prof .me .rx-av{width:78px;height:78px;font-size:28px;margin-bottom:10px}
-.rx-prof h2{font-size:19px;margin:0;letter-spacing:-.3px}.rx-badge{display:inline-flex;gap:5px;align-items:center;background:var(--lime3);color:#3E7B16;border-radius:999px;padding:3px 9px;font-size:11.5px;font-weight:700;margin:5px 0}
+.rx-prof h2{font-size:19px;margin:0;letter-spacing:-.3px}.rx-badge{display:inline-flex;gap:5px;align-items:center;background:var(--accs);color:var(--acc);border-radius:999px;padding:3px 9px;font-size:11.5px;font-weight:700;margin:5px 0}:root[data-theme="dark"] .rx-badge{color:#9DBBFF}
 .rx-mini{display:flex;flex-direction:column;gap:10px}.rx-mini .rx-card{padding:12px 14px;display:flex;gap:10px;align-items:center}.rx-mini b{font-size:19px;display:block}.rx-mini small{color:var(--muted);font-size:12px}
 .rx-stats{display:grid;grid-template-columns:repeat(3,1fr);text-align:center;padding:14px 6px;margin:0 0 12px}.rx-stats>div{border-left:1px solid var(--line)}.rx-stats>div:first-child{border:0}.rx-stats .rx-ic{width:36px;height:36px;margin:0 auto 6px}.rx-stats small{color:var(--muted);font-size:12px;display:block}.rx-stats b{font-size:20px}
-.rx-sw{position:relative;width:50px;height:30px;flex:none}.rx-sw input{opacity:0;width:0;height:0}.rx-sw i{position:absolute;inset:0;border-radius:99px;background:#D7DCD4;transition:.2s}.rx-sw i:before{content:"";position:absolute;width:24px;height:24px;left:3px;top:3px;border-radius:50%;background:#fff;transition:.2s;box-shadow:0 1px 3px rgba(0,0,0,.2)}.rx-sw input:checked+i{background:var(--lime2)}.rx-sw input:checked+i:before{transform:translateX(20px)}
+.rx-sw{position:relative;width:50px;height:30px;flex:none}.rx-sw input{opacity:0;width:0;height:0}.rx-sw i{position:absolute;inset:0;border-radius:99px;background:var(--line);transition:.2s}.rx-sw i:before{content:"";position:absolute;width:24px;height:24px;left:3px;top:3px;border-radius:50%;background:#fff;transition:.2s;box-shadow:0 1px 3px rgba(0,0,0,.25)}.rx-sw input:checked+i{background:var(--acc)}.rx-sw input:checked+i:before{transform:translateX(20px)}
 .rx-thumb{width:54px;height:54px;border-radius:16px;object-fit:cover;flex:none;background:var(--soft);display:grid;place-items:center;font-size:22px}
-.rx-alert{border-radius:16px;padding:12px 14px;font-weight:600;font-size:14px;margin:0 0 14px;line-height:1.45}.rx-alert.ok{background:var(--lime3);color:#2F6410}.rx-alert.bad{background:#FDE7E7;color:#A61B1F}.rx-alert.info{background:var(--card);border:1px solid var(--line)}
-.rx-muted{color:var(--muted)}.rx-center{text-align:center}.rx-link{color:#4C8A1E;font-weight:700;text-decoration:none;background:none;border:0;padding:0}.rx-red{color:var(--red)}
-.rx-step{margin:0 0 12px}.rx-step h3{display:flex;align-items:center;gap:10px;font-size:16px;margin:0 0 12px;font-weight:700}.rx-num{width:28px;height:28px;border-radius:50%;background:var(--lime);display:grid;place-items:center;font-size:13px;font-weight:800;flex:none}
+.rx-alert{border-radius:16px;padding:12px 14px;font-weight:600;font-size:14px;margin:0 0 14px;line-height:1.45}.rx-alert.ok{background:rgba(22,163,74,.12);color:var(--ok)}.rx-alert.bad{background:rgba(229,72,77,.12);color:var(--red)}.rx-alert.info{background:var(--card);border:1px solid var(--line)}
+.rx-muted{color:var(--muted)}.rx-center{text-align:center}.rx-link{color:var(--acc);font-weight:700;text-decoration:none;background:none;border:0;padding:0}:root[data-theme="dark"] .rx-link{color:#7EA8FF}.rx-red{color:var(--red)!important}.rx-okc{color:var(--ok);font-weight:700}
+.rx-step{margin:0 0 12px}.rx-step h3{display:flex;align-items:center;gap:10px;font-size:16px;margin:0 0 12px;font-weight:700}.rx-num{width:28px;height:28px;border-radius:50%;background:var(--acc);color:#fff;display:grid;place-items:center;font-size:13px;font-weight:800;flex:none}
 .rx-form label,.rx-f{display:grid;gap:6px;font-weight:600;font-size:14px;margin:0 0 14px}.rx-f small{color:var(--muted);font-weight:500;font-size:12.5px}
-.rx-form input,.rx-f input,.rx-f textarea{width:100%;font-size:16px;padding:14px 16px;border:1.5px solid var(--line);border-radius:18px;background:var(--soft);outline:none}.rx-form input:focus,.rx-f input:focus,.rx-f textarea:focus{border-color:var(--lime2);background:#fff}.rx-f textarea{resize:vertical;line-height:1.5}
-.rx-chk{display:flex;gap:10px;align-items:flex-start;font-size:14.5px;margin:0 0 12px;cursor:pointer;line-height:1.4;font-weight:500}.rx-chk input{width:22px;height:22px;accent-color:#6DB52E;flex:none;margin:0}
-.rx-tag{display:inline-flex;align-items:center;gap:6px;border:1.5px solid var(--line);background:var(--card);border-radius:999px;padding:8px 12px;font-weight:600;font-size:13px;margin:0 6px 8px 0}.rx-tag.on{background:var(--ink);color:#fff;border-color:var(--ink)}.rx-tag img{width:22px;height:22px;border-radius:50%}
+.rx-form input,.rx-f input,.rx-f textarea,.rx-in2{width:100%;font-size:16px;padding:14px 16px;border:1.5px solid var(--line);border-radius:18px;background:var(--soft);outline:none}.rx-form input:focus,.rx-f input:focus,.rx-f textarea:focus,.rx-in2:focus{border-color:var(--acc);background:var(--card)}.rx-f textarea{resize:vertical;line-height:1.5}
+.rx-chk{display:flex;gap:10px;align-items:flex-start;font-size:14.5px;margin:0 0 12px;cursor:pointer;line-height:1.4;font-weight:500}.rx-chk input{width:22px;height:22px;accent-color:#1660E8;flex:none;margin:0}
+.rx-tag{display:inline-flex;align-items:center;gap:6px;border:1.5px solid var(--line);background:var(--card);border-radius:999px;padding:8px 12px;font-weight:600;font-size:13px;margin:0 6px 8px 0}.rx-tag.on{background:var(--acc);color:#fff;border-color:var(--acc)}.rx-tag img{width:22px;height:22px;border-radius:50%}
 .rx-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:0 0 10px}.rx-post{position:relative;border:2.5px solid transparent;border-radius:18px;overflow:hidden;padding:0;background:var(--soft);aspect-ratio:1}.rx-post img{width:100%;height:100%;object-fit:cover;display:block}
-.rx-post.on{border-color:var(--lime2)}.rx-post.on:after{content:"✓";position:absolute;top:6px;right:6px;width:24px;height:24px;border-radius:50%;background:var(--lime);display:grid;place-items:center;font-weight:800;font-size:13px}.rx-post.any{display:grid;place-items:center;text-align:center;font-weight:700;font-size:12.5px;padding:6px}
-.rx-phone{background:var(--soft);border-radius:22px;padding:14px;display:flex;flex-direction:column;gap:8px}.rx-in{align-self:flex-end;background:var(--ink);color:#fff;padding:9px 14px;border-radius:20px 20px 6px 20px;max-width:80%}
-.rx-out{align-self:flex-start;background:#fff;border:1px solid var(--line);padding:10px 14px;border-radius:20px 20px 20px 6px;max-width:88%;white-space:pre-wrap;word-break:break-word;line-height:1.5}.rx-bt{margin-top:8px;padding-top:8px;border-top:1px solid var(--line);text-align:center;font-weight:700;color:#2563EB}
-.rx-tpls{display:grid;grid-template-columns:1fr 1fr;gap:10px}.rx-tpl{border:1px solid var(--line);background:var(--card);border-radius:22px;padding:16px;text-align:left}.rx-tpl .e{font-size:26px;display:block;margin-bottom:6px}.rx-tpl b{display:block;font-weight:700}.rx-tpl small{color:var(--muted);font-size:12.5px;line-height:1.35}
-.rx-act{padding:12px 0;border-top:1px solid var(--line)}.rx-act:first-child{border:0;padding-top:0}.rx-act .r{font-weight:700;font-size:13.5px;margin-top:4px}.rx-act .r.ok{color:#3E7B16}.rx-act .r.no{color:#B45309}
+.rx-post.on{border-color:var(--acc)}.rx-post.on:after{content:"✓";position:absolute;top:6px;right:6px;width:24px;height:24px;border-radius:50%;background:var(--acc);color:#fff;display:grid;place-items:center;font-weight:800;font-size:13px}.rx-post.any{display:grid;place-items:center;text-align:center;font-weight:700;font-size:12.5px;padding:6px}
+.rx-phone{background:var(--soft);border-radius:22px;padding:14px;display:flex;flex-direction:column;gap:8px}.rx-in{align-self:flex-end;background:var(--acc);color:#fff;padding:9px 14px;border-radius:20px 20px 6px 20px;max-width:80%}
+.rx-out{align-self:flex-start;background:var(--card);border:1px solid var(--line);padding:10px 14px;border-radius:20px 20px 20px 6px;max-width:88%;white-space:pre-wrap;word-break:break-word;line-height:1.5}.rx-bt{margin-top:8px;padding-top:8px;border-top:1px solid var(--line);text-align:center;font-weight:700;color:var(--acc)}
+.rx-tpls{display:grid;grid-template-columns:1fr 1fr;gap:10px}.rx-tpl{border:1px solid var(--line);background:var(--card);border-radius:22px;padding:16px;text-align:left}.rx-tpl:hover{border-color:var(--acc)}.rx-tpl .e{font-size:26px;display:block;margin-bottom:6px}.rx-tpl b{display:block;font-weight:700}.rx-tpl small{color:var(--muted);font-size:12.5px;line-height:1.35}
+.rx-act{padding:12px 0;border-top:1px solid var(--line)}.rx-act:first-child{border:0;padding-top:0}.rx-act .r{font-weight:700;font-size:13.5px;margin-top:4px}.rx-act .r.ok{color:var(--ok)}.rx-act .r.no{color:var(--or)}
 .rx-row{display:flex;gap:10px;align-items:center}.rx-err{color:var(--red);font-weight:600;margin:0 0 12px}.rx-err[hidden]{display:none}
-.rx-auth{max-width:440px;margin:0 auto;padding:28px 18px 40px}.rx-auth-top{display:flex;align-items:center;gap:10px;font-size:18px;margin:0 0 34px}.rx-logo{width:44px;height:44px;border-radius:14px;background:var(--lime);display:grid;place-items:center}.rx-h1{margin:0 0 8px}
+.rx-auth{max-width:440px;margin:0 auto;padding:28px 18px 40px}.rx-auth-top{display:flex;align-items:center;gap:10px;font-size:18px;margin:0 0 34px}.rx-auth-top .rx-ib{margin-left:auto}.rx-logo{width:44px;height:44px;border-radius:14px;background:linear-gradient(135deg,#1660E8,#0F4ACB);display:grid;place-items:center;box-shadow:0 10px 22px -10px #1660E8}.rx-logo svg{stroke:#fff}.rx-h1{margin:0 0 8px}
+.rx-brand small{display:block;font:600 11px/1 Inter,sans-serif;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin-top:3px}
 details.rx-card>summary{list-style:none;cursor:pointer;font-weight:700}details.rx-card>summary::-webkit-details-marker{display:none}
 [hidden]{display:none!important}
 CSS;
@@ -1100,6 +1108,7 @@ story:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="
 link:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg>',
 send:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h12M12 6l6 6-6 6"/></svg>',
 bolt:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M13 3 5 14h6l-1 7 8-11h-6z"/></svg>',
+moon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>',
 plus:'<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>'};
 function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
 function post(action,data){var f=new FormData();f.append('action',action);f.append('n',C.n);Object.keys(data||{}).forEach(function(k){f.append(k,data[k])});
@@ -1123,10 +1132,10 @@ function connectCard(){var a=S.accts;
  if(!S.ready&&!a.length)return '<div class="rx-promo"><div class="row"><span class="rx-crown">'+I.crown+'</span><div><h3>Almost ready</h3><p>'+(S.me.admin?'Finish the one-time Meta setup first. You can build automations meanwhile.':'Instagram connection opens soon. You can build automations meanwhile.')+'</p></div></div>'+(S.me.admin?'<a class="rx-btn rx-wide" href="'+esc(C.setup)+'">Open setup</a>':'')+'</div>';
  if(!a.length)return '<div class="rx-promo"><div class="row"><span class="rx-crown">'+I.crown+'</span><div><h3>Connect Instagram</h3><p>Business or Creator account. Log in, tap Allow, done.</p></div></div><a class="rx-btn rx-wide" href="'+esc(C.connect)+'">'+I.plus+' Connect Instagram</a></div>';
  var bad=a.filter(function(x){return x.status!=='active'});
- if(bad.length)return '<div class="rx-promo" style="background:linear-gradient(140deg,#FFD9C2,#FDBA8C)"><div class="row"><span class="rx-crown" style="background:#C2410C">'+I.crown+'</span><div><h3>@'+esc(bad[0].username)+' needs you</h3><p>Instagram logged it out. Reconnect to keep DMs flowing.</p></div></div><a class="rx-btn rx-wide" href="'+esc(C.connect)+'">Reconnect</a></div>';
+ if(bad.length)return '<div class="rx-promo warn"><div class="row"><span class="rx-crown">'+I.crown+'</span><div><h3>@'+esc(bad[0].username)+' needs you</h3><p>Instagram logged it out. Reconnect to keep DMs flowing.</p></div></div><a class="rx-btn rx-wide" href="'+esc(C.connect)+'">Reconnect</a></div>';
  return '<div class="rx-promo"><div class="row"><span class="rx-crown">'+I.crown+'</span><div><h3>'+S.tot.sent+' DMs sent</h3><p>'+S.autos.filter(function(x){return x.on}).length+' automation'+(S.autos.length===1?'':'s')+' live on '+a.map(function(x){return '@'+esc(x.username)}).join(', ')+'</p></div></div><button class="rx-btn rx-wide" data-new="">'+I.plus+' New automation</button></div>'}
-function home(){var h='<div class="rx-top"><button class="rx-hello" data-tab="profile">'+av(S.accts[0])+'<span>Hello, '+esc(S.me.name||'there')+'!</span></button><button class="rx-ib lime" data-new="" aria-label="New automation">'+I.spark+'</button><button class="rx-ib" data-tab="profile" aria-label="Menu">'+I.menu+'</button></div>';
- h+=banner()+'<h1 class="rx-hero">Turn your <span>comments</span><br>into clients today?</h1>';
+function home(){var h='<div class="rx-top"><button class="rx-hello" data-tab="profile">'+av(S.accts[0])+'<span>Hello, '+esc(S.me.name||'there')+'!</span></button><button class="rx-ib lime" data-new="" aria-label="New automation">'+I.spark+'</button><button class="rx-ib" onclick="rxTheme()" aria-label="Light or dark mode">'+I.moon+'</button></div>';
+ h+=banner()+'<h1 class="rx-hero">Let AI turn your <span>comments</span><br><em>into</em> clients today.</h1>';
  h+='<div class="rx-chips"><button class="rx-pill" data-new="">New automation</button><button class="rx-ib" data-new="comments" aria-label="Comment trigger">'+I.chat+'</button><button class="rx-ib" data-new="dms" aria-label="DM trigger">'+I.dm+'</button><button class="rx-ib" data-new="story" aria-label="Story trigger">'+I.story+'</button></div>';
  h+=connectCard();
  h+='<div class="rx-tiles"><button class="rx-tile" data-new="comments"><span class="rx-ic">'+I.chat+'</span>Comment to DM</button><button class="rx-tile on" data-new="dms"><span class="rx-ic g">'+I.dm+'</span>DM keyword</button><button class="rx-tile" data-new="story"><span class="rx-ic b">'+I.story+'</span>Story reply</button></div>';
@@ -1145,9 +1154,9 @@ function activity(){return '<div class="rx-head"><h1>Activity</h1><button class=
 function profile(){var a=S.accts,live=S.autos.filter(function(x){return x.on}).length;
  var h='<div class="rx-head"><button class="rx-ib" data-tab="home">'+I.back+'</button><h1>Profile</h1>'+(S.me.admin?'<a class="rx-ib" href="'+esc(C.setup)+'" aria-label="Setup">'+I.gear+'</a>':'<span style="width:48px"></span>')+'</div>'+banner();
  h+='<div class="rx-prof"><div class="rx-card me">'+av(a[0])+'<h2>'+esc(S.me.name||'You')+'</h2><span class="rx-badge">★ '+live+' live automation'+(live===1?'':'s')+'</span><div class="rx-muted" style="font-size:12px">'+esc(S.me.email)+'</div></div><div class="rx-mini"><div class="rx-card"><span class="rx-ic">'+I.dm+'</span><div><b>'+S.tot.sent+'</b><small>DMs sent</small></div></div><div class="rx-card"><span class="rx-ic g">'+I.link+'</span><div><b>'+S.tot.clicks+'</b><small>Link clicks</small></div></div></div></div>';
- h+='<div class="rx-card rx-stats"><div><span class="rx-ic">'+I.chat+'</span><small>Automations</small><b>'+S.autos.length+'</b></div><div><span class="rx-ic b">'+I.crown.replace('#fff','currentColor').replace('fill="#fff"','fill="currentColor"')+'</span><small>Accounts</small><b>'+a.length+'</b></div><div><span class="rx-ic o">'+I.bolt+'</span><small>Triggers</small><b>'+S.activity.length+'</b></div></div>';
+ h+='<div class="rx-card rx-stats"><div><span class="rx-ic">'+I.chat+'</span><small>Automations</small><b>'+S.autos.length+'</b></div><div><span class="rx-ic b">'+I.crown.split('#fff').join('currentColor')+'</span><small>Accounts</small><b>'+a.length+'</b></div><div><span class="rx-ic o">'+I.bolt+'</span><small>Triggers</small><b>'+S.activity.length+'</b></div></div>';
  h+='<div class="rx-promo"><div class="row"><span class="rx-crown">'+I.crown+'</span><div><h3>'+(a.length?'Add another account':'Connect Instagram')+'</h3><p>Run automations on several Instagram accounts from one place.</p></div></div><a class="rx-btn rx-wide" href="'+esc(C.connect)+'">'+I.plus+' '+(a.length?'Add Instagram account':'Connect Instagram')+'</a></div>';
- if(a.length)h+='<div class="rx-sec"><h2>Your accounts</h2></div>'+a.map(function(x){return '<div class="rx-item">'+av(x)+'<div class="t"><b>@'+esc(x.username)+'</b><small>'+(x.status==='active'?'<span style="color:#3E7B16;font-weight:700">● Connected</span>':'<span class="rx-red" style="font-weight:700">Needs reconnecting</span>')+'</small></div>'+(x.status==='active'?'<button class="rx-link rx-red" data-disc="'+esc(x.id)+'">Remove</button>':'<a class="rx-link" href="'+esc(C.connect)+'">Reconnect</a>')+'</div>'}).join('');
+ if(a.length)h+='<div class="rx-sec"><h2>Your accounts</h2></div>'+a.map(function(x){return '<div class="rx-item">'+av(x)+'<div class="t"><b>@'+esc(x.username)+'</b><small>'+(x.status==='active'?'<span class="rx-okc">● Connected</span>':'<span class="rx-red" style="font-weight:700">Needs reconnecting</span>')+'</small></div>'+(x.status==='active'?'<button class="rx-link rx-red" data-disc="'+esc(x.id)+'">Remove</button>':'<a class="rx-link" href="'+esc(C.connect)+'">Reconnect</a>')+'</div>'}).join('');
  h+='<details class="rx-card rx-pad" style="margin:12px 0"><summary>How it works & Instagram rules</summary><p class="rx-muted" style="margin:10px 0 0;font-size:14px;line-height:1.6">• One automatic DM per comment, within 7 days of the comment.<br>• DM and Story replies within 24 hours of their message.<br>• Your own comments never trigger anything.<br>• New comments are checked every 2 minutes.<br>• Links are tracked so you can see clicks.</p></details>';
  h+='<a class="rx-btn rx-wide" style="border:1px solid var(--line)" href="'+esc(C.logout)+'">Sign out</a>';return h}
 function find(id){return S.autos.filter(function(a){return String(a.id)===String(id)})[0]}
@@ -1206,7 +1215,7 @@ function save(){var c=collect(),b=R.querySelector('#rxSave'),e=R.querySelector('
  post('ir_dm_save',{cfg:JSON.stringify(c)}).then(function(r){b.disabled=false;b.textContent=c.id?'Save changes':'Save and switch on';
   if(!r.ok){e.textContent=r.err;e.hidden=false;e.scrollIntoView({behavior:'smooth',block:'center'});return}
   C.msg=c.id?'Saved.':(S.accts.length?'Your automation is live! Comment the word from another account to test it.':'Saved. It goes live when you connect Instagram.');ED=null;TAB='autos';load()})}
-function tryIt(c,out){out.innerHTML='<div class="rx-card rx-pad" style="margin-top:12px;background:var(--soft)"><b>Try it</b><p class="rx-muted" style="margin:4px 0 10px;font-size:14px">Type a comment like a follower would. Nothing is sent.</p><div class="rx-row"><input class="rxTi" style="flex:1;min-width:0;font-size:16px;padding:12px 14px;border:1.5px solid var(--line);border-radius:16px;background:#fff" value="'+esc((c.keywords[0]||'Love this')+' please! 🙏')+'"><button class="rx-btn rx-dark rxTg" style="padding:12px 16px">Test</button></div><div class="rxTr" style="margin-top:12px"></div></div>';
+function tryIt(c,out){out.innerHTML='<div class="rx-card rx-pad" style="margin-top:12px;background:var(--soft)"><b>Try it</b><p class="rx-muted" style="margin:4px 0 10px;font-size:14px">Type a comment like a follower would. Nothing is sent.</p><div class="rx-row"><input class="rxTi rx-in2" style="flex:1;min-width:0" value="'+esc((c.keywords[0]||'Love this')+' please! 🙏')+'"><button class="rx-btn rx-dark rxTg" style="padding:12px 16px">Test</button></div><div class="rxTr" style="margin-top:12px"></div></div>';
  var go=function(){var res=out.querySelector('.rxTr');res.innerHTML='<div class="rx-load" style="height:60px"><i></i></div>';
   post('ir_dm_test',{cfg:JSON.stringify(c),text:out.querySelector('.rxTi').value}).then(function(r){if(!r.ok){res.innerHTML='<div class="rx-alert bad">'+esc(r.err)+'</div>';return}
    if(!r.match){res.innerHTML='<div class="rx-alert bad">'+esc(r.why)+'</div>';return}
