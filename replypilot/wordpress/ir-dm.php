@@ -1,10 +1,10 @@
 <?php
 /**
  * Plugin Name: IR DM Automation
- * Description: Instagram comment-to-DM automation inside the AI Profit System (AI Tools > DM Automation, /members/prompts/dm/).
- *   Members connect their Instagram professional account through Meta's official API, pick a post, choose a trigger word
+ * Description: Private Instagram comment-to-DM automation for the site owner at /dm/ (admins only).
+ *   Connect an Instagram professional account through Meta's official API, pick a post, choose a trigger word
  *   and write the DM. Also handles keyword DMs and Story replies, optional public comment replies, tracked links,
- *   stats and a plain-English activity log. Admin setup: Tools > DM Automation.
+ *   stats and a plain-English activity log. One-time Meta setup: wp-admin > DM Automation.
  *   WordPress port of ReplyPilot. Keyword normalization approach adapted from OpenReply
  *   (https://github.com/diwenne/openreply, MIT, (c) 2026 Anish Raj, Diwen Huang).
  */
@@ -262,7 +262,8 @@ function ir_dm_get( $url, $args = [] ) {
  * ========================================================================= */
 
 function ir_dm_webhook_url() { return rest_url( 'ir-dm/v1/webhook' ); }
-function ir_dm_redirect_uri() { return function_exists( 'ir_pp_url' ) ? ir_pp_url( 'dm-callback' ) : home_url( '/members/prompts/dm-callback/' ); }
+function ir_dm_url( $p = '' ) { return home_url( '/dm/' . ( $p ? trim( $p, '/' ) . '/' : '' ) ); }
+function ir_dm_redirect_uri() { return ir_dm_url( 'callback' ); }
 
 add_action( 'rest_api_init', function () {
 	register_rest_route( 'ir-dm/v1', '/webhook', [
@@ -580,7 +581,7 @@ function ir_dm_state_ok( $s, $uid ) {
 }
 
 function ir_dm_page_connect() {
-	if ( ! ir_dm_ready() ) { wp_safe_redirect( ir_pp_url( 'dm' ) ); exit; }
+	if ( ! ir_dm_ready() ) { wp_safe_redirect( ir_dm_url() ); exit; }
 	$state = ir_dm_state( get_current_user_id() );
 	if ( ir_dm_unified() ) {
 		$url = 'https://www.facebook.com/' . ir_dm_graph_ver() . '/dialog/oauth?' . http_build_query( [ 'client_id' => ir_dm_opt( 'meta_app_id' ), 'config_id' => ir_dm_opt( 'config_id' ), 'redirect_uri' => ir_dm_redirect_uri(), 'response_type' => 'code', 'state' => $state ] );
@@ -594,7 +595,7 @@ function ir_dm_page_connect() {
 
 function ir_dm_page_callback() {
 	$uid = get_current_user_id();
-	$back = function ( $q ) { wp_safe_redirect( add_query_arg( $q, ir_pp_url( 'dm' ) ) ); exit; };
+	$back = function ( $q ) { wp_safe_redirect( add_query_arg( $q, ir_dm_url() ) ); exit; };
 	if ( ! empty( $_GET['error'] ) ) { $back( [ 'err' => 'You cancelled the Instagram login. Tap Connect Instagram to try again.' ] ); }
 	if ( ! ir_dm_state_ok( wp_unslash( $_GET['state'] ?? '' ), $uid ) ) { $back( [ 'err' => 'That connection link expired. Please tap Connect Instagram again.' ] ); }
 	$code = preg_replace( '/#_$/', '', (string) wp_unslash( $_GET['code'] ?? '' ) );
@@ -622,7 +623,7 @@ function ir_dm_page_callback() {
 			'login' => 'instagram', 'token' => ir_dm_enc( $long['access_token'] ), 'expires' => time() + (int) ( $long['expires_in'] ?? 5184000 ), 'refreshed' => time() ];
 	}
 	$other = ir_dm_owner( $acct['id'] );
-	if ( $other && $other !== $uid ) { $back( [ 'err' => '@' . $acct['username'] . ' is already connected to another member account.' ] ); }
+	if ( $other && $other !== $uid ) { $back( [ 'err' => '@' . $acct['username'] . ' is already connected to another user on this site.' ] ); }
 	$acct['status'] = 'active';
 	$sub = ir_dm_api( $acct, 'POST', $acct['id'] . '/subscribed_apps?subscribed_fields=comments,messages' );
 	$acct['subscribed'] = ! is_wp_error( $sub ) && ! empty( $sub['success'] );
@@ -636,9 +637,9 @@ function ir_dm_page_callback() {
 function ir_dm_connect_err( WP_Error $e ) {
 	$m = $e->get_error_message();
 	if ( stripos( $m, 'Insufficient developer role' ) !== false || stripos( $m, 'Unsupported request' ) !== false ) {
-		return 'Instagram says this account is not allowed yet. Message support so we can add your account, then try again.';
+		return 'Instagram says this account is not allowed yet. In your Meta app add it under App roles > Instagram testers, accept the invite in the Instagram app (Settings > Apps and websites > Tester invites), then try again.';
 	}
-	if ( stripos( $m, 'redirect_uri' ) !== false ) { return 'Instagram login is not fully set up yet. Please message support.'; }
+	if ( stripos( $m, 'redirect_uri' ) !== false ) { return 'The redirect URL in your Meta app does not match. Copy it again from the Setup page.'; }
 	return 'Instagram could not connect your account. Make sure it is a Business or Creator account and try again.';
 }
 
@@ -648,7 +649,7 @@ function ir_dm_connect_err( WP_Error $e ) {
 
 function ir_dm_member_ok() {
 	check_ajax_referer( 'ir_dm', 'n' );
-	if ( ! ( function_exists( 'ir_tl_member' ) ? ir_tl_member() : current_user_can( 'manage_options' ) ) ) { wp_send_json( [ 'ok' => false, 'err' => 'Please log in again.' ] ); }
+	if ( ! current_user_can( 'manage_options' ) ) { wp_send_json( [ 'ok' => false, 'err' => 'Please log in again.' ] ); }
 	return get_current_user_id();
 }
 function ir_dm_own_auto( $uid, $id ) {
@@ -809,34 +810,68 @@ function ir_dm_icon( $size = 26 ) {
 	return '<svg width="' . (int) $size . '" height="' . (int) $size . '" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3h11A2.5 2.5 0 0 1 20 5.5v8a2.5 2.5 0 0 1-2.5 2.5H10l-4.5 4v-4A1.5 1.5 0 0 1 4 14.5z"/><path d="M12.8 6.5 10 10.5h3.5l-2.6 4"/></svg>';
 }
 
-add_action( 'ir_pp_tool_tiles', function () {
-	echo '<a class="px-tool" style="--a:#E1306C;--b:#F77737" href="' . esc_url( ir_pp_url( 'dm' ) ) . '"><span class="ic">' . ir_dm_icon() . '</span><span><b>DM Automation</b><small>Auto-send a DM to anyone who comments your word on a post</small></span></a>'; // phpcs:ignore
-} );
+/* Private page for site admins only: /dm/, /dm/connect/, /dm/callback/. Everyone else is sent to the home page. */
+add_action( 'template_redirect', function () {
+	$path = trim( (string) wp_parse_url( $_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH ), '/' );
+	if ( ! preg_match( '#^dm(?:/(connect|callback))?$#', $path, $m ) ) { return; }
+	nocache_headers();
+	do_action( 'litespeed_control_set_nocache', 'dm automation' );
+	header( 'X-Robots-Tag: noindex, nofollow', true );
+	if ( ! is_user_logged_in() ) {
+		$qs = (string) ( $_SERVER['QUERY_STRING'] ?? '' );
+		wp_safe_redirect( wp_login_url( home_url( '/' . $path . '/' ) . ( $qs !== '' ? '?' . $qs : '' ) ) ); exit;
+	}
+	if ( ! current_user_can( 'manage_options' ) ) { wp_safe_redirect( home_url( '/' ) ); exit; }
+	status_header( 200 );
+	$r = $m[1] ?? '';
+	if ( $r === 'connect' ) { ir_dm_page_connect(); }
+	elseif ( $r === 'callback' ) { ir_dm_page_callback(); }
+	else { ir_dm_page(); }
+	exit;
+}, 0 );
 
-add_filter( 'ir_tools_map', function ( $map ) {
-	$map['dm'] = 'ir_dm_page';
-	$map['dm-connect'] = 'ir_dm_page_connect';
-	$map['dm-callback'] = 'ir_dm_page_callback';
-	return $map;
-} );
+/* Quick access from the admin bar. */
+add_action( 'admin_bar_menu', function ( $bar ) {
+	if ( current_user_can( 'manage_options' ) ) { $bar->add_node( [ 'id' => 'ir-dm', 'title' => 'DM Automation', 'href' => ir_dm_url() ] ); }
+}, 80 );
 
 function ir_dm_page() {
-	ir_pp_open( 'DM Automation', 'home' );
-	if ( function_exists( 'ir_tl_css' ) ) { echo '<style>' . ir_tl_css() . '</style>'; } // phpcs:ignore
-	echo '<style>' . ir_dm_css() . '</style>'; // phpcs:ignore
-	echo '<main class="pp-main narrow"><div class="tl dm" style="--k1:#E1306C;--k2:#F77737">';
-	echo '<nav class="pp-crumb"><a href="' . esc_url( ir_pp_url() ) . '">AI Profit System</a><span>›</span><span>DM Automation</span></nav>';
-	echo '<div class="tl-hero"><span class="ic">' . ir_dm_icon( 28 ) . '</span><div><h1>DM Automation</h1><p>When someone comments a word on your post, they get your DM automatically. Set it up once, it works 24/7.</p></div></div>'; // phpcs:ignore
-	$cfg = [ 'aj' => admin_url( 'admin-ajax.php' ), 'n' => wp_create_nonce( 'ir_dm' ), 'connect' => ir_pp_url( 'dm-connect' ),
+	$cfg = [ 'aj' => admin_url( 'admin-ajax.php' ), 'n' => wp_create_nonce( 'ir_dm' ), 'connect' => ir_dm_url( 'connect' ), 'setup' => admin_url( 'admin.php?page=ir-dm' ),
 		'msg' => isset( $_GET['connected'] ) ? 'Your Instagram is connected. Now create your first automation below.' : '', 'err' => sanitize_text_field( wp_unslash( $_GET['err'] ?? '' ) ) ];
-	echo '<div id="dmApp"><div class="tl-status"><span class="tl-spin"></span><span>Loading…</span></div></div>';
-	echo '</div></main>';
-	echo '<script>window.IRDM=' . wp_json_encode( $cfg ) . ';</script><script>' . ir_dm_js() . '</script>'; // phpcs:ignore
-	ir_pp_close();
+	?><!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow">
+<title>DM Automation · <?php echo esc_html( get_bloginfo( 'name' ) ); ?></title>
+<style><?php echo ir_dm_css(); // phpcs:ignore ?></style></head>
+<body><header class="dm-top"><a class="dm-brand" href="<?php echo esc_url( ir_dm_url() ); ?>"><span class="ic"><?php echo ir_dm_icon( 20 ); // phpcs:ignore ?></span>DM Automation</a>
+<nav><a href="<?php echo esc_url( $cfg['setup'] ); ?>">Setup</a><a href="<?php echo esc_url( home_url( '/' ) ); ?>">Website</a></nav></header>
+<main class="tl dm"><div class="tl-hero"><span class="ic"><?php echo ir_dm_icon( 28 ); // phpcs:ignore ?></span><div><h1>DM Automation</h1><p>When someone comments a word on your post, they get your DM automatically. Only you can see this page.</p></div></div>
+<div id="dmApp"><div class="tl-status"><span class="tl-spin"></span><span>Loading…</span></div></div></main>
+<script>window.IRDM=<?php echo wp_json_encode( $cfg ); ?>;</script><script><?php echo ir_dm_js(); // phpcs:ignore ?></script></body></html>
+<?php
 }
 
 function ir_dm_css() {
 	return <<<'CSS'
+:root{--bg:#f5f6fb;--surface:#fff;--soft:#eef0f7;--line:#e3e6ef;--text:#111827;--muted:#6b7280;--acc:#E1306C;color-scheme:light}
+@media(prefers-color-scheme:dark){:root{--bg:#0b1020;--surface:#141a2e;--soft:#1c2440;--line:#26304f;--text:#eef1f8;--muted:#9aa3bd;--acc:#ff4f8b;color-scheme:dark}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}a{color:var(--acc)}
+.dm-top{position:sticky;top:0;z-index:5;display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 16px;background:color-mix(in srgb,var(--surface) 92%,transparent);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+.dm-brand{display:flex;align-items:center;gap:10px;font-weight:800;color:var(--text);text-decoration:none}.dm-brand .ic{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;background:linear-gradient(135deg,#E1306C,#F77737)}
+.dm-top nav{display:flex;gap:14px;font-weight:700;font-size:14px}.dm-top nav a{color:var(--muted);text-decoration:none}
+.tl{max-width:760px;margin:0 auto;padding:18px 16px 60px}
+.tl-hero{display:flex;gap:14px;align-items:center;margin:4px 0 18px}.tl-hero .ic{width:56px;height:56px;border-radius:16px;display:grid;place-items:center;background:linear-gradient(135deg,#E1306C,#F77737);flex:none}
+.tl-hero h1{margin:0;font-size:26px;letter-spacing:-.5px;line-height:1.15}.tl-hero p{margin:5px 0 0;color:var(--muted);font-size:15px}
+.tl-card{background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:18px;margin:0 0 14px}
+.tl-f{display:grid;gap:6px;margin:0 0 14px}.tl-f>span{font-weight:700;font-size:14.5px}.tl-f>span em{font-style:normal;font-weight:600;color:var(--muted);font-size:13px}.tl-f small{color:var(--muted);font-size:13px;line-height:1.4}
+.tl-f input,.tl-f textarea{width:100%;font:inherit;font-size:16px;padding:13px 14px;border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--text)}.tl-f textarea{resize:vertical;line-height:1.55}
+.tl-go{display:block;width:100%;border:0;border-radius:16px;padding:17px;font-size:17px;font-weight:800;background:linear-gradient(135deg,#E1306C,#F77737);color:#fff;cursor:pointer;font-family:inherit}.tl-go[disabled]{opacity:.6;cursor:wait}
+.tl-btn2{border:1px solid var(--line);background:var(--soft);color:var(--text);border-radius:10px;padding:8px 12px;font-weight:700;font-size:13.5px;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:6px;font-family:inherit}
+.tl-acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.tl-err{color:#E5484D;font-weight:600;margin:10px 0}.tl-err[hidden]{display:none}
+.tl-status{display:flex;gap:10px;align-items:center;justify-content:center;padding:16px 4px;color:var(--muted);font-weight:600}
+.tl-spin{width:18px;height:18px;border-radius:50%;border:3px solid var(--line);border-top-color:var(--acc);animation:tlspin 1s linear infinite;flex:none}@keyframes tlspin{to{transform:rotate(360deg)}}
+.tl-note{background:var(--soft);border-radius:14px;padding:12px 14px;font-size:14.5px;line-height:1.55;margin:0 0 14px}
+.tl-more>summary{cursor:pointer;font-weight:700;color:var(--acc);font-size:14.5px;margin:0 0 12px;list-style:none}.tl-more>summary::-webkit-details-marker{display:none}
+[hidden]{display:none!important}
 .dm .dm-sec{margin:0 0 22px}.dm h2{font-size:19px;margin:0 0 10px;letter-spacing:-.2px}
 .dm .dm-acct{display:flex;gap:12px;align-items:center}.dm .dm-av{width:48px;height:48px;border-radius:50%;object-fit:cover;background:linear-gradient(135deg,#E1306C,#F77737);display:grid;place-items:center;color:#fff;font-weight:800;flex:none}
 .dm .dm-acct b{display:block;font-size:16px}.dm .dm-acct small{color:var(--muted)}.dm .dm-ok{color:#16a34a;font-weight:800}
@@ -866,7 +901,6 @@ function ir_dm_css() {
 .dm .dm-banner{border-radius:14px;padding:12px 14px;font-weight:600;margin:0 0 14px;line-height:1.5}.dm .dm-banner.ok{background:#dcfce7;color:#166534}.dm .dm-banner.bad{background:#fee2e2;color:#991b1b}
 .dm .dm-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.dm .dm-link{background:none;border:0;color:var(--acc);font-weight:700;cursor:pointer;padding:6px 0;font-size:14px}
 .dm .dm-big{display:flex;justify-content:space-around;text-align:center;gap:10px}.dm .dm-big b{display:block;font-size:26px}.dm .dm-big span{color:var(--muted);font-size:13px;font-weight:600}
-.dm .tl-go.ig{background:linear-gradient(135deg,#E1306C,#F77737)}
 CSS;
 }
 
@@ -891,7 +925,7 @@ function load(){return post('ir_dm_state').then(function(r){if(!r.ok){app.innerH
 function banner(){var h='';if(C.msg)h+='<div class="dm-banner ok">'+esc(C.msg)+'</div>';if(C.err)h+='<div class="dm-banner bad">'+esc(C.err)+'</div>';C.msg=C.err='';return h}
 
 function acctCard(){var a=S.acct;
- if(!S.ready&&!a)return '<div class="tl-card"><h2>Step 1: Connect your Instagram</h2><p class="tl-note">Instagram connection is opening soon. You can already create your automations below and test them with "Try it". They start working the moment you connect.</p></div>';
+ if(!S.ready&&!a)return '<div class="tl-card"><h2>Step 1: Connect your Instagram</h2><p class="tl-note">First finish the one-time Meta setup on the <a href="'+esc(C.setup)+'">Setup page</a>. Meanwhile you can create automations below and test them with "Try it". They start working the moment you connect.</p></div>';
  if(!a)return '<div class="tl-card"><h2>Step 1: Connect your Instagram</h2><ol class="dm-steps"><li>Your Instagram must be a <b>Business</b> or <b>Creator</b> account (Instagram app: Settings › Account type and tools › Switch to professional account).</li><li>Tap the button below and log in to Instagram.</li><li>Tap <b>Allow</b>. You come straight back here.</li></ol><a class="tl-go ig" style="display:block;text-align:center;text-decoration:none" href="'+esc(C.connect)+'">Connect Instagram</a></div>';
  var bad=a.status!=='active';
  return '<div class="tl-card"><div class="dm-acct">'+(a.pic?'<img class="dm-av" src="'+esc(a.pic)+'" alt="">':'<span class="dm-av">'+esc((a.username||'?')[0].toUpperCase())+'</span>')+'<div style="flex:1"><b>@'+esc(a.username)+'</b>'+(bad?'<small style="color:#b91c1c;font-weight:700">Instagram logged you out. Reconnect to keep sending DMs.</small>':'<small><span class="dm-ok">● Connected</span> · automations are live</small>')+'</div>'+(bad?'<a class="tl-btn2" href="'+esc(C.connect)+'">Reconnect</a>':'<button class="dm-link" id="dmDisc">Disconnect</button>')+'</div>'+(!bad&&!a.subscribed?'<p class="tl-note" style="margin:12px 0 0">Almost there: tap <a href="'+esc(C.connect)+'">Reconnect</a> once so Instagram starts sending us your comments.</p>':'')+'</div>';
@@ -925,7 +959,7 @@ function chooseTpl(){app.innerHTML='<div class="tl-card"><h2>New automation</h2>
 
 /* ---------- editor ---------- */
 function edit(c){ED=c;window.scrollTo(0,0);
- var h='<nav class="pp-crumb" style="margin:0 0 12px"><button class="dm-link" id="dmBack">← All automations</button></nav>';
+ var h='<div style="margin:0 0 12px"><button class="dm-link" id="dmBack">← All automations</button></div>';
  h+='<div class="tl-card dm-step"><h3><span class="dm-num">1</span>Which post?</h3><div id="dmPosts"></div></div>';
  h+='<div class="tl-card dm-step"><h3><span class="dm-num">2</span>What word should they comment?</h3><label class="tl-f"><input id="dmKw" placeholder="e.g. GUIDE" value="'+esc(c.keywords.join(', '))+'" autocapitalize="characters"><small>Capital letters, emojis and dots don\'t matter. Add more words with a comma: GUIDE, LINK</small></label><label class="dm-chk"><input type="checkbox" id="dmAny"'+(c.any_word?' checked':'')+'><span>Reply to <b>every</b> comment (no word needed)</span></label></div>';
  h+='<div class="tl-card dm-step"><h3><span class="dm-num">3</span>The DM they get</h3><div><span class="dm-pill" data-ins="{name}">+ Their @name</span><span class="dm-pill" data-ins="{link}">+ Your link</span></div><label class="tl-f"><textarea id="dmMsg" rows="5" maxlength="1000">'+esc(c.message)+'</textarea></label><label class="tl-f"><span>Your link <em>(optional)</em></span><input id="dmLink" type="url" inputmode="url" placeholder="https://yourwebsite.com/offer" value="'+esc(c.link)+'"><small>Your guide, booking page, WhatsApp link, anything. We count the clicks for you.</small></label><label class="dm-chk"><input type="checkbox" id="dmBtnOn"'+(c.button?' checked':'')+'><span>Show the link as a button</span></label><label class="tl-f" id="dmBtnBox"'+(c.button?'':' hidden')+'><span>Button text</span><input id="dmBtn" maxlength="20" value="'+esc(c.button||'Open link')+'"></label></div>';
@@ -982,7 +1016,10 @@ JS;
  * ========================================================================= */
 
 add_action( 'admin_menu', function () {
-	add_management_page( 'DM Automation', 'DM Automation', 'manage_options', 'ir-dm', 'ir_dm_admin' );
+	global $submenu;
+	add_menu_page( 'DM Automation', 'DM Automation', 'manage_options', 'ir-dm', 'ir_dm_admin', 'dashicons-instagram', 58 );
+	add_submenu_page( 'ir-dm', 'DM Automation setup', 'Setup', 'manage_options', 'ir-dm', 'ir_dm_admin' );
+	$submenu['ir-dm'][] = [ 'Open the app ↗', 'manage_options', ir_dm_url() ];
 } );
 
 add_action( 'admin_post_ir_dm_save', function () {
@@ -1000,7 +1037,7 @@ add_action( 'admin_post_ir_dm_save', function () {
 	$o['cap_private'] = max( 1, min( 750, (int) ( $_POST['cap_private'] ?? 750 ) ) );
 	$o['cap_dm'] = max( 1, min( 1000, (int) ( $_POST['cap_dm'] ?? 200 ) ) );
 	update_option( 'ir_dm_settings', $o, false );
-	wp_safe_redirect( admin_url( 'tools.php?page=ir-dm&saved=1' ) ); exit;
+	wp_safe_redirect( admin_url( 'admin.php?page=ir-dm&saved=1' ) ); exit;
 } );
 
 function ir_dm_admin() {
@@ -1016,12 +1053,12 @@ function ir_dm_admin() {
 	$copy = function ( $v ) { return '<code style="user-select:all;padding:4px 8px">' . esc_html( $v ) . '</code>'; };
 	echo '<div class="wrap" style="max-width:900px"><h1>DM Automation</h1>';
 	if ( isset( $_GET['saved'] ) ) { echo '<div class="notice notice-success"><p>Saved.</p></div>'; }
-	echo '<p>Members use it at <a href="' . esc_url( ir_pp_url( 'dm' ) ) . '" target="_blank">' . esc_html( ir_pp_url( 'dm' ) ) . '</a> (AI Profit System › AI Tools). This page is the one-time Meta setup.</p>';
+	echo '<p><a class="button button-primary button-hero" href="' . esc_url( ir_dm_url() ) . '">Open DM Automation →</a></p><p>Your private app lives at <a href="' . esc_url( ir_dm_url() ) . '">' . esc_html( ir_dm_url() ) . '</a> (only admins can open it). This page is the one-time Meta setup.</p>';
 	echo '<h2>Status</h2><table class="widefat striped" style="max-width:900px"><tbody>';
-	echo '<tr><td>' . $ok( ir_dm_ready() ) . ' Meta app details saved</td><td>' . ( ir_dm_ready() ? 'Members can connect Instagram.' : 'Fill in the form below.' ) . '</td></tr>'; // phpcs:ignore
+	echo '<tr><td>' . $ok( ir_dm_ready() ) . ' Meta app details saved</td><td>' . ( ir_dm_ready() ? 'You can connect Instagram in the app.' : 'Fill in the form below.' ) . '</td></tr>'; // phpcs:ignore
 	echo '<tr><td>' . $ok( $last > 0 ) . ' Webhooks arriving from Meta</td><td>' . ( $last ? 'Last one ' . esc_html( human_time_diff( $last ) ) . ' ago' : 'None yet' ) . ( $bad && $bad > $last ? ' · <b style="color:#dc2626">A webhook was rejected (wrong app secret?) ' . esc_html( human_time_diff( $bad ) ) . ' ago</b>' : '' ) . '</td></tr>'; // phpcs:ignore
 	echo '<tr><td>' . $ok( function_exists( 'as_enqueue_async_action' ) ) . ' Background queue (Action Scheduler)</td><td>Retries and delayed sends.</td></tr>'; // phpcs:ignore
-	echo '<tr><td>Members connected</td><td>' . (int) $members . '</td></tr><tr><td>Active automations</td><td>' . (int) $autos . '</td></tr><tr><td>DMs sent (7 days)</td><td>' . (int) $sent7 . '</td></tr>';
+	echo '<tr><td>Instagram accounts connected</td><td>' . (int) $members . '</td></tr><tr><td>Active automations</td><td>' . (int) $autos . '</td></tr><tr><td>DMs sent (7 days)</td><td>' . (int) $sent7 . '</td></tr>';
 	echo '</tbody></table>';
 	echo '<h2>Paste these into your Meta app</h2><table class="form-table"><tbody>';
 	echo '<tr><th>Webhook callback URL</th><td>' . $copy( ir_dm_webhook_url() ) . '</td></tr>'; // phpcs:ignore
