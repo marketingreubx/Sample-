@@ -10,7 +10,7 @@
  */
 if ( ! defined( 'ABSPATH' ) ) { exit; }
 
-define( 'IR_DM_VER', '1.0.0' );
+define( 'IR_DM_VER', '1.1.0' );
 
 /* =========================================================================
  * Settings, storage, crypto
@@ -91,6 +91,29 @@ function ir_dm_install() {
  created_at datetime NOT NULL,
  PRIMARY KEY  (id),
  KEY auto_id (auto_id)
+) $cs;" );
+	dbDelta( 'CREATE TABLE ' . ir_dm_t( 'lead' ) . " (
+ id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+ user_id bigint(20) unsigned NOT NULL,
+ ig_id varchar(40) NOT NULL,
+ auto_id bigint(20) unsigned NOT NULL DEFAULT 0,
+ igsid varchar(40) NOT NULL DEFAULT '',
+ username varchar(100) NOT NULL DEFAULT '',
+ email varchar(190) NOT NULL,
+ created_at datetime NOT NULL,
+ PRIMARY KEY  (id),
+ UNIQUE KEY user_email (user_id,email),
+ KEY user_created (user_id,created_at)
+) $cs;" );
+	dbDelta( 'CREATE TABLE ' . ir_dm_t( 'wait' ) . " (
+ id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+ ig_id varchar(40) NOT NULL,
+ igsid varchar(40) NOT NULL,
+ auto_id bigint(20) unsigned NOT NULL,
+ nudged tinyint(1) NOT NULL DEFAULT 0,
+ created_at datetime NOT NULL,
+ PRIMARY KEY  (id),
+ UNIQUE KEY who (ig_id,igsid)
 ) $cs;" );
 	update_option( 'ir_dm_db', IR_DM_VER, false );
 }
@@ -238,6 +261,9 @@ function ir_dm_reason_text( $r ) {
 		'window'          => "They messaged more than 24 hours ago. Instagram doesn't allow a reply after that.",
 		'cooldown'        => 'You already replied to them a few minutes ago.',
 		'not_connected'   => 'Your Instagram needs reconnecting.',
+		'not_following'   => 'Asked them to follow you first.',
+		'asked_again'     => 'Asked them again for their email.',
+		'no_email'        => 'They did not send an email address.',
 	];
 	return $map[ $r ] ?? $r;
 }
@@ -285,7 +311,43 @@ function ir_dm_api( $acct, $method, $path, $body = null ) {
 function ir_dm_msg_body( $m ) {
 	if ( empty( $m['button'] ) ) { return [ 'text' => $m['text'] ]; }
 	return [ 'attachment' => [ 'type' => 'template', 'payload' => [ 'template_type' => 'button', 'text' => $m['text'],
-		'buttons' => [ [ 'type' => 'web_url', 'url' => $m['button']['url'], 'title' => $m['button']['title'] ] ] ] ] ];
+		'buttons' => [ ! empty( $m['button']['payload'] ) ? [ 'type' => 'postback', 'payload' => $m['button']['payload'], 'title' => $m['button']['title'] ] : [ 'type' => 'web_url', 'url' => $m['button']['url'], 'title' => $m['button']['title'] ] ] ] ] ];
+}
+
+/* ---------- extras: follow to unlock, collect email ---------- */
+
+/** The first DM for an automation: follow gate, email question, or the content itself. */
+function ir_dm_first( $c, $auto_id, $name, $kw, $sender ) {
+	if ( ! empty( $c['follow'] ) ) {
+		$t = ir_dm_render( ( $c['follow_msg'] ?? '' ) ?: 'Hey {name}! Tap below and I will send it right over 👇', $name, $kw, '' );
+		return [ 'text' => mb_substr( $t, 0, 640 ), 'button' => [ 'title' => mb_substr( ( $c['follow_btn'] ?? '' ) ?: 'Send it to me', 0, 20 ), 'payload' => 'fg:' . (int) $auto_id ] ];
+	}
+	if ( ! empty( $c['ask_email'] ) ) {
+		return [ 'text' => ir_dm_trunc( ir_dm_render( ( $c['email_ask'] ?? '' ) ?: 'Hey {name}! What is the best email to send it to? 📩', $name, $kw, '' ) ) ];
+	}
+	return ir_dm_build( $c, $auto_id, $name, $kw, $sender );
+}
+/** Content sent once the email arrives (thank-you text if set, else the normal DM). */
+function ir_dm_after_email( $c, $auto_id, $name, $sender ) {
+	if ( ! empty( $c['email_thanks'] ) ) { $c['message'] = $c['email_thanks']; }
+	return ir_dm_build( $c, $auto_id, $name, '', $sender );
+}
+function ir_dm_wait_set( $ig, $igsid, $auto_id ) {
+	global $wpdb;
+	$wpdb->query( $wpdb->prepare( 'REPLACE INTO ' . ir_dm_t( 'wait' ) . ' (ig_id,igsid,auto_id,nudged,created_at) VALUES (%s,%s,%d,0,%s)', $ig, $igsid, $auto_id, ir_dm_now() ) );
+}
+function ir_dm_wait_get( $ig, $igsid ) {
+	global $wpdb;
+	return $wpdb->get_row( $wpdb->prepare( 'SELECT * FROM ' . ir_dm_t( 'wait' ) . ' WHERE ig_id=%s AND igsid=%s AND created_at > %s', $ig, $igsid, gmdate( 'Y-m-d H:i:s', time() - DAY_IN_SECONDS ) ) );
+}
+/** Save a lead, then forward it to the user's email list (webhook) if they set one. */
+function ir_dm_save_lead( $uid, $ig, $auto_id, $igsid, $username, $email ) {
+	global $wpdb;
+	$wpdb->query( $wpdb->prepare( 'INSERT IGNORE INTO ' . ir_dm_t( 'lead' ) . ' (user_id,ig_id,auto_id,igsid,username,email,created_at) VALUES (%d,%s,%d,%s,%s,%s,%s)', $uid, $ig, $auto_id, $igsid, $username, $email, ir_dm_now() ) );
+	$hook = (string) get_user_meta( $uid, 'ir_dm_hook', true );
+	if ( $hook && wp_http_validate_url( $hook ) ) {
+		wp_remote_post( $hook, [ 'timeout' => 5, 'blocking' => false, 'headers' => [ 'Content-Type' => 'application/json' ], 'body' => wp_json_encode( [ 'email' => $email, 'instagram' => $username, 'automation' => get_the_title( $auto_id ), 'account' => ( ir_dm_acct( $uid, $ig )['username'] ?? '' ), 'source' => IR_DM_NAME, 'date' => gmdate( 'c' ) ] ) ] );
+	}
 }
 
 function ir_dm_get( $url, $args = [] ) {
@@ -350,6 +412,14 @@ function ir_dm_parse( $p ) {
 				'uname' => (string) ( $v['from']['username'] ?? '' ), 'media' => (string) $mid, 'omedia' => $om && $om !== $mid ? (string) $om : '', 'ts' => $ts ];
 		}
 		foreach ( (array) ( $en['messaging'] ?? [] ) as $m ) {
+			if ( ! empty( $m['postback']['payload'] ) ) {
+				$from = (string) ( $m['sender']['id'] ?? '' ); $a = $acct ?: (string) ( $m['recipient']['id'] ?? '' );
+				if ( $from && $a && $from !== $a ) {
+					$pts = isset( $m['timestamp'] ) ? (int) $m['timestamp'] : $ts; if ( $pts > 1e12 ) { $pts = (int) ( $pts / 1000 ); }
+					$out[] = [ 'k' => 'postback', 'ig' => $a, 'id' => 'pb_' . ( $m['postback']['mid'] ?? md5( $from . $m['postback']['payload'] . $pts ) ), 'text' => (string) $m['postback']['payload'], 'from' => $from, 'uname' => '', 'media' => '', 'omedia' => '', 'ts' => $pts ];
+				}
+				continue;
+			}
 			$msg = $m['message'] ?? null;
 			if ( ! is_array( $msg ) || ! empty( $msg['is_echo'] ) || ! empty( $msg['is_deleted'] ) || ! empty( $msg['is_unsupported'] ) ) { continue; }
 			$from = (string) ( $m['sender']['id'] ?? '' ); $a = $acct ?: (string) ( $m['recipient']['id'] ?? '' );
@@ -385,6 +455,7 @@ function ir_dm_webhook_post( WP_REST_Request $req ) {
 		$events[] = $e;
 	}
 	if ( $events ) {
+		update_option( 'ir_dm_last_real_hook', time(), false );
 		add_action( 'shutdown', function () use ( $events ) {
 			if ( function_exists( 'litespeed_finish_request' ) ) { litespeed_finish_request(); }
 			elseif ( function_exists( 'fastcgi_finish_request' ) ) { fastcgi_finish_request(); }
@@ -412,7 +483,7 @@ function ir_dm_job( $e, $n = 0 ) {
 	$lock = ir_dm_lock( $e['id'] );
 	if ( ! $lock ) { if ( function_exists( 'as_schedule_single_action' ) ) { as_schedule_single_action( time() + 30, 'ir_dm_job', [ $e, $n ], 'ir-dm' ); } return; }
 	try {
-		$res = $e['k'] === 'comment' ? ir_dm_do_comment( $e ) : ir_dm_do_message( $e );
+		$res = $e['k'] === 'comment' ? ir_dm_do_comment( $e ) : ( $e['k'] === 'postback' ? ir_dm_do_postback( $e ) : ir_dm_do_message( $e ) );
 	} catch ( Throwable $t ) {
 		$res = [ 'retry' => 1 ];
 		error_log( '[ir-dm] ' . $t->getMessage() );
@@ -462,7 +533,7 @@ function ir_dm_fail( $uid, $log_id, WP_Error $err, $ig = null ) {
 function ir_dm_send( $acct, $recipient, $m ) {
 	$r = ir_dm_api( $acct, 'POST', $acct['id'] . '/messages', [ 'recipient' => $recipient, 'message' => ir_dm_msg_body( $m ) ] );
 	// Some accounts refuse button templates: fall back once to plain text with the link inline.
-	if ( is_wp_error( $r ) && ! empty( $m['button'] ) && $r->get_error_code() === 'permission' && ( $r->get_error_data()['code'] ?? 0 ) === 100 && ( $r->get_error_data()['sub'] ?? 0 ) !== 2534037 ) {
+	if ( is_wp_error( $r ) && ! empty( $m['button']['url'] ) && $r->get_error_code() === 'permission' && ( $r->get_error_data()['code'] ?? 0 ) === 100 && ( $r->get_error_data()['sub'] ?? 0 ) !== 2534037 ) {
 		$m = [ 'text' => ir_dm_trunc( $m['text'] . "\n" . $m['button']['url'] ) ];
 		$r = ir_dm_api( $acct, 'POST', $acct['id'] . '/messages', [ 'recipient' => $recipient, 'message' => ir_dm_msg_body( $m ) ] );
 	}
@@ -513,7 +584,7 @@ function ir_dm_do_comment( $e ) {
 			else { ir_dm_set( $log->id, [ 'error' => 'Waiting: hourly limit reached' ] ); $defer = max( $defer, $w ); }
 			continue;
 		}
-		$m = ir_dm_build( $c, $a['id'], $e['uname'], $kw, $e['from'] );
+		$m = ir_dm_first( $c, $a['id'], $e['uname'], $kw, $e['from'] );
 		$attempts = (int) $log->attempts + 1;
 		ir_dm_set( $log->id, [ 'attempts' => $attempts, 'dm_text' => $m['text'] ] );
 		list( $r, $m ) = ir_dm_send( $acct, [ 'comment_id' => $e['id'] ], $m );
@@ -523,6 +594,7 @@ function ir_dm_do_comment( $e ) {
 			if ( ! empty( $f['retry'] ) && $attempts < IR_DM_MAX_ATTEMPTS ) { $retry = true; }
 		} else {
 			ir_dm_set( $log->id, [ 'status' => 'sent', 'sent_at' => ir_dm_now(), 'error' => null, 'dm_text' => $m['text'] ] );
+			if ( empty( $c['follow'] ) && ! empty( $c['ask_email'] ) ) { ir_dm_wait_set( $e['ig'], $e['from'], $a['id'] ); }
 		}
 	}
 	if ( $defer ) { return [ 'defer' => $defer ]; }
@@ -532,6 +604,7 @@ function ir_dm_do_comment( $e ) {
 function ir_dm_do_message( $e ) {
 	$uid = ir_dm_owner( $e['ig'] );
 	if ( ! $uid || $e['from'] === $e['ig'] ) { return 'ignored'; }
+	if ( $e['k'] === 'dm' && ( $w = ir_dm_wait_get( $e['ig'], $e['from'] ) ) ) { return ir_dm_do_email( $uid, $e, $w ); }
 	$hit = null;
 	foreach ( ir_dm_autos_for( $uid, $e['k'] === 'story' ? 'story' : 'dms', $e['ig'] ) as $a ) {
 		$kw = ir_dm_match( $e['text'], $a['cfg'] );
@@ -556,7 +629,7 @@ function ir_dm_do_message( $e ) {
 	$name = '';
 	$u = ir_dm_api( $acct, 'GET', rawurlencode( $e['from'] ) . '?fields=username' );
 	if ( ! is_wp_error( $u ) && ! empty( $u['username'] ) ) { $name = (string) $u['username']; ir_dm_set( $log->id, [ 'sender_name' => mb_substr( $name, 0, 100 ) ] ); }
-	$m = ir_dm_build( $a['cfg'], $a['id'], $name, $kw, $e['from'] );
+	$m = ir_dm_first( $a['cfg'], $a['id'], $name, $kw, $e['from'] );
 	$attempts = (int) $log->attempts + 1;
 	ir_dm_set( $log->id, [ 'attempts' => $attempts, 'dm_text' => $m['text'] ] );
 	list( $r, $m ) = ir_dm_send( $acct, [ 'id' => $e['from'] ], $m );
@@ -566,6 +639,73 @@ function ir_dm_do_message( $e ) {
 		return ( ! empty( $f['retry'] ) && $attempts < IR_DM_MAX_ATTEMPTS ) ? [ 'retry' => 1 ] : 'failed';
 	}
 	ir_dm_set( $log->id, [ 'status' => 'sent', 'sent_at' => ir_dm_now(), 'error' => null, 'dm_text' => $m['text'] ] );
+	if ( empty( $a['cfg']['follow'] ) && ! empty( $a['cfg']['ask_email'] ) ) { ir_dm_wait_set( $e['ig'], $e['from'], $a['id'] ); }
+	return 'sent';
+}
+
+/** They replied while we wait for their email. */
+function ir_dm_do_email( $uid, $e, $w ) {
+	$c = get_post_meta( (int) $w->auto_id, '_ir_dm', true );
+	$acct = ir_dm_acct( $uid, $e['ig'] );
+	if ( ! is_array( $c ) || ! $acct ) { return 'ignored'; }
+	$ev = $e; $ev['k'] = 'email';
+	$log = ir_dm_claim( $uid, (int) $w->auto_id, $ev, '' );
+	if ( ! $log || in_array( $log->status, [ 'sent', 'skipped' ], true ) ) { return 'done'; }
+	if ( ! preg_match( '/[A-Z0-9._%+\-]+@[A-Z0-9.\-]+\.[A-Z]{2,}/i', $e['text'], $mm ) ) {
+		if ( (int) $w->nudged ) { ir_dm_set( $log->id, [ 'status' => 'skipped', 'reason' => 'no_email' ] ); return 'done'; }
+		global $wpdb; $wpdb->update( ir_dm_t( 'wait' ), [ 'nudged' => 1 ], [ 'id' => (int) $w->id ] );
+		list( $r ) = ir_dm_send( $acct, [ 'id' => $e['from'] ], [ 'text' => 'Could you reply with just your email address? Then I will send it straight over 🙏' ] );
+		ir_dm_set( $log->id, is_wp_error( $r ) ? [ 'status' => 'failed', 'error' => $r->get_error_message() ] : [ 'status' => 'skipped', 'reason' => 'asked_again' ] );
+		return 'nudged';
+	}
+	$email = strtolower( sanitize_email( $mm[0] ) );
+	$name = '';
+	$u = ir_dm_api( $acct, 'GET', rawurlencode( $e['from'] ) . '?fields=username' );
+	if ( ! is_wp_error( $u ) && ! empty( $u['username'] ) ) { $name = (string) $u['username']; }
+	ir_dm_save_lead( $uid, $e['ig'], (int) $w->auto_id, $e['from'], $name, $email );
+	global $wpdb; $wpdb->delete( ir_dm_t( 'wait' ), [ 'id' => (int) $w->id ] );
+	$m = ir_dm_after_email( $c, (int) $w->auto_id, $name, $e['from'] );
+	ir_dm_set( $log->id, [ 'sender_name' => $name, 'keyword' => $email, 'attempts' => 1, 'dm_text' => $m['text'] ] );
+	list( $r, $m ) = ir_dm_send( $acct, [ 'id' => $e['from'] ], $m );
+	if ( is_wp_error( $r ) ) { $f = ir_dm_fail( $uid, $log->id, $r, $e['ig'] ); return ! empty( $f['retry'] ) ? [ 'retry' => 1 ] : 'failed'; }
+	ir_dm_set( $log->id, [ 'status' => 'sent', 'sent_at' => ir_dm_now(), 'error' => null, 'dm_text' => $m['text'] ] );
+	return 'sent';
+}
+
+/** They tapped the "Send it to me" button: check they follow, then deliver. */
+function ir_dm_do_postback( $e ) {
+	$uid = ir_dm_owner( $e['ig'] );
+	if ( ! $uid || $e['from'] === $e['ig'] || ! preg_match( '/^fg:(\d+)$/', (string) $e['text'], $pm ) ) { return 'ignored'; }
+	$p = get_post( (int) $pm[1] );
+	$c = $p ? get_post_meta( $p->ID, '_ir_dm', true ) : null;
+	$acct = ir_dm_acct( $uid, $e['ig'] );
+	if ( ! $p || (int) $p->post_author !== $uid || ! is_array( $c ) || ! $acct ) { return 'ignored'; }
+	$ev = $e; $ev['k'] = 'follow'; $ev['text'] = 'Tapped "' . ( ( $c['follow_btn'] ?? '' ) ?: 'Send it to me' ) . '"';
+	$log = ir_dm_claim( $uid, $p->ID, $ev, '' );
+	if ( ! $log || in_array( $log->status, [ 'sent', 'skipped' ], true ) ) { return 'done'; }
+	$u = ir_dm_api( $acct, 'GET', rawurlencode( $e['from'] ) . '?fields=username,is_user_follow_business' );
+	$name = ! is_wp_error( $u ) && ! empty( $u['username'] ) ? (string) $u['username'] : '';
+	if ( $name ) { ir_dm_set( $log->id, [ 'sender_name' => $name ] ); }
+	$follows = is_wp_error( $u ) || ! array_key_exists( 'is_user_follow_business', $u ) ? null : (bool) $u['is_user_follow_business'];
+	if ( $follows === false ) {
+		$k = 'ir_dm_fg_' . md5( $e['ig'] . $e['from'] . $p->ID ); $n = (int) get_transient( $k );
+		if ( $n >= 3 ) { ir_dm_set( $log->id, [ 'status' => 'skipped', 'reason' => 'not_following' ] ); return 'done'; }
+		set_transient( $k, $n + 1, DAY_IN_SECONDS );
+		$m = [ 'text' => 'Almost there' . ( $name ? ' @' . $name : '' ) . '! Follow @' . $acct['username'] . ' first, then tap the button again and it is yours 👇', 'button' => [ 'title' => mb_substr( ( $c['follow_btn'] ?? '' ) ?: 'Send it to me', 0, 20 ), 'payload' => 'fg:' . $p->ID ] ];
+		list( $r ) = ir_dm_send( $acct, [ 'id' => $e['from'] ], $m );
+		ir_dm_set( $log->id, is_wp_error( $r ) ? [ 'status' => 'failed', 'error' => $r->get_error_message() ] : [ 'status' => 'skipped', 'reason' => 'not_following', 'dm_text' => $m['text'] ] );
+		return 'asked_follow';
+	}
+	if ( ! empty( $c['ask_email'] ) ) {
+		$m = [ 'text' => ir_dm_trunc( ir_dm_render( ( $c['email_ask'] ?? '' ) ?: 'Hey {name}! What is the best email to send it to? 📩', $name, '', '' ) ) ];
+	} else {
+		$m = ir_dm_build( $c, $p->ID, $name, '', $e['from'] );
+	}
+	ir_dm_set( $log->id, [ 'attempts' => 1, 'dm_text' => $m['text'] ] );
+	list( $r, $m ) = ir_dm_send( $acct, [ 'id' => $e['from'] ], $m );
+	if ( is_wp_error( $r ) ) { $f = ir_dm_fail( $uid, $log->id, $r, $e['ig'] ); return ! empty( $f['retry'] ) ? [ 'retry' => 1 ] : 'failed'; }
+	ir_dm_set( $log->id, [ 'status' => 'sent', 'sent_at' => ir_dm_now(), 'error' => null, 'dm_text' => $m['text'] ] );
+	if ( ! empty( $c['ask_email'] ) ) { ir_dm_wait_set( $e['ig'], $e['from'], $p->ID ); }
 	return 'sent';
 }
 
@@ -573,18 +713,21 @@ function ir_dm_do_message( $e ) {
  * Works even when Meta does not send webhooks (e.g. app not Live). Safe to run alongside webhooks:
  * every comment is processed once (log table + seen list). */
 add_action( 'init', function () {
-	if ( function_exists( 'as_has_scheduled_action' ) && ! as_has_scheduled_action( 'ir_dm_poll' ) ) {
-		as_schedule_recurring_action( time() + 60, 120, 'ir_dm_poll', [], 'ir-dm' );
+	if ( ! function_exists( 'as_has_scheduled_action' ) ) { return; }
+	if ( get_option( 'ir_dm_poll_iv' ) !== '60' ) { as_unschedule_all_actions( 'ir_dm_poll', [], 'ir-dm' ); update_option( 'ir_dm_poll_iv', '60', false ); }
+	if ( ! as_has_scheduled_action( 'ir_dm_poll' ) ) {
+		as_schedule_recurring_action( time() + 30, 60, 'ir_dm_poll', [], 'ir-dm' );
 	}
 }, 21 );
 add_action( 'ir_dm_poll', 'ir_dm_poll' );
 function ir_dm_poll() {
 	if ( get_transient( 'ir_dm_polling' ) ) { return 0; }
-	set_transient( 'ir_dm_polling', 1, 100 );
+	set_transient( 'ir_dm_polling', 1, 55 );
 	update_option( 'ir_dm_last_poll', time(), false );
 	$found = 0;
 	foreach ( ir_dm_owners() as $uid ) { foreach ( ir_dm_accts( $uid ) as $a ) {
 		if ( ( $a['status'] ?? '' ) !== 'active' ) { continue; }
+		ir_dm_poll_replies( $a );
 		$autos = ir_dm_autos_for( $uid, 'comments', $a['id'] );
 		if ( ! $autos ) { continue; }
 		$media = []; $any = false;
@@ -616,6 +759,22 @@ function ir_dm_poll() {
 	} }
 	delete_transient( 'ir_dm_polling' );
 	return $found;
+}
+
+/** Read DM replies from people we are waiting on (email), for when Meta's notifications are not arriving. */
+function ir_dm_poll_replies( $a ) {
+	global $wpdb;
+	$waits = $wpdb->get_results( $wpdb->prepare( 'SELECT * FROM ' . ir_dm_t( 'wait' ) . ' WHERE ig_id=%s AND created_at > %s LIMIT 20', (string) $a['id'], gmdate( 'Y-m-d H:i:s', time() - DAY_IN_SECONDS ) ) );
+	foreach ( $waits as $w ) {
+		$r = ir_dm_api( $a, 'GET', $a['id'] . '/conversations?platform=instagram&user_id=' . rawurlencode( $w->igsid ) . '&fields=messages.limit(5){id,message,from,created_time}' );
+		if ( is_wp_error( $r ) ) { continue; }
+		$since = strtotime( $w->created_at . ' UTC' );
+		foreach ( (array) ( $r['data'][0]['messages']['data'] ?? [] ) as $m ) {
+			$t = strtotime( (string) ( $m['created_time'] ?? '' ) ) ?: 0;
+			if ( (string) ( $m['from']['id'] ?? '' ) !== (string) $w->igsid || $t < $since || empty( $m['message'] ) ) { continue; }
+			ir_dm_job( [ 'k' => 'dm', 'ig' => (string) $a['id'], 'id' => (string) $m['id'], 'text' => (string) $m['message'], 'from' => (string) $w->igsid, 'uname' => '', 'media' => '', 'omedia' => '', 'ts' => $t ], 0 );
+		}
+	}
 }
 
 /* ---------- daily token refresh (Instagram-login tokens last 60 days) ---------- */
@@ -781,8 +940,15 @@ add_action( 'wp_ajax_ir_dm_state', function () {
 			'auto' => (string) $r->name, 'ok' => $r->status === 'sent', 'res' => $res, 'dm' => (string) $r->dm_text, 'pub' => $r->public_status === 'sent' ? (string) $r->public_text : '' ];
 	}, $rows );
 	$tot = [ 'sent' => array_sum( array_column( $autos, 'sent' ) ), 'clicks' => array_sum( array_column( $autos, 'clicks' ) ) ];
+	$tot['leads'] = (int) $wpdb->get_var( $wpdb->prepare( 'SELECT COUNT(*) FROM ' . ir_dm_t( 'lead' ) . ' WHERE user_id=%d', $uid ) );
+	$per = [];
+	foreach ( $wpdb->get_results( $wpdb->prepare( 'SELECT ig_id, SUM(status=\'sent\') n FROM ' . ir_dm_t( 'log' ) . ' WHERE user_id=%d GROUP BY ig_id', $uid ) ) as $x ) { $per[ $x->ig_id ] = (int) $x->n; }
+	$leads = $wpdb->get_results( $wpdb->prepare( 'SELECT email, username, auto_id, created_at FROM ' . ir_dm_t( 'lead' ) . ' WHERE user_id=%d ORDER BY id DESC LIMIT 100', $uid ) );
 	$u = wp_get_current_user();
-	wp_send_json( [ 'ok' => true, 'ready' => ir_dm_ready(), 'accts' => array_values( array_map( 'ir_dm_acct_public', ir_dm_accts( $uid ) ) ), 'autos' => $autos, 'activity' => $act, 'tot' => $tot,
+	$accts = array_values( array_map( function ( $a ) use ( $per, $autos ) { $p = ir_dm_acct_public( $a ); $p['sent'] = $per[ $p['id'] ] ?? 0; $first = (string) ( ir_dm_acct( $uid )['id'] ?? '' ); $p['autos'] = count( array_filter( $autos, function ( $x ) use ( $p, $first ) { $ac = (string) ( $x['cfg']['acct'] ?? '' ); return $ac === $p['id'] || ( $ac === '' && $p['id'] === $first ); } ) ); return $p; }, ir_dm_accts( $uid ) ) );
+	wp_send_json( [ 'ok' => true, 'ready' => ir_dm_ready(), 'accts' => $accts, 'autos' => $autos, 'activity' => $act, 'tot' => $tot,
+		'leads' => array_map( function ( $l ) { return [ 'email' => $l->email, 'who' => $l->username ? '@' . $l->username : '', 'auto' => get_the_title( (int) $l->auto_id ), 'when' => strtotime( $l->created_at . ' UTC' ) ]; }, $leads ),
+		'hook' => (string) get_user_meta( $uid, 'ir_dm_hook', true ), 'instant' => (int) get_option( 'ir_dm_last_real_hook' ) > time() - 7 * DAY_IN_SECONDS,
 		'me' => [ 'name' => $u->first_name ?: $u->display_name, 'email' => $u->user_email, 'admin' => user_can( $uid, 'manage_options' ) ] ] );
 } );
 
@@ -821,6 +987,12 @@ function ir_dm_clean_cfg( $in ) {
 		'button'   => $link ? $s( $in['button'] ?? '', 20 ) : '',
 		'public_on'=> ! empty( $in['public_on'] ),
 		'acct'     => preg_replace( '/[^0-9]/', '', (string) ( $in['acct'] ?? '' ) ),
+		'follow'   => ! empty( $in['follow'] ),
+		'follow_msg' => $s( $in['follow_msg'] ?? '', 640 ),
+		'follow_btn' => $s( $in['follow_btn'] ?? '', 20 ),
+		'ask_email' => ! empty( $in['ask_email'] ),
+		'email_ask' => $s( $in['email_ask'] ?? '', 640 ),
+		'email_thanks' => $s( $in['email_thanks'] ?? '', 1000 ),
 		'public'   => array_slice( array_values( array_filter( array_map( function ( $p ) use ( $s ) { return $s( $p, 300 ); }, (array) ( $in['public'] ?? [] ) ) ) ), 0, 10 ),
 	];
 	if ( $c['any_post'] ) { $c['post'] = ''; $c['post_img'] = ''; }
@@ -856,6 +1028,28 @@ add_action( 'wp_ajax_ir_dm_save', function () {
 	update_post_meta( $id, '_ir_dm', $cfg );
 	if ( $cfg['link'] ) { ir_dm_slug( $id ); }
 	wp_send_json( [ 'ok' => true, 'id' => $id ] );
+} );
+
+add_action( 'wp_ajax_ir_dm_hook', function () {
+	$uid = ir_dm_member_ok();
+	$u = esc_url_raw( trim( (string) wp_unslash( $_POST['url'] ?? '' ) ), [ 'https' ] );
+	if ( ! empty( $_POST['url'] ) && ! $u ) { wp_send_json( [ 'ok' => false, 'err' => 'Paste a link that starts with https://' ] ); }
+	update_user_meta( $uid, 'ir_dm_hook', $u );
+	if ( $u ) { wp_remote_post( $u, [ 'timeout' => 8, 'headers' => [ 'Content-Type' => 'application/json' ], 'body' => wp_json_encode( [ 'email' => 'test@example.com', 'instagram' => 'test_user', 'automation' => 'Test', 'source' => IR_DM_NAME, 'test' => true ] ) ] ); }
+	wp_send_json( [ 'ok' => true ] );
+} );
+add_action( 'wp_ajax_ir_dm_leads_csv', function () {
+	check_ajax_referer( 'ir_dm', 'n' );
+	if ( ! ir_dm_can() ) { wp_die( 'No access' ); }
+	global $wpdb;
+	$rows = $wpdb->get_results( $wpdb->prepare( 'SELECT email, username, auto_id, created_at FROM ' . ir_dm_t( 'lead' ) . ' WHERE user_id=%d ORDER BY id DESC', get_current_user_id() ) );
+	nocache_headers();
+	header( 'Content-Type: text/csv; charset=utf-8' );
+	header( 'Content-Disposition: attachment; filename="reubx-dm-leads-' . gmdate( 'Y-m-d' ) . '.csv"' );
+	$f = fopen( 'php://output', 'w' );
+	fputcsv( $f, [ 'email', 'instagram', 'automation', 'date' ] );
+	foreach ( $rows as $l ) { fputcsv( $f, [ $l->email, $l->username, get_the_title( (int) $l->auto_id ), $l->created_at ] ); }
+	exit;
 } );
 
 add_action( 'wp_ajax_ir_dm_toggle', function () {
@@ -1048,11 +1242,12 @@ a{color:inherit}button{font:inherit;color:inherit;cursor:pointer}input,textarea,
 .rx-chips{display:flex;gap:10px;margin:0 0 18px;overflow-x:auto;scrollbar-width:none}.rx-chips::-webkit-scrollbar{display:none}
 .rx-pill{border:1.5px solid var(--acc);background:var(--card);color:var(--acc);border-radius:999px;padding:12px 18px;font-weight:700;white-space:nowrap}
 .rx-card{background:var(--card);border-radius:var(--r);border:1px solid var(--line)}.rx-pad{padding:18px}
-.rx-promo{position:relative;overflow:hidden;background:linear-gradient(140deg,#1660E8,#0F4ACB 55%,#0B1A33);color:#fff;border-radius:var(--r);padding:18px;margin:0 0 16px;box-shadow:0 18px 34px -18px rgba(22,96,232,.8)}
-.rx-promo:after{content:"";position:absolute;right:-40px;top:-40px;width:150px;height:150px;border-radius:50%;background:radial-gradient(circle,rgba(255,122,26,.55),transparent 70%)}
+.rx-promo{position:relative;overflow:hidden;background:linear-gradient(140deg,#2A74F2,#1660E8 45%,#0F3FB0);color:#fff;border-radius:var(--r);padding:18px;margin:0 0 16px;box-shadow:0 18px 34px -18px rgba(22,96,232,.8)}
+.rx-promo:before{content:"";position:absolute;inset:0;background:radial-gradient(120% 80% at 100% 0%,rgba(255,255,255,.28),transparent 55%),radial-gradient(90% 70% at 0% 100%,rgba(125,170,255,.35),transparent 60%);pointer-events:none}
+.rx-promo:after{content:"";position:absolute;right:18px;top:16px;width:92px;height:92px;border-radius:28px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.28);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);transform:rotate(14deg);pointer-events:none}
 .rx-promo .row{position:relative;z-index:1;display:flex;gap:14px;align-items:flex-start;margin:0 0 14px}.rx-promo h3{margin:0;font-size:18px;letter-spacing:-.3px}.rx-promo p{margin:3px 0 0;font-size:13.5px;color:rgba(255,255,255,.82)}.rx-promo .rx-btn{position:relative;z-index:1}
 .rx-promo.warn{background:linear-gradient(140deg,#FF7A1A,#E2560B)}
-.rx-crown{width:50px;height:50px;border-radius:50%;background:rgba(255,255,255,.18);display:grid;place-items:center;flex:none}.rx-crown svg{width:24px;height:24px}
+.rx-crown{width:50px;height:50px;border-radius:16px;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.3);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);display:grid;place-items:center;flex:none}.rx-crown svg{width:24px;height:24px}
 .rx-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:0;border-radius:999px;padding:14px 20px;font-weight:700;text-decoration:none;background:var(--card);color:var(--ink)}
 .rx-promo .rx-btn{background:#fff;color:#0A1633}
 .rx-wide{width:100%}.rx-dark{background:var(--navy);color:#fff}:root[data-theme="dark"] .rx-dark{background:var(--acc)}.rx-lime{background:var(--acc);color:#fff}.rx-btn[disabled]{opacity:.6}
@@ -1120,11 +1315,24 @@ details.rx-card>summary{list-style:none;cursor:pointer;font-weight:700}details.r
 @media(min-width:900px){
 .rx-auth-wrap{display:grid;grid-template-columns:1.1fr 1fr}
 .rx-auth-side{display:flex;flex-direction:column;justify-content:space-between;padding:48px;color:#fff;background:linear-gradient(150deg,#1660E8,#0F4ACB 45%,#071233);position:relative;overflow:hidden}
-.rx-auth-side:after{content:"";position:absolute;right:-120px;bottom:-120px;width:420px;height:420px;border-radius:50%;background:radial-gradient(circle,rgba(255,122,26,.5),transparent 70%)}
-.rx-auth-side h2{font:800 46px/1.05 "Plus Jakarta Sans",sans-serif;letter-spacing:-1.6px;margin:0 0 22px;max-width:520px}.rx-auth-side h2 span{color:#FFB37A}
+.rx-auth-side:after{content:"";position:absolute;right:-90px;bottom:-90px;width:380px;height:380px;border-radius:90px;transform:rotate(18deg);background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.2);backdrop-filter:blur(6px)}
+.rx-auth-side h2{font:800 46px/1.05 "Plus Jakarta Sans",sans-serif;letter-spacing:-1.6px;margin:0 0 22px;max-width:520px}.rx-auth-side h2 span{color:#BFD5FF}
 .rx-auth-side ul{list-style:none;padding:0;margin:0;display:grid;gap:14px}.rx-auth-side li{display:flex;gap:12px;align-items:center;font-size:16px;color:rgba(255,255,255,.9)}.rx-auth-side li i{width:36px;height:36px;border-radius:12px;background:rgba(255,255,255,.15);display:grid;place-items:center;font-style:normal}
 .rx-auth{display:flex;flex-direction:column;justify-content:center;padding:48px}
 }
+body{background:radial-gradient(900px 600px at 0% 0%,rgba(22,96,232,.10),transparent 60%),radial-gradient(800px 600px at 100% 100%,rgba(96,165,250,.12),transparent 60%),var(--bg);background-attachment:fixed}
+:root[data-theme="dark"] body{background:radial-gradient(900px 600px at 0% 0%,rgba(22,96,232,.28),transparent 60%),radial-gradient(800px 600px at 100% 100%,rgba(96,165,250,.14),transparent 60%),var(--bg);background-attachment:fixed}
+.rx-card,.rx-item,.rx-tile,.rx-tpl,.rx-hello,.rx-glass{background:color-mix(in srgb,var(--card) 74%,transparent);backdrop-filter:blur(18px) saturate(150%);-webkit-backdrop-filter:blur(18px) saturate(150%);border-color:color-mix(in srgb,var(--line) 70%,transparent)}
+:root:not([data-theme="dark"]) .rx-card,:root:not([data-theme="dark"]) .rx-item,:root:not([data-theme="dark"]) .rx-tile{box-shadow:0 1px 0 rgba(255,255,255,.7) inset,0 12px 30px -22px rgba(11,26,51,.25)}
+.rx-tile.on{background:color-mix(in srgb,var(--accs) 80%,transparent)}
+@media(min-width:900px){.rx-side{background:color-mix(in srgb,var(--card) 70%,transparent);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px)}}
+.rx-accs{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;margin:0 0 14px}
+.rx-acc{border:1px solid var(--line);border-radius:24px;padding:16px;display:flex;flex-direction:column;gap:14px}
+.rx-av.big{width:54px;height:54px;font-size:20px;box-shadow:0 0 0 3px var(--card),0 0 0 5px color-mix(in srgb,var(--acc) 45%,transparent)}
+.rx-ell{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:16px}
+.rx-pillst{display:inline-block;margin-top:4px;font-size:12px;font-weight:700;border-radius:99px;padding:3px 10px}.rx-pillst.ok{background:rgba(22,163,74,.12);color:var(--ok)}.rx-pillst.bad{background:rgba(229,72,77,.12);color:var(--red)}
+.rx-accst{display:grid;grid-template-columns:1fr 1fr;gap:8px}.rx-accst>div{background:color-mix(in srgb,var(--soft) 80%,transparent);border-radius:16px;padding:10px 12px}.rx-accst b{display:block;font-size:20px}.rx-accst small{color:var(--muted);font-size:12px}
+.rx-acc .rx-row .rx-btn{flex:1;padding:11px 12px;font-size:14px}.rx-ghost{background:transparent;border:1px solid var(--line)}
 [hidden]{display:none!important}
 CSS;
 }
@@ -1150,6 +1358,8 @@ send:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1
 bolt:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M13 3 5 14h6l-1 7 8-11h-6z"/></svg>',
 logo:'<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6.5A2.5 2.5 0 0 1 6.5 4h11A2.5 2.5 0 0 1 20 6.5v7a2.5 2.5 0 0 1-2.5 2.5H11l-4.5 4v-4A2.5 2.5 0 0 1 4 13.5z"/><path d="M13 7.5 10.5 11h3.5L11.5 14"/></svg>',
 out:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3M10 17l5-5-5-5M15 12H3"/></svg>',
+mail:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="m4 7 8 6 8-6"/></svg>',
+dl:'<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>',
 moon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>',
 plus:'<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>'};
 function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
@@ -1162,9 +1372,9 @@ var TPL=[
  {e:'📅',n:'Book a call',d:'Comment BOOK, get your booking link',kw:['BOOK'],msg:'Hi {name}! So happy you want to work together. Pick a time that suits you here:\n{link}',btn:'Book now',pub:['Sent you the link {name} 📅','Check your DMs!']},
  {e:'💰',n:'Price list',d:'Comment PRICE, get your prices',kw:['PRICE','PRICES'],msg:'Hi {name}! Here are my prices and packages 👇\n{link}\n\nAny questions, just reply here.',btn:'See prices',pub:['Sent you the price list {name} 💌','Check your DMs!']},
  {e:'✏️',n:'Start blank',d:'Write your own',kw:[],msg:'Hey {name}! ',btn:'',pub:['Check your DMs {name} 💌']}];
-function blank(t,trig){t=t||TPL[3];var a=S.accts[0];return{id:0,name:'',acct:a?a.id:'',t:{comments:trig?trig==='comments':true,dms:trig==='dms',story:trig==='story'},any_post:!!trig&&trig!=='comments',post:'',post_img:'',keywords:t.kw.slice(),any_word:false,message:t.msg,link:'',button:t.btn,public_on:t.n!=='Start blank'&&(!trig||trig==='comments'),public:t.pub.slice()}}
+function blank(t,trig){t=t||TPL[3];var a=S.accts[0];return{id:0,name:'',acct:a?a.id:'',t:{comments:trig?trig==='comments':true,dms:trig==='dms',story:trig==='story'},any_post:!!trig&&trig!=='comments',post:'',post_img:'',keywords:t.kw.slice(),any_word:false,message:t.msg,link:'',button:t.btn,public_on:t.n!=='Start blank'&&(!trig||trig==='comments'),public:t.pub.slice(),follow:false,follow_msg:'Hey {name}! Tap below and I will send it right over 👇',follow_btn:'Send it to me',ask_email:false,email_ask:'Hey {name}! What is the best email to send it to? 📩',email_thanks:''}}
 function load(){return post('ir_dm_state').then(function(r){if(!r.ok){R.innerHTML='<div class="rx-alert bad">'+esc(r.err)+'</div>';return}S=r;draw()})}
-var TABS=[['home','Home','home'],['autos','Automations','chat'],['activity','Activity','list'],['profile','Profile','gear']];
+var TABS=[['home','Home','home'],['autos','Automations','chat'],['activity','Activity','list'],['leads','Leads','mail'],['profile','Profile','gear']];
 function side(){var on=function(t){return TAB===t&&!ED};
  return '<aside class="rx-side"><div class="rx-sbrand"><span class="rx-logo">'+I.logo+'</span><b class="rx-brand">'+esc(C.name)+'<small>AI DM automation</small></b></div>'+
  '<button class="rx-btn rx-lime rx-wide" data-new="">'+I.plus+' New automation</button>'+
@@ -1175,7 +1385,7 @@ function shell(h){return side()+'<main class="rx-main">'+h+'</main>'+nav()}
 function nav(){return '<nav class="rx-nav">'+TABS.map(function(x){var on=TAB===x[0]&&!ED;return '<button data-tab="'+x[0]+'" class="'+(on?'on':'')+'" aria-label="'+x[1]+'">'+(on?'<i>'+I[x[2]]+'</i><span>'+x[1]+'</span>':I[x[2]])+'</button>'}).join('')+'</nav>'}
 function banner(){var h='';if(C.msg)h+='<div class="rx-alert ok">'+esc(C.msg)+'</div>';if(C.err)h+='<div class="rx-alert bad">'+esc(C.err)+'</div>';C.msg=C.err='';return h}
 function draw(){if(ED)return editor();var h='';
- if(TAB==='home')h=home();else if(TAB==='autos')h=autos();else if(TAB==='activity')h=activity();else h=profile();
+ if(TAB==='home')h=home();else if(TAB==='autos')h=autos();else if(TAB==='activity')h=activity();else if(TAB==='leads')h=leads();else h=profile();
  R.innerHTML=shell(h);bind();window.scrollTo(0,0)}
 function connectCard(){var a=S.accts;
  if(!S.ready&&!a.length)return '<div class="rx-promo"><div class="row"><span class="rx-crown">'+I.crown+'</span><div><h3>Almost ready</h3><p>'+(S.me.admin?'Finish the one-time Meta setup first. You can build automations meanwhile.':'Instagram connection opens soon. You can build automations meanwhile.')+'</p></div></div>'+(S.me.admin?'<a class="rx-btn rx-wide" href="'+esc(C.setup)+'">Open setup</a>':'')+'</div>';
@@ -1199,16 +1409,22 @@ function autos(){var h='<div class="rx-head"><h1>Automations</h1><button class="
   return '<div class="rx-card rx-pad rx-acard"><div class="rx-row">'+(c.post_img&&!c.any_post?'<img class="rx-thumb" src="'+esc(c.post_img)+'" alt="">':'<span class="rx-thumb">💬</span>')+'<div style="flex:1;min-width:0"><b style="display:block">'+esc(a.name)+'</b><small class="rx-muted">When someone '+esc(w.join(', or '))+(ac&&S.accts.length>1?' · @'+esc(ac.username):'')+'</small><div style="font-size:13px;font-weight:700;margin-top:4px">'+a.sent+' <span class="rx-muted">sent</span> · '+a.clicks+' <span class="rx-muted">clicks</span></div></div><label class="rx-sw"><input type="checkbox" data-tog="'+a.id+'"'+(a.on?' checked':'')+'><i></i></label></div>'+
   '<div class="rx-row" style="margin-top:12px"><button class="rx-btn rx-dark" style="padding:10px 16px" data-edit="'+a.id+'">Edit</button><button class="rx-btn" style="padding:10px 16px;border:1px solid var(--line)" data-try="'+a.id+'">Try it</button><button class="rx-link rx-red" style="margin-left:auto" data-del="'+a.id+'">Delete</button></div><div data-tryout="'+a.id+'"></div></div>'}).join('')+'</div>'}
 function tpls(){return '<div class="rx-tpls">'+TPL.map(function(t,i){return '<button class="rx-tpl" data-tpl="'+i+'"><span class="e">'+t.e+'</span><b>'+esc(t.n)+'</b><small>'+esc(t.d)+'</small></button>'}).join('')+'</div>'}
-function activity(){return '<div class="rx-head"><h1>Activity</h1><button class="rx-ib" data-reload="1" aria-label="Refresh">'+I.bolt+'</button></div>'+(S.activity.length?'<div class="rx-card rx-pad">'+S.activity.map(function(x){return '<div class="rx-act"><div class="rx-row" style="justify-content:space-between"><b>'+esc(x.who)+'</b><small class="rx-muted">'+ago(x.when)+'</small></div><div class="rx-muted" style="font-size:14px">'+(x.trig==='comment'?'Commented':x.trig==='story'?'Replied to your Story':'Sent you a DM')+': “'+esc(x.said||'…')+'” · '+esc(x.auto)+'</div><div class="r '+(x.ok?'ok':'no')+'">'+(x.ok?'✓ ':'')+esc(x.res)+'</div></div>'}).join('')+'</div>':'<div class="rx-alert info">No activity yet. New comments are checked every 2 minutes.</div>')}
+function activity(){return '<div class="rx-head"><h1>Activity</h1><button class="rx-ib" data-reload="1" aria-label="Refresh">'+I.bolt+'</button></div>'+(S.activity.length?'<div class="rx-card rx-pad">'+S.activity.map(function(x){return '<div class="rx-act"><div class="rx-row" style="justify-content:space-between"><b>'+esc(x.who)+'</b><small class="rx-muted">'+ago(x.when)+'</small></div><div class="rx-muted" style="font-size:14px">'+(x.trig==='comment'?'Commented':x.trig==='story'?'Replied to your Story':'Sent you a DM')+': “'+esc(x.said||'…')+'” · '+esc(x.auto)+'</div><div class="r '+(x.ok?'ok':'no')+'">'+(x.ok?'✓ ':'')+esc(x.res)+'</div></div>'}).join('')+'</div>':'<div class="rx-alert info">No activity yet. New comments are picked up within about a minute.</div>')}
 function profile(){var a=S.accts,live=S.autos.filter(function(x){return x.on}).length;
  var h='<div class="rx-head"><button class="rx-ib" data-tab="home">'+I.back+'</button><h1>Profile</h1>'+(S.me.admin?'<a class="rx-ib" href="'+esc(C.setup)+'" aria-label="Setup">'+I.gear+'</a>':'<span style="width:48px"></span>')+'</div>'+banner()+'<div class="rx-pgrid"><div>';
  h+='<div class="rx-prof"><div class="rx-card me">'+av(a[0])+'<h2>'+esc(S.me.name||'You')+'</h2><span class="rx-badge">★ '+live+' live automation'+(live===1?'':'s')+'</span><div class="rx-muted" style="font-size:12px">'+esc(S.me.email)+'</div></div><div class="rx-mini"><div class="rx-card"><span class="rx-ic">'+I.dm+'</span><div><b>'+S.tot.sent+'</b><small>DMs sent</small></div></div><div class="rx-card"><span class="rx-ic g">'+I.link+'</span><div><b>'+S.tot.clicks+'</b><small>Link clicks</small></div></div></div></div>';
  h+='<div class="rx-card rx-stats"><div><span class="rx-ic">'+I.chat+'</span><small>Automations</small><b>'+S.autos.length+'</b></div><div><span class="rx-ic b">'+I.crown.split('#fff').join('currentColor')+'</span><small>Accounts</small><b>'+a.length+'</b></div><div><span class="rx-ic o">'+I.bolt+'</span><small>Triggers</small><b>'+S.activity.length+'</b></div></div>';
  h+='</div><div>';
  h+='<div class="rx-promo"><div class="row"><span class="rx-crown">'+I.crown+'</span><div><h3>'+(a.length?'Add another account':'Connect Instagram')+'</h3><p>Run automations on several Instagram accounts from one place.</p></div></div><a class="rx-btn rx-wide" href="'+esc(C.connect)+'">'+I.plus+' '+(a.length?'Add Instagram account':'Connect Instagram')+'</a></div>';
- if(a.length)h+='<div class="rx-sec"><h2>Your accounts</h2></div>'+a.map(function(x){return '<div class="rx-item">'+av(x)+'<div class="t"><b>@'+esc(x.username)+'</b><small>'+(x.status==='active'?'<span class="rx-okc">● Connected</span>':'<span class="rx-red" style="font-weight:700">Needs reconnecting</span>')+'</small></div>'+(x.status==='active'?'<button class="rx-link rx-red" data-disc="'+esc(x.id)+'">Remove</button>':'<a class="rx-link" href="'+esc(C.connect)+'">Reconnect</a>')+'</div>'}).join('');
- h+='<details class="rx-card rx-pad" style="margin:12px 0"><summary>How it works & Instagram rules</summary><p class="rx-muted" style="margin:10px 0 0;font-size:14px;line-height:1.6">• One automatic DM per comment, within 7 days of the comment.<br>• DM and Story replies within 24 hours of their message.<br>• Your own comments never trigger anything.<br>• New comments are checked every 2 minutes.<br>• Links are tracked so you can see clicks.</p></details>';
+ if(a.length)h+='<div class="rx-sec"><h2>Your accounts</h2></div><div class="rx-accs">'+a.map(function(x){var ok=x.status==='active';return '<div class="rx-acc rx-glass"><div class="rx-row">'+av(x,'big')+'<div style="flex:1;min-width:0"><b class="rx-ell">@'+esc(x.username)+'</b><span class="rx-pillst '+(ok?'ok':'bad')+'">'+(ok?'● Live':'● Reconnect needed')+'</span></div></div><div class="rx-accst"><div><b>'+(x.sent||0)+'</b><small>DMs sent</small></div><div><b>'+(x.autos||0)+'</b><small>Automations</small></div></div><div class="rx-row">'+(ok?'<a class="rx-btn rx-ghost" href="'+esc(C.connect)+'">Refresh</a>':'<a class="rx-btn rx-lime" href="'+esc(C.connect)+'">Reconnect</a>')+'<button class="rx-btn rx-ghost rx-red" data-disc="'+esc(x.id)+'">Remove</button></div></div>'}).join('')+'</div>';
+ h+='<details class="rx-card rx-pad" style="margin:12px 0"><summary>How it works & Instagram rules</summary><p class="rx-muted" style="margin:10px 0 0;font-size:14px;line-height:1.6">• One automatic DM per comment, within 7 days of the comment.<br>• DM and Story replies within 24 hours of their message.<br>• Your own comments never trigger anything.<br>• New comments are picked up within about a minute (instantly once your Meta app is Live).<br>• Links are tracked so you can see clicks.</p></details>';
  h+='<a class="rx-btn rx-wide rx-mob" style="border:1px solid var(--line)" href="'+esc(C.logout)+'">Sign out</a></div></div>';return h}
+function leads(){var h='<div class="rx-head"><h1>Leads</h1><a class="rx-btn rx-lime" style="padding:11px 16px" href="'+esc(C.aj)+'?action=ir_dm_leads_csv&n='+esc(C.n)+'">'+I.dl+' Export CSV</a></div>'+banner();
+ h+='<div class="rx-pgrid"><div><div class="rx-card rx-pad" style="margin:0 0 14px"><div class="rx-row" style="margin:0 0 12px;align-items:flex-start"><span class="rx-ic g">'+I.mail+'</span><div><b style="display:block">Send leads to your email list</b><small class="rx-muted">Paste a webhook link from Zapier, Make, Pabbly, Mailchimp or Brevo. Every new email goes there instantly.</small></div></div>'+
+ '<div class="rx-row"><input id="rxHook" class="rx-in2" placeholder="https://hooks.zapier.com/..." value="'+esc(S.hook||'')+'"><button class="rx-btn rx-dark" id="rxHookSave" style="padding:12px 18px">Save</button></div><div class="rx-muted" id="rxHookMsg" style="font-size:13px;margin-top:8px">'+(S.hook?'✓ Connected. New leads are sent automatically.':'Not connected yet. Leads are still saved here and in the CSV.')+'</div></div>'+
+ '<div class="rx-alert info" style="font-size:13.5px;font-weight:500">To collect emails, open an automation and switch on <b>Ask for their email first</b>.</div></div><div>';
+ h+=S.leads.length?'<div class="rx-card rx-pad">'+S.leads.map(function(l){return '<div class="rx-act"><div class="rx-row" style="justify-content:space-between"><b>'+esc(l.email)+'</b><small class="rx-muted">'+ago(l.when)+'</small></div><div class="rx-muted" style="font-size:13.5px">'+esc(l.who||'')+(l.auto?' · '+esc(l.auto):'')+'</div></div>'}).join('')+'</div>':'<div class="rx-card rx-pad rx-center"><span class="rx-ic g" style="margin:0 auto 10px;width:56px;height:56px">'+I.mail+'</span><b style="display:block">No leads yet</b><small class="rx-muted">Emails people send through your automations appear here.</small></div>';
+ return h+'</div></div>'}
 function find(id){return S.autos.filter(function(a){return String(a.id)===String(id)})[0]}
 function bind(){var q=function(s){return R.querySelectorAll(s)};
  q('[data-tab]').forEach(function(b){b.onclick=function(){TAB=b.dataset.tab;ED=null;draw()}});
@@ -1219,7 +1435,8 @@ function bind(){var q=function(s){return R.querySelectorAll(s)};
  q('[data-del]').forEach(function(b){b.onclick=function(){if(!confirm('Delete this automation?'))return;post('ir_dm_delete',{id:b.dataset.del}).then(load)}});
  q('[data-tog]').forEach(function(i){i.onchange=function(){post('ir_dm_toggle',{id:i.dataset.tog,on:i.checked?1:''}).then(function(r){if(!r.ok){alert(r.err);i.checked=!i.checked}else load()})}});
  q('[data-disc]').forEach(function(b){b.onclick=function(){if(confirm('Remove this Instagram account? Its automations stop.'))post('ir_dm_disconnect',{ig:b.dataset.disc}).then(load)}});
- q('[data-reload]').forEach(function(b){b.onclick=load})}
+ q('[data-reload]').forEach(function(b){b.onclick=load});
+ var hs=R.querySelector('#rxHookSave');if(hs)hs.onclick=function(){hs.disabled=true;post('ir_dm_hook',{url:R.querySelector('#rxHook').value.trim()}).then(function(x){hs.disabled=false;var m=R.querySelector('#rxHookMsg');if(!x.ok){m.textContent=x.err;m.style.color='var(--red)';return}S.hook=R.querySelector('#rxHook').value.trim();m.style.color='';m.textContent=S.hook?'✓ Saved. We sent a test lead (test@example.com) so you can check it arrived.':'Disconnected.'})}}
 /* ---------- editor ---------- */
 function edit(c){ED=c;TAB='autos';editor()}
 function editor(){var c=ED,h='<div class="rx-head"><button class="rx-ib" id="rxBack">'+I.back+'</button><h1>'+(c.id?'Edit automation':'New automation')+'</h1><span style="width:48px"></span></div><div class="rx-ed"><div>';
@@ -1229,6 +1446,11 @@ function editor(){var c=ED,h='<div class="rx-head"><button class="rx-ib" id="rxB
  h+='<div class="rx-card rx-pad rx-step"><h3><span class="rx-num">3</span>Trigger word</h3><label class="rx-f"><input id="rxKw" placeholder="e.g. GUIDE" value="'+esc(c.keywords.join(', '))+'" autocapitalize="characters"><small>Capitals, emojis and dots don\'t matter. Add more with a comma.</small></label><label class="rx-chk" style="margin:0"><input type="checkbox" id="rxAny"'+(c.any_word?' checked':'')+'><span>Reply to <b>every</b> comment or message</span></label></div>';
  h+='<div class="rx-card rx-pad rx-step"><h3><span class="rx-num">4</span>The DM they get</h3><div style="margin:0 0 8px"><button class="rx-tag" data-ins="{name}">+ Their @name</button><button class="rx-tag" data-ins="{link}">+ Your link</button></div><label class="rx-f"><textarea id="rxMsg" rows="5" maxlength="1000">'+esc(c.message)+'</textarea></label><label class="rx-f"><span>Your link <small>(optional, clicks are counted)</small></span><input id="rxLink" type="url" inputmode="url" placeholder="https://yourwebsite.com/offer" value="'+esc(c.link)+'"></label><label class="rx-chk"><input type="checkbox" id="rxBtnOn"'+(c.button?' checked':'')+'><span>Show the link as a button</span></label><label class="rx-f" id="rxBtnBox"'+(c.button?'':' hidden')+' style="margin:0"><span>Button text</span><input id="rxBtn" maxlength="20" value="'+esc(c.button||'Open link')+'"></label></div>';
  h+='<div class="rx-card rx-pad rx-step" id="rxPubBox"'+(c.t.comments?'':' hidden')+'><h3><span class="rx-num">5</span>Reply under the comment?</h3><label class="rx-chk"><input type="checkbox" id="rxPubOn"'+(c.public_on?' checked':'')+'><span>Yes, reply publicly too</span></label><label class="rx-f" id="rxPubTxt"'+(c.public_on?'':' hidden')+' style="margin:0"><textarea id="rxPub" rows="3">'+esc(c.public.join('\n'))+'</textarea><small>One per line. A different one is picked each time.</small></label></div>';
+ h+='<div class="rx-card rx-pad rx-step"><h3><span class="rx-num">+</span>Grow your list and followers</h3>'+(S.instant?'':'<div class="rx-alert info" style="font-size:13px;font-weight:500;margin:0 0 12px">These two need your Meta app to be <b>Live</b>, so Instagram tells us when people reply or tap a button.</div>')+
+ '<label class="rx-chk"><input type="checkbox" id="rxFol"'+(c.follow?' checked':'')+'><span><b>Only for followers.</b> They tap a button, we check they follow you, then send it. If not, we ask them to follow first.</span></label>'+
+ '<div id="rxFolBox"'+(c.follow?'':' hidden')+'><label class="rx-f"><span>First message</span><textarea id="rxFolMsg" rows="2" maxlength="640">'+esc(c.follow_msg||'Hey {name}! Tap below and I will send it right over 👇')+'</textarea></label><label class="rx-f"><span>Button text</span><input id="rxFolBtn" maxlength="20" value="'+esc(c.follow_btn||'Send it to me')+'"></label></div>'+
+ '<label class="rx-chk"><input type="checkbox" id="rxEm"'+(c.ask_email?' checked':'')+'><span><b>Ask for their email first.</b> We save it to your Leads (and your email list), then send what they asked for.</span></label>'+
+ '<div id="rxEmBox"'+(c.ask_email?'':' hidden')+'><label class="rx-f"><span>Question</span><textarea id="rxEmAsk" rows="2" maxlength="640">'+esc(c.email_ask||'Hey {name}! What is the best email to send it to? 📩')+'</textarea></label><label class="rx-f" style="margin:0"><span>After they reply <small>(optional, otherwise your DM above is sent)</small></span><textarea id="rxEmThx" rows="2" maxlength="1000" placeholder="Thanks {name}! Here it is: {link}">'+esc(c.email_thanks||'')+'</textarea></label></div></div>';
  h+='</div><div class="rx-edr">';
  h+='<div class="rx-card rx-pad rx-step"><h3><span class="rx-num">👀</span>Preview</h3><div class="rx-phone" id="rxPrev"></div></div>';
  h+='<label class="rx-f"><span>Name <small>(just for you)</small></span><input id="rxName" placeholder="e.g. Free guide giveaway" value="'+esc(c.name||'')+'"></label>';
@@ -1242,18 +1464,24 @@ function editor(){var c=ED,h='<div class="rx-head"><button class="rx-ib" id="rxB
  $('#rxTc').onchange=function(){$('#rxPostBox').hidden=!this.checked;$('#rxPubBox').hidden=!this.checked};
  $('#rxBtnOn').onchange=function(){$('#rxBtnBox').hidden=!this.checked;prev()};
  $('#rxPubOn').onchange=function(){$('#rxPubTxt').hidden=!this.checked};
+ $('#rxFol').onchange=function(){$('#rxFolBox').hidden=!this.checked;prev()};$('#rxEm').onchange=function(){$('#rxEmBox').hidden=!this.checked;prev()};
+ ['#rxFolMsg','#rxFolBtn','#rxEmAsk'].forEach(function(s){$(s).addEventListener('input',prev)});
  ['#rxKw','#rxMsg','#rxLink','#rxBtn','#rxAny'].forEach(function(s){$(s).addEventListener('input',prev);$(s).addEventListener('change',prev)});
  $('#rxSave').onclick=save;$('#rxTry').onclick=function(){tryIt(collect(),$('#rxTryOut'))};
  posts();prev();window.scrollTo(0,0)}
 function collect(){var $=function(s){return R.querySelector(s)},c=ED;
  c.keywords=$('#rxKw').value.split(',').map(function(s){return s.trim()}).filter(Boolean);c.any_word=$('#rxAny').checked;c.message=$('#rxMsg').value;c.link=$('#rxLink').value.trim();
  c.button=$('#rxBtnOn').checked?($('#rxBtn').value.trim()||'Open link'):'';c.public_on=$('#rxPubOn').checked;c.public=$('#rxPub').value.split('\n').map(function(s){return s.trim()}).filter(Boolean);
- c.t={comments:$('#rxTc').checked,dms:$('#rxTd').checked,story:$('#rxTs').checked};c.name=$('#rxName').value.trim();return c}
+ c.t={comments:$('#rxTc').checked,dms:$('#rxTd').checked,story:$('#rxTs').checked};c.name=$('#rxName').value.trim();
+ c.follow=$('#rxFol').checked;c.follow_msg=$('#rxFolMsg').value;c.follow_btn=$('#rxFolBtn').value.trim();c.ask_email=$('#rxEm').checked;c.email_ask=$('#rxEmAsk').value;c.email_thanks=$('#rxEmThx').value;return c}
 function prev(){var c=collect(),link=c.link?location.origin+'/dmlink/…':'',btn=!!(c.link&&c.button);
  var m=c.message.replace(/\{name\}|\{username\}/gi,'@their_name').replace(/\{keyword\}/gi,c.keywords[0]||'');
  if(link&&!btn){m=/\{link\}/i.test(m)?m.replace(/\{link\}/gi,link):m+'\n'+link}else{m=m.replace(/[ \t]*\{link\}[ \t]*/gi,' ')}
  m=m.replace(/[ \t]+\n/g,'\n').replace(/\n{3,}/g,'\n\n');
- R.querySelector('#rxPrev').innerHTML='<div class="rx-in">'+esc(c.any_word?'Love this! 😍':(c.keywords[0]||'GUIDE'))+'</div><div class="rx-out">'+esc(m.trim()||'…')+(btn?'<div class="rx-bt">'+esc(c.button)+'</div>':'')+'</div>'}
+ var nm=function(t){return String(t||'').replace(/\{name\}|\{username\}/gi,'@their_name')},h='<div class="rx-in">'+esc(c.any_word?'Love this! 😍':(c.keywords[0]||'GUIDE'))+'</div>';
+ if(c.follow)h+='<div class="rx-out">'+esc(nm(c.follow_msg))+'<div class="rx-bt">'+esc(c.follow_btn||'Send it to me')+'</div></div><div class="rx-in">Tapped</div>';
+ if(c.ask_email)h+='<div class="rx-out">'+esc(nm(c.email_ask))+'</div><div class="rx-in">amaka@gmail.com</div>';
+ h+='<div class="rx-out">'+esc(m.trim()||'…')+(btn?'<div class="rx-bt">'+esc(c.button)+'</div>':'')+'</div>';R.querySelector('#rxPrev').innerHTML=h}
 function posts(){var box=R.querySelector('#rxPosts'),c=ED;if(!box)return;
  var anyB='<button class="rx-post any'+(c.any_post?' on':'')+'" data-any="1">🌐<br>Any post<br><small class="rx-muted">incl. new ones</small></button>';
  if(!S.accts.length){c.any_post=true;box.innerHTML='<div class="rx-grid">'+anyB.replace('rx-post any','rx-post any on')+'</div><small class="rx-muted">Connect Instagram to pick one post.</small>';return}
