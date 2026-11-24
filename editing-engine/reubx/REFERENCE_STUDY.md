@@ -18,25 +18,25 @@ Every reel was downloaded, transcribed, measured (ffmpeg scene detection, signal
 | DgGHPcdA-4F | 60.1s | 3.54s | 200 | 84 | 14.2 | -14.2 | 4 dB |
 
 ## What all 12 do (now engine defaults)
-- **Hard cuts only.** Not one whip, flash or glitch. Motion comes from layout changes (talking head, split screen, full-screen graphic, picture card) and from graphics animating in.  defaults to ; the effects stay available.
-- **Tight pacing:** 156-282 words/min (median ~220). Pauses are trimmed hard (: max kept pause 0.30 s).
+- **Hard cuts only.** Not one whip, flash or glitch. Motion comes from layout changes (talking head, split screen, full-screen graphic, picture card) and from graphics animating in. `look.transitions` defaults to `off`; the effects stay available.
+- **Tight pacing:** 156-282 words/min (median ~220). Pauses are trimmed hard (`look.pace = tight`: max kept pause 0.30 s).
 - **Muted, moody grade:** saturation 4-14 (phone footage is 20-40), average luma 46-130. The grade keeps the mood and only fixes extremes; colourful footage is pulled toward the reference range.
 - **Loudness -14 LUFS**, music bed ~11-16 dB under the voice.
 - **Captions:** 1-3 words, white bold sans with a soft shadow (no heavy outline), one emphasised word per line in a colour (yellow / gold / lime), a script font (millie, deshna) or a red box (deshna).
 - **Numbered section headers** in 6 of 12 reels ('1. TRANSFORMATION', '#1 Repetition', 'Mistake #3:'). Detected automatically from 'number one', 'step two', 'the third mistake'.
 - **Full-screen word cards** on light paper or black ('6 Months', 'Good News', kallaway's black diagram frames). Auto-made for number + unit phrases.
-- **Picture card over the blurred speaker** (chloe.shih, adam.kelada) for photos / proof: B-roll layout .
-- **Split screen** graphic-top / speaker-bottom (kallaway, zachdoesai, tumi): layout , used automatically for screen-type B-roll.
+- **Picture card over the blurred speaker** (chloe.shih, adam.kelada) for photos / proof: B-roll layout `P`.
+- **Split screen** graphic-top / speaker-bottom (kallaway, zachdoesai, tumi): layout `S`, used automatically for screen-type B-roll.
 
 ## Per reel (preset name -> what it does)
--  (Df4rQ4IM-S1, Df7Qfs2sqa9): dark, red label boxes, black diagram frames, single centred words.
--  (Deuy9Y5EWK4): one locked bright shot, white box headers, typed example cards.
--  (DeO6tn3oKg8): screen recordings on dark stage with gold glow, numbered settings list.
--  (Ddewmw8PGtf): podcast wide shot, yellow uppercase keyword under a small white lead, icon tiles.
--  (DgGHPcdA-4F): lead / huge metallic gold word / tail stacks, light checklist split cards, paper word cards.
--  (Df4q6gqkcop): locked wide shot, handwritten script emphasis, 'Mistake #3:' headers.
--  (Dfmrmyvh5ic): white canvas split screen with UI mock-ups, captions on a dark pill.
--  (DgC871CDaBS): one dark shot, glassy green HUD overlays above the head.
--  (DSFr2cEEo7c): wide/tight hard cuts, sans + script captions, key phrase in a red box, paper cards.
--  (DOldGdUEVso): fastest (cut every 3 s), captions above the head, yellow key words, numbered headers, picture cards.
--  (DNBUWB3om71): very dark desaturated, gold serif words, glass list cards, full-screen 3D B-roll.
+- `ref-kallaway` (Df4rQ4IM-S1, Df7Qfs2sqa9): dark, red label boxes, black diagram frames, single centred words.
+- `ref-socialinfluence` (Deuy9Y5EWK4): one locked bright shot, white box headers, typed example cards.
+- `ref-adamkelada` (DeO6tn3oKg8): screen recordings on dark stage with gold glow, numbered settings list.
+- `ref-wolf` (Ddewmw8PGtf): podcast wide shot, yellow uppercase keyword under a small white lead, icon tiles.
+- `ref-tumi` (DgGHPcdA-4F): lead / huge metallic gold word / tail stacks, light checklist split cards, paper word cards.
+- `ref-millie` (Df4q6gqkcop): locked wide shot, handwritten script emphasis, 'Mistake #3:' headers.
+- `ref-zach` (Dfmrmyvh5ic): white canvas split screen with UI mock-ups, captions on a dark pill.
+- `ref-skytan` (DgC871CDaBS): one dark shot, glassy green HUD overlays above the head.
+- `ref-deshna` (DSFr2cEEo7c): wide/tight hard cuts, sans + script captions, key phrase in a red box, paper cards.
+- `ref-chloe` (DOldGdUEVso): fastest (cut every 3 s), captions above the head, yellow key words, numbered headers, picture cards.
+- `ref-cinematic` (DNBUWB3om71): very dark desaturated, gold serif words, glass list cards, full-screen 3D B-roll.
