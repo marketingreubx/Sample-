@@ -416,7 +416,7 @@ function refPlan(words, plan, ai) { var n = words.length, ok = function (i) { re
   P.title = ai.list && ai.list.title ? String(ai.list.title) : (ai.topic ? String(ai.topic) : '');
   (ai.cards || []).forEach(function (c) { if (ok(+c.from) && ok(+c.to) && c.text) { P.cards.push({ a: +c.from, b: +c.to, lead: String(c.lead || ''), text: String(c.text) }); } });
   if (ai.hook && ok(+ai.hook.from) && ai.hook.text) { P.hook = { a: +ai.hook.from, b: ok(+ai.hook.to) ? +ai.hook.to : +ai.hook.from, text: String(ai.hook.text) }; }
-  if (ai.cta && ok(+ai.cta.from) && ai.cta.keyword && ctaOk(words, +ai.cta.from, String(ai.cta.keyword))) { P.cta = { a: +ai.cta.from, keyword: String(ai.cta.keyword).toUpperCase().replace(/[^\w-]/g, '').slice(0, 20) }; }
+  var ck = ai.cta && ok(+ai.cta.from) ? ctaKw(words, +ai.cta.from, ai.cta.keyword) : ''; if (ck) { P.cta = { a: +ai.cta.from, keyword: ck }; }
  } else {
   Object.keys(plan.key || {}).forEach(function () {}); words.forEach(function (x, i) { if (plan.key && plan.key[cleanW(x.w).toLowerCase()]) { P.keys[i] = 1; } });
   (plan.punch || []).forEach(function (i) { P.keys[i] = 1; });
@@ -428,7 +428,8 @@ function refPlan(words, plan, ai) { var n = words.length, ok = function (i) { re
  P.used = {}; P.imgs = {}; P.viral = ai ? viralPlan(ai, ok) : null; P.pics = []; if (ai && ai.pictures) { ai.pictures.forEach(function (p) { if (p && ok(+p.from) && p.query) { P.pics.push({ a: +p.from, b: ok(+p.to) ? Math.max(+p.to, +p.from) : +p.from, query: String(p.query).slice(0, 60) }); } }); }
  P.noun = nounFor(words, ai); P.items.sort(function (x, y) { return x.a - y.a; }); for (var k = 0; k < P.items.length; k++) { if (P.items[k + 1] && P.items[k].b >= P.items[k + 1].a) { P.items[k].b = P.items[k + 1].a - 1; } }
  return P; }
-function ctaOk(words, from, kw) { var win = words.slice(Math.max(0, from - 8), from + 10).map(function (x) { return cleanW(x.w).toLowerCase(); }), k = kw.toLowerCase().replace(/[^a-z0-9]/g, ''); return win.indexOf('comment') >= 0 && !!k && win.some(function (w) { return w.replace(/[^a-z0-9]/g, '') === k; }); }
+function ctaKw(words, from, kw) { var st = Math.max(0, from - 8), win = words.slice(st, from + 10).map(function (x) { return cleanW(x.w).toLowerCase().replace(/[^a-z0-9]/g, ''); }), ci = win.indexOf('comment'); if (ci < 0) { return ''; } var k = String(kw || '').toLowerCase().replace(/[^a-z0-9]/g, ''), after = win.slice(ci + 1);
+ if (k && k !== 'comment' && after.indexOf(k) >= 0) { return k.toUpperCase().slice(0, 20); } var bad = { below: 1, the: 1, a: 1, on: 1, and: 1, this: 1, to: 1, me: 1, now: 1, word: 1, '': 1 }, nx = after[0] === 'the' && after[1] === 'word' ? after[2] : after[0]; return nx && !bad[nx] && nx.length >= 2 ? nx.toUpperCase().slice(0, 20) : ''; }
 function cap1(x) { x = String(x || ''); return x.charAt(0).toUpperCase() + x.slice(1); }
 function nounFor(words, ai) { var n = ai && ai.list && ai.list.noun ? String(ai.list.noun).toLowerCase().replace(/[^a-z]/g, '').replace(/s$/, '') : ''; if (n && n.length >= 3 && n.length <= 12) { return n; }
  var cnt = {}, keys = { sign: /^signs?$/, step: /^steps?$/, tip: /^tips?$/, mistake: /^mistakes?$/, reason: /^reasons?$/, rule: /^rules?$/, habit: /^habits?$/, myth: /^myths?$/, hack: /^hacks?$/, lesson: /^lessons?$/, way: /^ways?$/, question: /^questions?$/, symptom: /^symptoms?$/, secret: /^secrets?$/ }; words.forEach(function (x) { var w = cleanW(x.w).toLowerCase(); for (var k in keys) { if (keys[k].test(w)) { cnt[k] = (cnt[k] || 0) + 1; } } });
