@@ -409,7 +409,8 @@ function dispWords(words, ai) { var out = words.map(function (x) { return { w: x
   if (/^\d{1,2}([:.]\d{2})?$/.test(a.replace(/[.,]$/, '')) && /^(am|pm|a\.m\.?|p\.m\.?)$/.test(b)) { out[i].w = a.replace(/[.,]$/, '') + ' ' + (b.charAt(0) === 'a' ? 'AM' : 'PM') + (/[.,?!]$/.test(out[i + 1].w) ? out[i + 1].w.slice(-1) : ''); out[i + 1].w = ''; } }
  return out; }
 /* the AI plan (site AI reads the transcript); null when unavailable, the editor then plans by itself */
-function aiPlan(words, sid) { return aiPlan1(words, sid).then(function (a) { return a || aiPlan1(words, sid); }); }
+function aiPlan(words, sid) { var txt = words.map(function (x) { return x.w; }).join(' ').toLowerCase(), hint = /out of (ten|10)|\d\/10|worth it|not worth|yes or no|\bdon'?ts\b/.test(txt), plain = function (a) { return !a || !a.viral || a.viral.format === 'plain' || !(a.viral.entries || []).length; };
+ return aiPlan1(words, sid).then(function (a) { return a || aiPlan1(words, sid); }).then(function (a) { if (a && hint && plain(a)) { return aiPlan1(words, sid).then(function (b) { return b && !plain(b) ? b : a; }); } return a; }); }
 function aiPlan1(words, sid) { if (!C.aj || !C.n) { return Promise.resolve(null); }
  var fd = new FormData(); fd.append('action', 'ir_rx_plan'); fd.append('n', C.n); fd.append('style', sid); fd.append('words', JSON.stringify(words.map(function (x) { return x.w; })));
  return Promise.race([fetch(C.aj, { method: 'POST', body: fd, credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (j) { return j && j.ok && j.plan ? j.plan : null; }).catch(function () { return null; }), new Promise(function (r) { setTimeout(function () { r(null); }, 40000); })]); }
