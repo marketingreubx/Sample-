@@ -72,7 +72,9 @@ class Job:
         for a, b in plan.get("remove", []): rem |= set(range(a, b + 1))
         keep = [i for i in range(len(w)) if i not in rem]
         sil = json.load(open(self.p("silences.json"))); env = np.load(self.p("env_db.npy"))
-        PAD_IN, PAD_OUT, MAXGAP = 0.22, 0.16, (1e9 if plan.get("_screen") else 0.45)   # screen recordings: never chop pauses
+        pace = plan.get("look", {}).get("pace", "tight")    # references: 200-280 words/min, pauses trimmed hard
+        PAD_IN, PAD_OUT, MAXGAP = (0.14, 0.10, 0.30) if pace == "tight" else (0.22, 0.16, 0.45)
+        if plan.get("_screen"): MAXGAP = 1e9                   # screen recordings: never chop pauses
         def valley(t0, t1):
             i0, i1 = max(int(t0 * 100), 0), max(int(t1 * 100), int(t0 * 100) + 1)
             return (i0 + int(np.argmin(env[i0:i1]))) / 100

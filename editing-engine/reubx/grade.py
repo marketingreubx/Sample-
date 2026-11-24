@@ -39,10 +39,11 @@ def adapt(s, st):
     s, notes = dict(s), []
     if not st: return s, notes
     y, lo, hi, sat = st.get("YAVG", 125), st.get("YLOW", 30), st.get("YHIGH", 210), st.get("SATAVG", 30)
-    if y < 105:   # dark clip: lift, crush less
-        s["brightness"] += min((110 - y) * 0.45, 14); s["shadows"] *= 0.45; notes.append(f"dark clip (avg {y:.0f}): lifted exposure, kept shadows open")
-    elif y > 150:  # bright clip: hold back, protect highlights
-        s["brightness"] -= min((y - 145) * 0.35, 10); s["highlights"] -= 8; notes.append(f"bright clip (avg {y:.0f}): pulled exposure and highlights down")
+    # The 12 reference reels sit between avg luma 46 (moody) and 172 (bright white set): mood is kept, only extremes are fixed.
+    if y < 50:
+        s["brightness"] += min((60 - y) * 0.5, 12); s["shadows"] *= 0.4; notes.append(f"very dark clip (avg {y:.0f}): lifted a little, mood kept")
+    elif y > 175:
+        s["brightness"] -= min((y - 170) * 0.35, 10); s["highlights"] -= 8; notes.append(f"very bright clip (avg {y:.0f}): pulled exposure and highlights down")
     if lo < 18:
         s["shadows"] *= 0.5; notes.append("blacks already deep: softer shadow pull")
     elif lo > 48:
@@ -51,10 +52,13 @@ def adapt(s, st):
         s["highlights"] -= 7; s["whites"] -= 4; notes.append("clipping highlights: recovered")
     elif hi < 175:
         s["whites"] = abs(s["whites"]) * 0.6; s["highlights"] *= 0.5; notes.append("dull whites: let them breathe")
-    if sat > 48:
-        s["saturation"] *= 0.3; notes.append(f"already colourful (sat {sat:.0f}): barely any saturation added")
-    elif sat < 18:
-        s["saturation"] += 5; notes.append(f"muted colours (sat {sat:.0f}): a touch more colour")
+    # References are muted (signalstats saturation 4-14). Phone footage is often 20-40: bring it toward that range.
+    if sat > 22:
+        s["saturation"] -= min((sat - 18) * 0.6, 14); notes.append(f"colourful phone footage (sat {sat:.0f}): toned down to the reference range")
+    elif sat > 14:
+        s["saturation"] *= 0.3; notes.append(f"colour already in range (sat {sat:.0f}): barely touched")
+    elif sat < 4:
+        s["saturation"] += 4; notes.append(f"almost grey (sat {sat:.0f}): a touch of colour")
     return s, notes
 
 

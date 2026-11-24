@@ -1,5 +1,5 @@
 {
- "_doc": "One preset per reference reel. base = engine style; look = fonts/colours/sound/zoom defaults (plan.look overrides); plan = default plan keys; guide = what the plan should contain to match the reel.",
+ "_doc": "One preset per reference reel. base = engine style; look = fonts/colours/sound/zoom defaults (plan.look overrides); plan = default plan keys; guide = what the plan should contain to match the reel. ref-* presets come from the 12-reel reference study (see REFERENCE_STUDY.md).",
  "kilgore-list": {
   "ref": "@itsmegkilgore DewrbKMRjlE — '15 ways Claude edits my reels'",
   "base": "a-list",
@@ -250,5 +250,265 @@
    "screen": "auto"
   },
   "guide": "Screen recordings and walkthroughs: the recording is kept whole on a soft backdrop with a smart zoom that follows the cursor and typing, captions under the screen, lime key words, step cards between sections."
+ },
+ "ref-kallaway": {
+  "ref": "@kallawaymarketing Df4rQ4IM-S1 / Df7Qfs2sqa9",
+  "base": "b-loud",
+  "look": {
+   "font_main": "Inter",
+   "font_lead": "Inter",
+   "font_cap": "Inter",
+   "cap_weight": 800,
+   "cap_size": 62,
+   "cap_pos": "center",
+   "main_color": "#FFFFFF",
+   "highlight": "#FFFFFF",
+   "outline": 0,
+   "zoom": 0.05,
+   "music": 0.1,
+   "sfx": 0.6
+  },
+  "plan": {
+   "accent": "#E10600",
+   "accent2": "#FF6B6B",
+   "header_style": "red"
+  },
+  "guide": "Dark moody grade. Talking head <-> split screen (black diagram/UI top, speaker in a rounded card bottom) <-> full black diagram frames with white/red line art. One white bold word at a time, centred. Red label boxes as section titles. Hard cuts only. Reference study (all 12 reels): hard cuts, layout changes carry the motion, 1-3 word captions, one emphasised word, muted grade, tight pacing."
+ },
+ "ref-socialinfluence": {
+  "ref": "@socialinfluencestudios Deuy9Y5EWK4",
+  "base": "b-loud",
+  "look": {
+   "font_main": "Inter",
+   "font_lead": "Inter",
+   "font_cap": "Inter",
+   "cap_weight": 700,
+   "cap_size": 60,
+   "main_color": "#FFFFFF",
+   "highlight": "#FFFFFF",
+   "outline": 0,
+   "zoom": 0.0,
+   "music": 0.08,
+   "sfx": 0.4
+  },
+  "plan": {
+   "accent": "#111111",
+   "accent2": "#FFFFFF",
+   "header_style": "box"
+  },
+  "guide": "One locked bright shot, no cuts. Black-on-white box section headers ('1. TRANSFORMATION'), white typed example cards, bold white chest captions with soft shadow. Reference study (all 12 reels): hard cuts, layout changes carry the motion, 1-3 word captions, one emphasised word, muted grade, tight pacing."
+ },
+ "ref-adamkelada": {
+  "ref": "@adam.kelada.media DeO6tn3oKg8",
+  "base": "b-loud",
+  "look": {
+   "font_main": "Archivo Black",
+   "font_lead": "Inter",
+   "font_cap": "Inter",
+   "cap_weight": 800,
+   "cap_size": 60,
+   "main_color": "#FFFFFF",
+   "highlight": "#F5C518",
+   "outline": 0,
+   "zoom": 0.06,
+   "screen_bg": "#0B0B0D",
+   "music": 0.1,
+   "sfx": 0.7
+  },
+  "plan": {
+   "accent": "#F5C518",
+   "accent2": "#FFE27A",
+   "header_style": "num",
+   "screen": "auto"
+  },
+  "guide": "Screen recordings of the app on a dark stage with a warm gold glow, cursor highlight, outlined checklist of the 6 settings, small picture-card speaker. Captions white bold, key phrase in gold. Reference study (all 12 reels): hard cuts, layout changes carry the motion, 1-3 word captions, one emphasised word, muted grade, tight pacing."
+ },
+ "ref-wolf": {
+  "ref": "@wolfofwallst Ddewmw8PGtf",
+  "base": "b-loud",
+  "look": {
+   "font_main": "Montserrat",
+   "font_lead": "Poppins",
+   "font_cap": "Poppins",
+   "cap_weight": 800,
+   "cap_size": 64,
+   "cap_case": "uppercase",
+   "main_color": "#FFD400",
+   "highlight": "#FFD400",
+   "outline": 0.2,
+   "zoom": 0.08,
+   "music": 0.12,
+   "sfx": 0.8
+  },
+  "plan": {
+   "accent": "#FFD400",
+   "accent2": "#FFE680",
+   "header_style": "num"
+  },
+  "guide": "Wide locked podcast shot, slow push-ins. Two-line captions: small white lead + big yellow uppercase keyword. Yellow-outlined icon tiles above the head, a full-screen 3D chart break on black. Reference study (all 12 reels): hard cuts, layout changes carry the motion, 1-3 word captions, one emphasised word, muted grade, tight pacing."
+ },
+ "ref-tumi": {
+  "ref": "@tumiifebogun DgGHPcdA-4F",
+  "base": "b-loud",
+  "look": {
+   "font_main": "Bricolage Grotesque",
+   "font_lead": "Inter",
+   "font_cap": "Inter",
+   "main_style": "gradient",
+   "grad": "linear-gradient(180deg,#F6D77A 0%,#D8A73A 55%,#A9781E 100%)",
+   "outline": 0,
+   "cap_size": 56,
+   "zoom": 0.07,
+   "music": 0.16,
+   "sfx": 0.6
+  },
+  "plan": {
+   "accent": "#D8A73A",
+   "accent2": "#F6D77A"
+  },
+  "guide": "Warm backlit grade. Every beat is a stack: small white lead top-left, one huge metallic-gold word, small tail bottom-right. Light grey split cards on top with checklist rows popping in. Light paper word cards ('6 Months', 'Good News'). Reference study (all 12 reels): hard cuts, layout changes carry the motion, 1-3 word captions, one emphasised word, muted grade, tight pacing."
+ },
+ "ref-millie": {
+  "ref": "@itsmodernmillie Df4q6gqkcop",
+  "base": "b-editorial",
+  "look": {
+   "font_main": "Caveat",
+   "font_lead": "Inter",
+   "font_cap": "Inter",
+   "font_emph": "Caveat",
+   "emph": "script",
+   "cap_weight": 700,
+   "cap_size": 58,
+   "main_color": "#FFFFFF",
+   "outline": 0,
+   "zoom": 0.0,
+   "music": 0.09,
+   "sfx": 0.4
+  },
+  "plan": {
+   "accent": "#FFFFFF",
+   "accent2": "#FFFFFF",
+   "header_style": "script"
+  },
+  "guide": "One locked wide shot, no cuts. Captions mix bold sans with big handwritten script words. 'Mistake #3: low effort' style headers top, 'DO THIS instead', username keyword pill for the CTA. Reference study (all 12 reels): hard cuts, layout changes carry the motion, 1-3 word captions, one emphasised word, muted grade, tight pacing."
+ },
+ "ref-zach": {
+  "ref": "@zachdoesai_ Dfmrmyvh5ic",
+  "base": "b-loud",
+  "look": {
+   "font_main": "Inter",
+   "font_lead": "Inter",
+   "font_cap": "Inter",
+   "cap_bg": "pill",
+   "cap_weight": 700,
+   "cap_size": 46,
+   "main_color": "#111111",
+   "highlight": "#FFFFFF",
+   "outline": 0,
+   "zoom": 0.04,
+   "music": 0.1,
+   "sfx": 0.8
+  },
+  "plan": {
+   "accent": "#D97757",
+   "accent2": "#F3C2AE"
+  },
+  "guide": "Split screen all the way: clean white canvas top half with product UI mock-ups (folders, toggles, lead lists, pricing cards) animating in, speaker bottom half. Small white captions on a dark pill at the seam. Reference study (all 12 reels): hard cuts, layout changes carry the motion, 1-3 word captions, one emphasised word, muted grade, tight pacing."
+ },
+ "ref-skytan": {
+  "ref": "@realskytan DgC871CDaBS",
+  "base": "b-loud",
+  "look": {
+   "font_main": "Inter",
+   "font_lead": "Inter",
+   "font_cap": "Inter",
+   "cap_weight": 500,
+   "cap_size": 56,
+   "main_color": "#7CFF4F",
+   "highlight": "#7CFF4F",
+   "outline": 0,
+   "zoom": 0.03,
+   "music": 0.11,
+   "sfx": 0.9
+  },
+  "plan": {
+   "accent": "#4CD137",
+   "accent2": "#9CFF7A"
+  },
+  "guide": "One dark locked shot, no cuts. Glassy green HUD above the head: progress bar timeline, arc charts, phone cards with B-roll clips, face stickers. Big green title, regular-weight white captions. Reference study (all 12 reels): hard cuts, layout changes carry the motion, 1-3 word captions, one emphasised word, muted grade, tight pacing."
+ },
+ "ref-deshna": {
+  "ref": "@bytheway.deshna DSFr2cEEo7c",
+  "base": "b-loud",
+  "look": {
+   "font_main": "Montserrat",
+   "font_lead": "Inter",
+   "font_cap": "Montserrat",
+   "font_emph": "Playfair Display",
+   "emph": "box",
+   "cap_weight": 800,
+   "cap_size": 58,
+   "main_color": "#FFFFFF",
+   "outline": 0,
+   "zoom": 0.1,
+   "music": 0.1,
+   "sfx": 0.6
+  },
+  "plan": {
+   "accent": "#D7262E",
+   "accent2": "#FF8A8F"
+  },
+  "guide": "Dark warm desk set, hard cuts between wide and tight. Captions stack bold sans with script italic words; the key phrase sits in a red box. White paper full-screen cards with small grey text. Reference study (all 12 reels): hard cuts, layout changes carry the motion, 1-3 word captions, one emphasised word, muted grade, tight pacing."
+ },
+ "ref-chloe": {
+  "ref": "@chloe.shih DOldGdUEVso",
+  "base": "b-loud",
+  "look": {
+   "font_main": "Inter",
+   "font_lead": "Inter",
+   "font_cap": "Inter",
+   "cap_pos": "top",
+   "cap_weight": 700,
+   "cap_size": 54,
+   "main_color": "#FFE600",
+   "highlight": "#FFE600",
+   "outline": 0,
+   "zoom": 0.08,
+   "pace": "tight",
+   "music": 0.12,
+   "sfx": 0.8
+  },
+  "plan": {
+   "accent": "#FFE600",
+   "accent2": "#FFF27A",
+   "header_style": "num"
+  },
+  "guide": "Fastest pacing (a cut every 3 s). Small white captions above the head with yellow key words, '#1 Repetition' numbered headers, picture cards over the blurred speaker for every example, stickers, YouTube screenshot cards. Reference study (all 12 reels): hard cuts, layout changes carry the motion, 1-3 word captions, one emphasised word, muted grade, tight pacing."
+ },
+ "ref-cinematic": {
+  "ref": "@kreatize_ DNBUWB3om71",
+  "base": "b-editorial",
+  "look": {
+   "font_main": "Instrument Serif",
+   "font_lead": "Inter",
+   "font_cap": "Inter",
+   "main_style": "gradient",
+   "grad": "linear-gradient(180deg,#FFF3C4 0%,#E9C46A 60%,#B8862B 100%)",
+   "outline": 0,
+   "cap_size": 54,
+   "zoom": 0.05,
+   "music": 0.15,
+   "sfx": 0.9,
+   "grade": {
+    "saturation": -10,
+    "contrast": 8,
+    "shadows": -15
+   }
+  },
+  "plan": {
+   "accent": "#E9C46A",
+   "accent2": "#FFF3C4"
+  },
+  "guide": "Cinematic, very dark and desaturated with grain. Gold serif keywords, tilted glass list cards writing in, neon line chart, circle-masked face with bullet list, sparkles, map route and trophy as full-screen B-roll. Reference study (all 12 reels): hard cuts, layout changes carry the motion, 1-3 word captions, one emphasised word, muted grade, tight pacing."
  }
 }

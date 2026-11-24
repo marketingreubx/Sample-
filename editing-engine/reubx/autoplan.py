@@ -23,6 +23,59 @@ def sentences(words):
 def clean(w): return re.sub(r"[^\w$%'.,-]", "", w).strip(".,")
 
 
+NUMW = {"one": 1, "two": 2, "three": 3, "four": 4, "five": 5, "six": 6, "seven": 7, "eight": 8, "nine": 9, "ten": 10,
+        "first": 1, "second": 2, "third": 3, "fourth": 4, "fifth": 5, "sixth": 6, "seventh": 7, "eighth": 8, "ninth": 9, "tenth": 10}
+LABEL = {"step", "mistake", "tip", "rule", "lesson", "reason", "way", "hook", "sign", "secret", "habit"}
+UNITS = {"months", "month", "days", "day", "weeks", "week", "years", "year", "hours", "minutes", "million", "thousand", "k", "percent", "followers", "views", "clients"}
+
+
+def _num(w):
+    w = clean(w).lower(); return NUMW.get(w) or (int(w) if w.isdigit() and int(w) < 50 else None)
+
+
+def headers(words, sents):
+    """Numbered sections ('Number one, solutions.' / 'Step two...' / 'The third mistake is...') -> on-screen header."""
+    out = []
+    for s in sents:
+        ws = [clean(words[i]["w"]).lower() for i in s]
+        for k in range(min(4, len(ws) - 1)):
+            n = None; lab = ""
+            if ws[k] == "number" and k + 1 < len(ws): n = _num(ws[k + 1]); start = k + 2
+            elif ws[k] in LABEL and k + 1 < len(ws) and _num(ws[k + 1]): n = _num(ws[k + 1]); lab = ws[k]; start = k + 2
+            elif ws[k] in ("first", "second", "third", "fourth", "fifth") and k + 1 < len(ws) and ws[k + 1] in LABEL: n = NUMW[ws[k]]; lab = ws[k + 1]; start = k + 2
+            elif k == 0 and _num(ws[0]) and words[s[0]]["w"][-1:] in ",." : n = _num(ws[0]); start = 1
+            if n:
+                rest = []
+                for j in s[start:]:
+                    c = clean(words[j]["w"])
+                    if c.lower() in ("is", "are", "the", "a", "an", "to") and not rest: continue
+                    if not c: continue
+                    rest.append(c)
+                    if len(rest) >= 4 or words[j]["w"][-1:] in ",.?!": break
+                while rest and rest[-1].lower() in STOP: rest.pop()          # no dangling 'about' / 'your'
+                if not rest: break
+                title = " ".join(rest)
+                txt = f"{lab.title()} #{n}: {title}" if lab else f"{n}. {title.upper()}"
+                out.append({"w": [s[0], s[-1]], "text": txt.strip().rstrip(":"), "style": "script" if lab else "box"}); break
+    return out
+
+
+def word_cards(words, sents, skip, gap=14.0):
+    """Short punchy number phrases ('six months', '1 million followers') -> full-screen word card (~1.2 s)."""
+    out, last = [], -99.0
+    for s in sents:
+        for k, i in enumerate(s):
+            n = _num(words[i]["w"]) or (clean(words[i]["w"]).replace(",", "").replace("$", "").isdigit() and clean(words[i]["w"]))
+            if not n or k + 1 >= len(s) or i in skip: continue
+            u = clean(words[s[k + 1]]["w"]).lower()
+            if u in UNITS and words[i]["s"] - last >= gap and words[i]["s"] > 2.0:
+                num = clean(words[i]["w"]); num = str(NUMW.get(num.lower(), num))
+                lead = " ".join(clean(words[j]["w"]).lower() for j in s[max(0, k - 3):k])
+                out.append({"type": "word", "w": [i, s[k + 1]], "lead": lead, "text": f"{num} {u.title()}", "dark": False}); last = words[i]["s"]
+                break
+    return out
+
+
 def autoplan(words, style="b-loud", look=None, screen=False):
     plan = {"style": style, "fix": {}, "remove": [] if screen else retake_hints(words), "look": look or {}}
     if screen: plan["screen"] = True
@@ -89,7 +142,13 @@ def autoplan(words, style="b-loud", look=None, screen=False):
             lead = " ".join(clean(words[j]["w"]) for j in pre).lower()
             blocks.append({"w": [pre[0] if pre else r[0], r[0], r[-1]], "lead": lead, "text": big}); lastb = words[r[0]]["s"]
         plan["blocks"], plan["counts"] = blocks, counts
-        plan["key"] = sorted({clean(words[i]["w"]).lower() for i in punch})
+        key = {clean(words[i]["w"]).lower() for i in punch}
+        for s_ in sents:                                   # one highlighted word per sentence (references: yellow / script emphasis)
+            b = max(s_, key=score)
+            if score(b) >= 3: key.add(clean(words[b]["w"]).lower())
+        plan["key"] = sorted(key)
+        plan["headers"] = headers(words, sents)
+        plan["cards"] = plan.get("cards", []) + word_cards(words, sents, {h["w"][0] for h in plan["headers"]})
         if cta: plan["cta"] = cta
     return plan
 

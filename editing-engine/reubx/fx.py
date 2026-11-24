@@ -25,8 +25,7 @@ SFX = {"whip": ("whoosh", 0.40, 0.42), "spin": ("whoosh", 0.45, 0.40), "zoom": (
 def mode_for(style, look):
     m = (look or {}).get("transitions", "auto")
     if m != "auto": return m
-    if style.startswith("b-loud") or style.startswith("b-showcase") or style.startswith("a-skit"): return "dynamic"
-    return "minimal"
+    return "off"   # all 12 reference reels cut hard; layouts, cards and text animation carry the motion
 
 
 def assign(shots, section_starts, style, look, overrides=None):

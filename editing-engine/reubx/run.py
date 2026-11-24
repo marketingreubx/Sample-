@@ -98,7 +98,7 @@ def render(job, style, out):
         for x in json.load(open(job.p("broll_suggestions.json"))):
             name = next((f for f in os.listdir(job.broll) if os.path.splitext(f)[0] == os.path.splitext(x["file"])[0]), None)
             if name and name not in have and x["word"] in WI:
-                plan.setdefault("broll", []).append({"img": name, "lay": "F", "w": [x["word"], min(x["word"] + 7, x["w"][1])]})
+                plan.setdefault("broll", []).append({"img": name, "lay": {"screen": "S", "photo": "P"}.get(x["kind"], "F"), "w": [x["word"], min(x["word"] + 7, x["w"][1])]})
     if fam == "a":
         import style_a; L, EV, END = style_a.build(job, plan, cut, wins); acc, acc2 = plan.get("accent_color", "#ff5a93"), "#F3E37C"
     else:

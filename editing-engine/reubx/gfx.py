@@ -82,6 +82,17 @@ html,body{margin:0;width:1080px;height:1920px;background:transparent;overflow:hi
 .ed .s-main{font-family:var(--f-accent);font-weight:400;letter-spacing:-.01em;line-height:.9;background:none;color:var(--c-ed);-webkit-text-stroke:0;-webkit-background-clip:border-box;padding:0 .06em}
 .gt .s-main{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-stroke:0}
 .hl{color:var(--c-hl);font-weight:900}
+.emph-script .hl{font-family:var(--f-emph);font-style:italic;font-weight:400;font-size:1.25em;letter-spacing:0;-webkit-text-stroke:0}
+.emph-both .hl{font-family:var(--f-emph);font-style:italic;font-weight:400;font-size:1.25em;letter-spacing:0;-webkit-text-stroke:0}
+.emph-script .hl{color:var(--c-text)}
+.emph-box .hl{background:var(--acc);color:#fff;padding:0 .18em;border-radius:.08em;-webkit-text-stroke:0;box-shadow:0 8px 22px rgba(0,0,0,.35)}
+.cap-pill .cap{background:rgba(18,18,22,.74);padding:6px 20px 10px;border-radius:14px;text-shadow:none;-webkit-text-stroke:0}
+.hdr{display:inline-flex;align-items:center;gap:14px;white-space:nowrap;font-family:var(--f-cap);font-weight:800;letter-spacing:.5px}
+.hdr-box{background:#fff;color:#0b0b0f;padding:8px 18px;font-size:50px;text-transform:uppercase}
+.hdr-red{background:var(--acc);color:#fff;padding:8px 22px;border-radius:6px;font-size:46px;box-shadow:0 10px 30px rgba(0,0,0,.35)}
+.hdr-num{color:#fff;font-size:64px;text-shadow:0 3px 14px rgba(0,0,0,.6)}
+.hdr-num i{font-style:normal;font-size:.7em;padding:4px 14px;border:3px solid var(--c-hl);border-radius:50%;color:var(--c-hl)}
+.hdr-script{color:#fff;font-size:58px;text-shadow:0 3px 14px rgba(0,0,0,.6)}.hdr-script em{font-family:var(--f-emph);font-weight:400;font-size:1.3em}
 .mbox .s-main{background:var(--c-box);color:var(--c-main);-webkit-text-stroke:0;padding:.06em .22em .1em;border-radius:.12em;font-style:normal}
 .chip-e small{font-size:.6em}
 .glass-l{position:relative;overflow:hidden;background:linear-gradient(135deg,rgba(140,205,255,.92),rgba(60,140,255,.78));border:1.5px solid rgba(255,255,255,.55);box-shadow:0 24px 60px rgba(10,40,120,.35),inset 0 1px 0 rgba(255,255,255,.6);box-sizing:border-box}
@@ -127,7 +138,7 @@ for(const it of ITEMS){
 LOOK_DEFAULT = {"font_cap": "Poppins", "font_accent": "Instrument Serif", "font_hand": "Gochi", "font_main": "Montserrat", "font_lead": "Poppins",
                 "text": "#ffffff", "accent_text": "#F3E37C", "cap_size": 66, "grad": "linear-gradient(180deg,#fff 0%,#fff 48%,#d3ebff 70%,#8fcaff 100%)",
                 "main_color": "#FFFFFF", "stroke": "#0B0B0F", "highlight": "#FFD60A", "main_style": "solid", "box_color": "#FF3B30",
-                "cap_weight": 800, "cap_case": "lowercase", "outline": 1}
+                "cap_weight": 800, "cap_case": "as-spoken", "outline": 0.35, "emph": "color", "font_emph": "Instrument Serif"}
 
 
 def page(items, acc="#2F6BFF", acc2="#9cc2ff", look=None):
@@ -139,10 +150,10 @@ def page(items, acc="#2F6BFF", acc2="#9cc2ff", look=None):
             f"--f-hand:{q(lk['font_hand'])},'Gochi',cursive;--f-main:{q(lk['font_main'])},'Montserrat',sans-serif;--f-lead:{q(lk['font_lead'])},'Poppins',sans-serif;"
             f"--c-text:{lk['text']};--c-accent:{lk['accent_text']};--cap-size:{int(lk['cap_size'])}px;--c-main:{lk['main_color']};--c-stroke:{lk['stroke']};"
             f"--c-hl:{lk['highlight']};--c-box:{lk['box_color']};--c-ed:{ed};--stroke-w:{0.06 * ow:.3f}em;--cap-stroke:{0.07 * ow:.3f}em;--cap-w:{int(lk['cap_weight'])};"
-            f"--cap-case:{'none' if lk['cap_case'] == 'as-spoken' else lk['cap_case']}}}")
+            f"--cap-case:{'none' if lk['cap_case'] == 'as-spoken' else lk['cap_case']};--f-emph:{q(lk['font_emph'])},serif}}")
     css = re.sub(r":root\{[^}]*\}", root, CSS, count=1)
     if lk.get("main_style") == "gradient": css += "\n.s-main{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-stroke:0}"
-    body = ' class="mbox"' if lk.get("main_style") == "box" else ""
+    body = f' class="{"mbox " if lk.get("main_style") == "box" else ""}emph-{lk.get("emph", "color")}{" cap-pill" if lk.get("cap_bg") == "pill" else ""}"'
     return f"<!doctype html><html><head><meta charset='utf-8'><style>{font_faces()}\n{css}</style></head><body{body}><script>const ITEMS={json.dumps(items)};{JS}</script></body></html>"
 
 
@@ -187,7 +198,7 @@ def broll_clips(work, wins, broll_dir):
     from PIL import Image, ImageDraw
     def mask(w, h, r, n):
         m = Image.new("L", (w, h), 0); ImageDraw.Draw(m).rounded_rectangle([0, 0, w - 1, h - 1], radius=r, fill=255); m.save(f"{work}/{n}")
-    mask(1032, 900, 44, "mask_top.png"); mask(1032, 952, 44, "mask_bot.png")
+    mask(1032, 900, 44, "mask_top.png"); mask(1032, 952, 44, "mask_bot.png"); mask(900, 1180, 46, "mask_pip.png")
     g = np.zeros((H, W, 4), np.uint8); yy = np.linspace(0, 1, H)[:, None]
     g[..., 3] = (np.clip((yy - 0.52) / 0.48, 0, 1) ** 1.6 * 0.78 * np.ones((1, W)) * 255).astype(np.uint8)
     Image.fromarray(g).save(f"{work}/grad.png")
@@ -196,6 +207,10 @@ def broll_clips(work, wins, broll_dir):
         vid = src.lower().endswith((".mp4", ".mov", ".m4v", ".webm", ".mkv")); src_in = ["-i", src] if vid else ["-loop", "1", "-i", src]
         if vid: n = 10 ** 6    # real footage: no Ken Burns drift needed, keep a gentle constant push
         desat = ",hue=s=0.15,eq=contrast=1.08" if x.get("archive") else ""
+        if x["lay"] == "P":   # picture card over the blurred speaker (reference: chloe.shih / adam.kelada)
+            vf = (f"scale=1800:-2:flags=lanczos,crop=1800:2360:(iw-1800)/2:(ih-2360)*0.4,zoompan=z='1+0.06*on/{n}':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d=1:s=900x1180:fps=30,"
+                  f"eq=contrast=1.03:saturation=1.0{desat}")
+            ff(src_in + ["-t", f"{d:.3f}", "-vf", vf, "-r", "30", "-c:v", "libx264", "-preset", "veryfast", "-crf", "16", "-pix_fmt", "yuv420p", out]); continue
         if x["lay"] == "F":
             vf = (f"scale=-2:3840:flags=lanczos,crop=2160:3840:(iw-2160)/2:0,zoompan=z='1+0.10*on/{n}':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d=1:s=1080x1920:fps=30,"
                   f"eq=contrast=1.03:saturation=1.04{desat},format=yuva420p[p];[p][1:v]overlay=0:0,format=yuv420p")
@@ -223,6 +238,12 @@ def compose(work, T, wins, layers, out, end=0.0):
             ff(["-ss", f"{x['a']:.3f}", "-t", f"{d:.3f}", "-i", f"{work}/base.mp4", "-i", x["clip"], "-loop", "1", "-framerate", "30", "-t", f"{d:.3f}", "-i", f"{work}/mask_top.png",
                 "-loop", "1", "-framerate", "30", "-t", f"{d:.3f}", "-i", f"{work}/mask_bot.png", "-filter_complex", fc, "-map", "[o]", "-t", f"{d:.3f}", "-r", "30",
                 "-c:v", "libx264", "-preset", "veryfast", "-crf", "16", "-pix_fmt", "yuv420p", o]); clips.append((x, o))
+        elif x["lay"] == "P":
+            d = x["b"] - x["a"]; o = f"{work}/pre{i:02d}.mp4"
+            fc = (f"[0:v]scale=270:480,gblur=sigma=10,scale=1080:1920,eq=brightness=-0.10:saturation=0.8[bg];[2:v]format=gray[m];[1:v]format=rgba,setpts=PTS-STARTPTS[c0];[c0][m]alphamerge[card];"
+                  "[bg][card]overlay=x=90:y='170+70*pow(max(0,1-t/0.35),3)':eof_action=pass,format=yuv420p[o]")
+            ff(["-ss", f"{x['a']:.3f}", "-t", f"{d:.3f}", "-i", f"{work}/base.mp4", "-i", x["clip"], "-loop", "1", "-framerate", "30", "-t", f"{d:.3f}", "-i", f"{work}/mask_pip.png",
+                "-filter_complex", fc, "-map", "[o]", "-t", f"{d:.3f}", "-r", "30", "-c:v", "libx264", "-preset", "veryfast", "-crf", "16", "-pix_fmt", "yuv420p", o]); clips.append((x, o))
         else: clips.append((x, x["clip"]))
     inp = ["-i", base]
     for L in layers: inp += ["-framerate", "30", "-start_number", "0", "-i", f"{work}/seq_{L}/f%05d.png"]

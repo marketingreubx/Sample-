@@ -56,6 +56,13 @@ def build(job, plan, cut, wins_out):
         if ease: it["ease"] = ease
         L[layer].append(it)
     WINS_REF = []
+    cpos = plan.get("look", {}).get("cap_pos", "chest")
+    def cap_y(t):          # chest (default) / top: above the head (chloe.shih) / center: mid-frame (kallaway full shots)
+        if cpos == "top" and len(F):
+            m = (F[:, 0] >= t - .5) & (F[:, 0] <= t + .5); f = F[m] if m.any() else F
+            return int(max(np.percentile(f[:, 2], 10) - 90, 260))
+        if cpos == "center": return 1000
+        return int(min(chin_at(t) + 110, 1700))
     def scrim_alpha(t, yc, w, h):
         """Contrast check: brighter / busier background behind the text -> stronger feathered shadow."""
         win = next((x for x in WINS_REF if x["a"] <= t < x["b"]), None)
@@ -83,6 +90,7 @@ def build(job, plan, cut, wins_out):
             fx, fy, fw, fh = np.median(f[:, 1:], 0) if len(f) else (300, 500, 480, 480)
             x["y0"] = int(min(max(fy + fh / 2 - 0.42 * 886, 0), 1920 - 886)); x["x0"] = int(min(max(fx + fw / 2 - 480, 0), 120))
             x["capy"] = int(min(944 + (fy + 1.1 * fh - x["y0"]) * 1.075 + 70, 1840))
+        if x["lay"] == "P": x["capy"] = 1520
         BUSY.append((x["a"], x["b"], "win"))
     wins_out.extend(wins); WINS_REF.extend(wins)
     # ---------------- keyword blocks
@@ -181,18 +189,29 @@ def build(job, plan, cut, wins_out):
         EV.append((t0 + 0.42, "tick", None, 0.35))
     G["id"] = None
     # ---------------- full-frame interstitial cards
-    def full(inner, dark, t0, t1, bg=None):
+    def full(inner, dark, t0, t1, bg=None, kind="slide", out="slide"):
         BUSY.append((t0, t1, "card", dark))
         bg = bg or ("linear-gradient(165deg,#070f2b 0%,#14306f 55%,var(--acc) 130%)" if dark else "linear-gradient(170deg,#f7f8fc 0%,#e7ecf8 100%)")
         add(f'<div style="width:1080px;height:1920px;background:{bg};position:relative;overflow:hidden">'
             f'<div style="position:absolute;inset:0;background:radial-gradient(900px 700px at 85% 8%,rgba(255,255,255,{.18 if dark else .9}),transparent 60%)"></div>{inner}<div class="grain"></div></div>',
-            "left:0;top:0;width:1080px;height:1920px", "slide", t0, t1, out="slide", outd=420)
-        EV.append((t0 - 0.12, "whoosh", 0.62, 0.5)); EV.append((t1 - 0.1, "whoosh", 0.5, 0.35))
+            "left:0;top:0;width:1080px;height:1920px", kind, t0, t1, out=out, outd=420 if out == "slide" else 160, dur=300 if kind == "fade" else None)
+        if kind == "slide": EV.append((t0 - 0.12, "whoosh", 0.62, 0.5)); EV.append((t1 - 0.1, "whoosh", 0.5, 0.35))
+        else: EV.append((t0, "swish", 0.3, 0.25))
     for c in plan.get("cards", []):
         i0, i1 = c["w"]; t0, t1 = t_of(i0) - 0.05, te_of(i1) + 0.25; dark = c.get("dark", True)
         fg, kc = ("#fff", "var(--acc2)") if dark else (INK, "var(--acc)")
         head = (f'<div class="kick" style="color:{kc}" data-d="0.05">{c.get("kicker", "")}</div>'
                 f'<div class="h1" style="color:{fg}" data-d="0.12">{c.get("title", "")}</div>')
+        if c["type"] == "word":   # full-screen word card (references: tumifebogun '6 Months', deshna paper cards, kallaway black frames)
+            paper = "radial-gradient(1200px 900px at 30% 20%,#ffffff 0%,#ececec 55%,#d9d9d9 100%)" if not dark else "radial-gradient(1100px 900px at 50% 40%,#1c1c20 0%,#09090b 100%)"
+            ink = "#0b0b0f" if not dark else "#ffffff"; col = c.get("color") or ("var(--c-main)" if dark else ink)
+            sz = max(110, min(220, int(1500 / max(len(c.get("text", "")), 4))))
+            inner = (f'<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center"><div class="stack">'
+                     f'<div class="ln" data-a="left" data-d="0.05" style="justify-self:start;font:500 40px var(--f-cap);color:{ink};opacity:.75">{c.get("lead", "")}</div>'
+                     f'<div class="ln" data-a="zoom" data-d="0.15" style="font:900 {sz}px var(--f-main);color:{col};letter-spacing:-.02em;line-height:.95;'
+                     f'text-shadow:0 10px 30px rgba(0,0,0,{.45 if dark else .18})">{c.get("text", "")}</div>'
+                     f'<div class="ln" data-a="right" data-d="0.3" style="justify-self:end;font:500 40px var(--f-cap);color:{ink};opacity:.75">{c.get("tail", "")}</div></div></div>')
+            full(inner, dark, t0, t1, paper, kind="fade", out="cut"); continue
         if c["type"] == "list":
             rows = "".join(f'<div class="row" data-d="{0.3 + k * 0.16:.2f}"><div class="mono">{r[0]}</div><div style="flex:1"><div class="wn">{r[1]}</div><div class="ws">{r[2]}</div></div><div class="wv">{r[3]}</div></div>' for k, r in enumerate(c["rows"]))
             body = head + rows + (f'<div data-d="0.9" style="align-self:flex-start;display:flex;align-items:center;gap:16px;padding:18px 30px;border-radius:60px;background:rgba(255,255,255,.14);border:1.5px solid rgba(255,255,255,.4)">{dot(c.get("badge_icon", "sparkles"), 58, "#d97757")}<span class="gl">{c["badge"]}</span></div>' if c.get("badge") else "")
@@ -241,6 +260,24 @@ def build(job, plan, cut, wins_out):
         full(f'<div style="position:absolute;left:90px;right:90px;top:140px;bottom:240px;display:flex;flex-direction:column;justify-content:center;gap:30px">{body}</div>', dark, t0, t1,
              c.get("bg") or ("linear-gradient(170deg,#f4f9ff 0%,#cfe6ff 55%,#7fbfff 100%)" if c["type"] == "answer" else None))
         if c["type"] == "browser": EV.append((t0 + 1.6, "shimmer", 0.7, 0.3))
+    # ---------------- section headers (references: '1. TRANSFORMATION' white box, kallaway red labels, chloe '#1 Repetition', millie 'Mistake #3:')
+    hs = plan.get("headers", [])
+    for k, hd in enumerate(hs):
+        i0 = hd["w"][0]; i1 = hd["w"][1] if len(hd["w"]) > 1 else i0
+        t0 = t_of(i0) - 0.05; t1 = min(t_of(hs[k + 1]["w"][0]) - 0.1 if k + 1 < len(hs) else T, te_of(i1) + 6.0) if i1 == i0 else te_of(i1) + 0.3
+        st = plan.get("header_style") or hd.get("style", "box"); txt = hd["text"]
+        if st == "num" and txt[:1] in "#0123456789":
+            n, _, rest = txt.partition(" "); html = f'<div class="hdr hdr-num"><i>{n}</i>{rest}</div>'
+        elif st == "script" and ":" in txt:
+            a, _, b = txt.partition(":"); html = f'<div class="hdr hdr-script">{a}:&nbsp;<em>{b.strip()}</em></div>'
+        else: html = f'<div class="hdr hdr-{st}">{txt}</div>'
+        top = 170
+        if len(F):
+            m = (F[:, 0] >= t0) & (F[:, 0] <= t1); ff_ = F[m] if m.any() else F
+            top = int(max(110, min(np.percentile(ff_[:, 2], 10) - 150, 420)))
+        if cpos == "top": top = 110           # captions live above the head: header goes to the very top
+        add(html, f"left:0;top:{top}px;width:1080px;display:flex;justify-content:center", "pop", t0, t1, dur=320, outd=120)
+        EV.append((t0, "pop", None, 0.3))
     # ---------------- CTA comment box
     if plan.get("cta"):
         G["id"] = "cta"
@@ -290,7 +327,7 @@ def build(job, plan, cut, wins_out):
         elif uis: y = min(max(e[3] for e in uis) + 80, 1800)
         else:
             wv = next((x for x in wins if x["a"] <= a + 0.05 < x["b"]), None)
-            y = wv["capy"] if wv and wv["lay"] == "S" else 1560 if wv else int(min(chin_at(a + 0.05) + 110, 1700))
+            y = wv["capy"] if wv and wv["lay"] == "S" else 1560 if wv else cap_y(a + 0.05)
         row(f'<div class="cap">{" ".join(parts)}</div>', y, a, b, "pop", 140, scrim=(len(txt) * 36 + 140, 150), dur=260, outd=60)
     # ---------------- wipes into full-screen photos; swish into split screens
     for k, x in enumerate([x for x in wins if x["lay"] == "F"]):
