@@ -10,8 +10,14 @@ from core import Job, retake_hints, ff, W, H
 import gfx
 from gfx import FONTDIR
 
-GRADE = {"a": "eq=brightness=0.025:contrast=1.05:saturation=1.05:gamma=1.03,colorbalance=rm=0.02:bm=-0.012,unsharp=5:5:0.45",
-         "b": "eq=brightness=0.03:contrast=1.06:saturation=1.07:gamma=1.04,unsharp=5:5:0.5"}
+import grade as gradelib, fx, screen as screenlib
+
+
+def is_screen(job, plan):
+    m = plan.get("screen", "auto")
+    if m in (True, False): return m
+    fr = job.p("faces_raw.json")
+    return screenlib.detect(job.video, json.load(open(fr)) if os.path.exists(fr) else [])
 
 
 def h(obj): return hashlib.md5(json.dumps(obj, sort_keys=True).encode()).hexdigest()[:10]
@@ -27,6 +33,10 @@ def prep(job):
     if cur: lines.append(f"[{t0:5.1f}] " + " ".join(cur))
     open(job.p("transcript.txt"), "w").write("\n".join(lines))
     print("\n".join(lines))
+    import broll_suggest
+    sug = broll_suggest.write(job.dir, w)
+    print("\nB-ROLL SUGGESTIONS (drop the file into <work>/broll/ with this name and it is used automatically):")
+    for x in sug: print(f"  {x['t']:5.1f}s  [{x['kind']}] {x['idea']}  ->  {x['file']}")
     print("\nRETAKE HINTS (earlier take of a repeated phrase -> candidate 'remove' range):", retake_hints(w) or "none")
 
 
@@ -68,14 +78,27 @@ def render(job, style, out):
     t = time.time()
     plan = json.load(open(job.p("plan.json"))); style, plan = resolve(style, plan); fam = style[0]; plan["style"] = style
     st = json.load(open(job.p("state.json"))) if os.path.exists(job.p("state.json")) else {}
-    kc = h([plan.get("fix"), plan.get("remove")]); kb = h([kc, plan.get("shots"), plan.get("punch"), plan.get("start_tight"), fam])
+    job.analyse(); plan["_screen"] = scr = is_screen(job, plan)
+    lk = plan.get("look", {})
+    gchain, grep_ = gradelib.build(job.video, lk, screen=scr); json.dump(grep_, open(job.p("grade.json"), "w"), indent=1)
+    print("grade:", ", ".join(grep_.get("notes", [])) or "base grade", flush=True)
+    kc = h([plan.get("fix"), plan.get("remove"), scr]); kb = h([kc, plan.get("shots"), plan.get("punch"), plan.get("start_tight"), fam, gchain, plan.get("trans"),
+                                                                 lk.get("transitions"), lk.get("zoom"), lk.get("punch_fx"), lk.get("screen_bg"), style])
     if st.get("cut") != kc or not os.path.exists(job.p("voice.wav")):
         cut = job.cut(plan); job.voice(cut); st["cut"] = kc; print(f"cut {cut['T']:.2f}s, voice cleaned", flush=True)
     else: cut = json.load(open(job.p("cut.json")))
     if st.get("base") != kb or not os.path.exists(job.p("base.mp4")):
-        job.base(cut, plan, GRADE[fam], 0.5 if fam == "a" else 0.42); st["base"] = kb; print("camera moves + base done", flush=True)
+        if scr: screenlib.base(job, cut, gchain, lk); print("screen recording presented (no cuts, smart zoom)", flush=True)
+        else: job.base(cut, plan, gchain, 0.5 if fam == "a" else 0.42, style); print("camera moves + transitions + base done", flush=True)
+        st["base"] = kb
     json.dump(st, open(job.p("state.json"), "w"))
     wins = []
+    if fam == "b" and os.path.exists(job.p("broll_suggestions.json")) and os.path.isdir(job.broll):   # dropped B-roll files are used automatically
+        have = {x.get("img") for x in plan.get("broll", [])}; WI = {x["i"] for x in cut["words"]}
+        for x in json.load(open(job.p("broll_suggestions.json"))):
+            name = next((f for f in os.listdir(job.broll) if os.path.splitext(f)[0] == os.path.splitext(x["file"])[0]), None)
+            if name and name not in have and x["word"] in WI:
+                plan.setdefault("broll", []).append({"img": name, "lay": "F", "w": [x["word"], min(x["word"] + 7, x["w"][1])]})
     if fam == "a":
         import style_a; L, EV, END = style_a.build(job, plan, cut, wins); acc, acc2 = plan.get("accent_color", "#ff5a93"), "#F3E37C"
     else:
@@ -85,7 +108,8 @@ def render(job, style, out):
         if items: gfx.render(items, name, total, job.dir, acc, acc2, look=plan.get("look"))
     if wins: gfx.broll_clips(job.dir, wins, job.broll)
     gfx.compose(job.dir, cut["T"], wins, [n for n, v in L.items() if v], job.p("video_only.mp4"), END)
-    lk = plan.get("look", {}); sg = float(lk.get("sfx", 1.0))
+    sg = float(lk.get("sfx", 1.0))
+    if os.path.exists(job.p("trans.json")): EV = list(EV) + fx.sfx_events(json.load(open(job.p("shots.json"))), json.load(open(job.p("trans.json"))))
     job.audio(total, [(t, k, d, g * sg) for t, k, d, g in EV] if sg > 0 else [], float(lk.get("music", 0.14)))
     final = out if style != "b-showcase" else job.p("edit_inner.mp4")
     job.mux(job.p("video_only.mp4"), final)
@@ -104,5 +128,6 @@ if __name__ == "__main__":
         if not os.path.exists(job.p("transcript.json")): prep(job)
         if not os.path.exists(job.p("plan.json")):
             from autoplan import autoplan
-            json.dump(autoplan(json.load(open(job.p("transcript.json"))), PRESETS.get(a.style, {}).get("base", a.style)), open(job.p("plan.json"), "w"), indent=1)
+            job.analyse(); scr = is_screen(job, {})
+            json.dump(autoplan(json.load(open(job.p("transcript.json"))), PRESETS.get(a.style, {}).get("base", a.style), screen=scr), open(job.p("plan.json"), "w"), indent=1)
         render(job, a.style, a.out or job.p(f"final_{a.style}.mp4"))

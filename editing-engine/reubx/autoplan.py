@@ -23,8 +23,9 @@ def sentences(words):
 def clean(w): return re.sub(r"[^\w$%'.,-]", "", w).strip(".,")
 
 
-def autoplan(words, style="b-loud", look=None):
-    plan = {"style": style, "fix": {}, "remove": retake_hints(words), "look": look or {}}
+def autoplan(words, style="b-loud", look=None, screen=False):
+    plan = {"style": style, "fix": {}, "remove": [] if screen else retake_hints(words), "look": look or {}}
+    if screen: plan["screen"] = True
     removed = {i for a, b in plan["remove"] for i in range(a, b + 1)}
     sents = [[i for i in s if i not in removed] for s in sentences(words)]
     sents = [s for s in sents if s]

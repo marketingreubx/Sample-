@@ -100,7 +100,15 @@ def camera(d=0.25):
     return _stereo(_bandnoise(n, 120, 700) * np.sin(np.pi * t) ** 2 * 0.5)
 
 
-KINDS = {"whoosh": whoosh, "swish": swish, "tick": tick, "pop": pop, "hit": hit, "riser": riser,
+def glitch(d=0.25):
+    """Digital glitch: bit-crushed noise bursts + a short square-wave stutter."""
+    n = int(SR * d); t = np.arange(n) / SR; rng = np.random.default_rng(7)
+    sq = np.sign(np.sin(2 * np.pi * 180 * t)) * 0.25 + rng.uniform(-1, 1, n) * 0.35
+    gate = (np.floor(t * 38) % 3 != 1).astype(np.float32); hold = np.repeat(sq[::24], 24)[:n]
+    return _stereo(np.round(hold * 6) / 6 * gate * np.exp(-t * 6) * 0.7, -0.2, 0.2)
+
+
+KINDS = {"glitch": glitch, "whoosh": whoosh, "swish": swish, "tick": tick, "pop": pop, "hit": hit, "riser": riser,
          "chime": chime, "shimmer": shimmer, "typing": typing, "camera": camera}
 
 
@@ -110,7 +118,7 @@ def render(events, total, out_wav):
     buf = np.zeros((int(SR * (total + 2)), 2), np.float32)
     for t, kind, d, g in events:
         fn = KINDS[kind]
-        x = fn(d) if d and kind in ("whoosh", "swish", "hit", "riser", "shimmer", "typing", "camera") else fn()
+        x = fn(d) if d and kind in ("whoosh", "swish", "hit", "riser", "shimmer", "typing", "camera", "glitch") else fn()
         s = int(max(t, 0) * SR); e = min(len(buf), s + len(x)); buf[s:e] += x[:e - s] * g
     buf = buf[: int(SR * total)]
     pk = np.abs(buf).max()

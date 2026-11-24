@@ -55,7 +55,7 @@ html,body{margin:0;width:1080px;height:1920px;background:transparent;overflow:hi
 .kbw{display:flex;flex-direction:column;align-items:center;gap:12px}
 .kbl{position:relative;overflow:hidden;display:inline-flex;align-items:center;gap:.18em;font-family:'Montserrat';font-weight:900;font-style:italic;color:#fff;letter-spacing:1px;line-height:1;white-space:nowrap;background:var(--acc);padding:.13em .3em .15em;border-radius:.16em;box-shadow:0 14px 34px rgba(0,0,0,.38),inset 0 -.06em 0 rgba(0,0,0,.18);text-shadow:0 2px 0 rgba(0,0,0,.25)}
 .kser{font-family:'Instrument Serif';font-style:italic;color:#fff;line-height:.95;text-align:center;white-space:nowrap;text-shadow:0 4px 20px rgba(0,0,0,.55)}
-.cap{font-family:var(--f-cap);font-weight:600;font-size:var(--cap-size);color:var(--c-text);white-space:nowrap;letter-spacing:-1px;text-shadow:0 1px 2px rgba(0,0,0,.8),0 3px 14px rgba(0,0,0,.7)}
+.cap{font-family:var(--f-cap);font-weight:var(--cap-w);font-size:var(--cap-size);color:var(--c-text);white-space:nowrap;letter-spacing:-1px;text-transform:var(--cap-case);-webkit-text-stroke:var(--cap-stroke) var(--c-stroke);paint-order:stroke fill;text-shadow:0 2px 0 rgba(0,0,0,.55),0 4px 16px rgba(0,0,0,.6)}
 .scrim{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);background:radial-gradient(closest-side,rgba(0,0,0,.8),rgba(0,0,0,.5) 45%,rgba(0,0,0,0) 100%);filter:blur(16px);z-index:-1;pointer-events:none}
 .card{position:relative;background:#fff;border-radius:30px;box-shadow:0 26px 60px rgba(15,12,40,.30),0 2px 6px rgba(0,0,0,.08);overflow:hidden}
 .glass{position:relative;overflow:hidden;background:linear-gradient(180deg,rgba(255,255,255,.20),rgba(255,255,255,.06)),rgba(12,16,32,.78);border:1.5px solid rgba(255,255,255,.28);box-shadow:0 24px 60px rgba(0,0,0,.38),inset 0 1px 0 rgba(255,255,255,.35);box-sizing:border-box}
@@ -75,12 +75,14 @@ html,body{margin:0;width:1080px;height:1920px;background:transparent;overflow:hi
 .ln{white-space:nowrap}
 .s-lead,.s-tail{font-family:var(--f-lead);font-weight:500;font-style:italic;color:#fff;white-space:nowrap;text-shadow:0 1px 2px rgba(0,0,0,.75),0 3px 12px rgba(0,0,0,.65)}
 .s-lead{justify-self:start}.s-tail{justify-self:end}
-.s-glow{display:inline-block;filter:drop-shadow(0 2px 2px rgba(0,8,30,.6)) drop-shadow(0 6px 16px rgba(0,8,30,.7)) drop-shadow(0 0 20px rgba(90,175,255,.35))}
-.s-main{display:inline-block;font-family:var(--f-main);font-weight:800;font-style:italic;letter-spacing:-.01em;line-height:.92;white-space:nowrap;padding:0 .08em .04em;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.s-glow{display:inline-block;filter:drop-shadow(0 3px 0 rgba(0,0,0,.55)) drop-shadow(0 8px 22px rgba(0,0,0,.6))}
+.s-main{display:inline-block;font-family:var(--f-main);font-weight:900;font-style:italic;letter-spacing:-.01em;line-height:.92;white-space:nowrap;padding:0 .08em .04em;color:var(--c-main);-webkit-text-stroke:var(--stroke-w) var(--c-stroke);paint-order:stroke fill}
 .ed .s-lead,.ed .s-tail{font-style:normal;font-weight:300}
 .ed .s-glow{filter:drop-shadow(0 3px 12px rgba(0,0,0,.55))}
-.ed .s-main{font-family:var(--f-accent);font-weight:400;letter-spacing:-.01em;line-height:.9;background:none;color:var(--acc);-webkit-background-clip:border-box;padding:0 .06em}
-.gt .s-main{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.ed .s-main{font-family:var(--f-accent);font-weight:400;letter-spacing:-.01em;line-height:.9;background:none;color:var(--c-ed);-webkit-text-stroke:0;-webkit-background-clip:border-box;padding:0 .06em}
+.gt .s-main{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-stroke:0}
+.hl{color:var(--c-hl);font-weight:900}
+.mbox .s-main{background:var(--c-box);color:var(--c-main);-webkit-text-stroke:0;padding:.06em .22em .1em;border-radius:.12em;font-style:normal}
 .chip-e small{font-size:.6em}
 .glass-l{position:relative;overflow:hidden;background:linear-gradient(135deg,rgba(140,205,255,.92),rgba(60,140,255,.78));border:1.5px solid rgba(255,255,255,.55);box-shadow:0 24px 60px rgba(10,40,120,.35),inset 0 1px 0 rgba(255,255,255,.6);box-sizing:border-box}
 .chip-e{display:inline-flex;align-items:center;gap:14px;padding:14px 28px 14px 18px;border-radius:60px;background:#fff;box-shadow:0 14px 30px rgba(0,0,0,.25);font:italic 500 40px Poppins;color:var(--acc)}
@@ -123,17 +125,25 @@ for(const it of ITEMS){
 
 
 LOOK_DEFAULT = {"font_cap": "Poppins", "font_accent": "Instrument Serif", "font_hand": "Gochi", "font_main": "Montserrat", "font_lead": "Poppins",
-                "text": "#ffffff", "accent_text": "#F3E37C", "cap_size": 66, "grad": "linear-gradient(180deg,#fff 0%,#fff 48%,#d3ebff 70%,#8fcaff 100%)"}
+                "text": "#ffffff", "accent_text": "#F3E37C", "cap_size": 66, "grad": "linear-gradient(180deg,#fff 0%,#fff 48%,#d3ebff 70%,#8fcaff 100%)",
+                "main_color": "#FFFFFF", "stroke": "#0B0B0F", "highlight": "#FFD60A", "main_style": "solid", "box_color": "#FF3B30",
+                "cap_weight": 800, "cap_case": "lowercase", "outline": 1}
 
 
 def page(items, acc="#2F6BFF", acc2="#9cc2ff", look=None):
     lk = dict(LOOK_DEFAULT, **(look or {}))
     q = lambda f: f"'{f}'"
+    ow = float(lk.get("outline", 1))
+    ed = lk["main_color"] if "main_color" in (look or {}) else acc
     root = (f":root{{--acc:{acc};--acc2:{acc2};--grad:{lk['grad']};--f-cap:{q(lk['font_cap'])},'Poppins',sans-serif;--f-accent:{q(lk['font_accent'])},serif;"
             f"--f-hand:{q(lk['font_hand'])},'Gochi',cursive;--f-main:{q(lk['font_main'])},'Montserrat',sans-serif;--f-lead:{q(lk['font_lead'])},'Poppins',sans-serif;"
-            f"--c-text:{lk['text']};--c-accent:{lk['accent_text']};--cap-size:{int(lk['cap_size'])}px}}")
+            f"--c-text:{lk['text']};--c-accent:{lk['accent_text']};--cap-size:{int(lk['cap_size'])}px;--c-main:{lk['main_color']};--c-stroke:{lk['stroke']};"
+            f"--c-hl:{lk['highlight']};--c-box:{lk['box_color']};--c-ed:{ed};--stroke-w:{0.06 * ow:.3f}em;--cap-stroke:{0.07 * ow:.3f}em;--cap-w:{int(lk['cap_weight'])};"
+            f"--cap-case:{'none' if lk['cap_case'] == 'as-spoken' else lk['cap_case']}}}")
     css = re.sub(r":root\{[^}]*\}", root, CSS, count=1)
-    return f"<!doctype html><html><head><meta charset='utf-8'><style>{font_faces()}\n{css}</style></head><body><script>const ITEMS={json.dumps(items)};{JS}</script></body></html>"
+    if lk.get("main_style") == "gradient": css += "\n.s-main{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-stroke:0}"
+    body = ' class="mbox"' if lk.get("main_style") == "box" else ""
+    return f"<!doctype html><html><head><meta charset='utf-8'><style>{font_faces()}\n{css}</style></head><body{body}><script>const ITEMS={json.dumps(items)};{JS}</script></body></html>"
 
 
 CHROMIUM = "/opt/pw-browsers/chromium" if os.path.exists("/opt/pw-browsers/chromium") else None
@@ -183,14 +193,16 @@ def broll_clips(work, wins, broll_dir):
     Image.fromarray(g).save(f"{work}/grad.png")
     for i, x in enumerate(wins):
         src = f"{broll_dir}/{x['img']}"; d = x["b"] - x["a"] + 0.2; n = int(d * 30) + 2; out = f"{work}/kb{i:02d}.mp4"; x["clip"] = out
+        vid = src.lower().endswith((".mp4", ".mov", ".m4v", ".webm", ".mkv")); src_in = ["-i", src] if vid else ["-loop", "1", "-i", src]
+        if vid: n = 10 ** 6    # real footage: no Ken Burns drift needed, keep a gentle constant push
         desat = ",hue=s=0.15,eq=contrast=1.08" if x.get("archive") else ""
         if x["lay"] == "F":
             vf = (f"scale=-2:3840:flags=lanczos,crop=2160:3840:(iw-2160)/2:0,zoompan=z='1+0.10*on/{n}':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d=1:s=1080x1920:fps=30,"
                   f"eq=contrast=1.03:saturation=1.04{desat},format=yuva420p[p];[p][1:v]overlay=0:0,format=yuv420p")
-            ff(["-loop", "1", "-i", src, "-loop", "1", "-i", f"{work}/grad.png", "-t", f"{d:.3f}", "-filter_complex", "[0:v]" + vf, "-r", "30", "-c:v", "libx264", "-preset", "veryfast", "-crf", "16", "-pix_fmt", "yuv420p", out])
+            ff(src_in + ["-loop", "1", "-i", f"{work}/grad.png", "-t", f"{d:.3f}", "-filter_complex", "[0:v]" + vf, "-r", "30", "-c:v", "libx264", "-preset", "veryfast", "-crf", "16", "-pix_fmt", "yuv420p", out])
         else:
             vf = (f"scale=2064:-2:flags=lanczos,crop=2064:1800:0:(ih-1800)*0.3,zoompan=z='1+0.08*on/{n}':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d=1:s=1032x900:fps=30,eq=contrast=1.03:saturation=1.04{desat}")
-            ff(["-loop", "1", "-i", src, "-t", f"{d:.3f}", "-vf", vf, "-r", "30", "-c:v", "libx264", "-preset", "veryfast", "-crf", "16", "-pix_fmt", "yuv420p", out])
+            ff(src_in + ["-t", f"{d:.3f}", "-vf", vf, "-r", "30", "-c:v", "libx264", "-preset", "veryfast", "-crf", "16", "-pix_fmt", "yuv420p", out])
 
 
 def compose(work, T, wins, layers, out, end=0.0):

@@ -72,7 +72,7 @@ class Job:
         for a, b in plan.get("remove", []): rem |= set(range(a, b + 1))
         keep = [i for i in range(len(w)) if i not in rem]
         sil = json.load(open(self.p("silences.json"))); env = np.load(self.p("env_db.npy"))
-        PAD_IN, PAD_OUT, MAXGAP = 0.22, 0.16, 0.45
+        PAD_IN, PAD_OUT, MAXGAP = 0.22, 0.16, (1e9 if plan.get("_screen") else 0.45)   # screen recordings: never chop pauses
         def valley(t0, t1):
             i0, i1 = max(int(t0 * 100), 0), max(int(t1 * 100), int(t0 * 100) + 1)
             return (i0 + int(np.argmin(env[i0:i1]))) / 100
@@ -132,44 +132,64 @@ class Job:
         ff(["-i", self.p("voice_cut_raw.wav"), "-af", chain, "-ar", "48000", self.p("voice.wav")])
 
     # ------------------------------------------------------------------ 4. camera: shots + keyframed zooms
-    def base(self, cut, plan, grade, anchor=0.42):
+    def base(self, cut, plan, grade, anchor=0.42, style="b-loud"):
         """Shots change framing (wide / tight) at every jump cut and at plan['shots']; inside each shot the camera moves:
-        a slow push-in plus eased punch-ins on plan['punch'] words (ease in 0.2 s, hold, ease out 0.35 s)."""
+        a slow push-in plus eased punch-ins on plan['punch'] words (ease in 0.2 s, hold, ease out 0.35 s).
+        Transitions (fx.py) are rendered inside each shot's own pass, so nothing overlaps and sync never moves."""
+        import fx
         segs, T = cut["segs"], cut["T"]; WO = {x["i"]: x for x in cut["words"]}
         RF = np.array(json.load(open(self.p("faces_raw.json"))), float)
         rw, rh = video_size(self.video)
-        bounds = {round(sg["o"], 3) for sg in segs}
+        bounds = {round(sg["o"], 3) for sg in segs}; sections = []
         for i in plan.get("shots", []):
-            if i in WO: bounds.add(round(cut_before(cut, i), 3))
+            if i in WO: t = round(cut_before(cut, i), 3); bounds.add(t); sections.append(t)
         bounds = sorted(b for b in bounds if b < T - 0.3)
         shots, tight = [], plan.get("start_tight", False)
         for k, a in enumerate(bounds):
             b = bounds[k + 1] if k + 1 < len(bounds) else T
             shots.append([a, b, "T" if tight else "W"]); tight = not tight
+        lk = plan.get("look", {})
+        ov = {round(cut_before(cut, int(i)), 3): v for i, v in (plan.get("trans") or {}).items() if int(i) in WO}
+        trans = fx.assign(shots, sections, style, lk, ov)
+        dyn = fx.mode_for(style, lk) == "dynamic" and lk.get("punch_fx", True)
         punches = [(WO[i]["o"], WO[i]["oe"]) for i in plan.get("punch", []) if i in WO]
-        parts = []
+        leak = fx.leak_png(f"{CACHE}/leak.png") if "leak" in trans else None
+        parts, jobs = [], []
         for k, (a, b, fr) in enumerate(shots):
             sg = max((s for s in segs if s["o"] <= a + 1e-6), key=lambda s: s["o"]); s0 = sg["s"] + (a - sg["o"])
-            n = round(b * FPS) - round(a * FPS)
+            n = round(b * FPS) - round(a * FPS); tin = trans[k]; tout = trans[k + 1] if k + 1 < len(trans) else "none"
             f = RF[(RF[:, 0] >= s0 - .3) & (RF[:, 0] <= s0 + (b - a) + .3)] if len(RF) else RF
             cx, cy = (np.median(f[:, 1] + f[:, 3] / 2) / rw, np.median(f[:, 2] + f[:, 4] / 2) / rh) if len(f) else (0.5, 0.42)
             z0 = 1.16 if fr == "T" else 1.0
-            terms = [f"{z0}*(1+0.035*on/{max(n, 1)})"]
+            terms = [f"{z0}*(1+0.035*on/{max(n, 1)})"]; pf = []
             for pa, pb in punches:
                 if a <= pa < b:
-                    f0 = (pa - a) * FPS - 3; f1 = min((pb - a) * FPS + 12, (b - a) * FPS - 1)
+                    f0 = (pa - a) * FPS - 3; f1 = min((pb - a) * FPS + 12, (b - a) * FPS - 1); pf.append(int(f0 + 5))
                     up = f"clip((on-{f0:.1f})/6,0,1)"; dn = f"clip((on-{f1:.1f})/10,0,1)"
-                    terms.append(f"{float(plan.get('look', {}).get('zoom', 0.11)):.3f}*({up}*{up}*(3-2*{up}))*(1-{dn}*{dn}*(3-2*{dn}))")
-            z = "+".join(terms)
-            x = f"clip({cx:.4f}*iw-iw/zoom/2,0,iw-iw/zoom)"; y = f"clip({cy:.4f}*ih-ih/zoom*{anchor},0,ih-ih/zoom)"
+                    terms.append(f"{float(lk.get('zoom', 0.11)):.3f}*({up}*{up}*(3-2*{up}))*(1-{dn}*{dn}*(3-2*{dn}))")
+            tz, tdx, tdy = fx.zoom_terms(tin, tout, n)
+            if dyn: pdx, pdy = fx.punch_terms(pf); tdx += pdx; tdy += pdy
+            j = lambda ts: "".join(t if t.startswith("-") else "+" + t for t in ts)
+            z = "+".join(terms + tz); dx = j(tdx); dy = j(tdy)
+            x = f"clip({cx:.4f}*iw-iw/zoom/2{dx},0,iw-iw/zoom)"; y = f"clip({cy:.4f}*ih-ih/zoom*{anchor}{dy},0,ih-ih/zoom)"
+            post = fx.post_filters(tin, tout, n, pf if dyn else ())
+            chain = f"scale=2160:3840:flags=lanczos,zoompan=z='{z}':x='{x}':y='{y}':d=1:s={W}x{H}:fps={FPS},{grade}" + "".join("," + p for p in post) + ",setsar=1"
             out = self.p(f"shot{k:03d}.mp4"); parts.append(out)
-            ff(["-ss", f"{s0:.3f}", "-t", f"{b - a + 0.2:.3f}", "-i", self.video, "-vf",
-                f"scale=2160:3840:flags=lanczos,zoompan=z='{z}':x='{x}':y='{y}':d=1:s={W}x{H}:fps={FPS},{grade},setsar=1",
-                "-an", "-frames:v", str(n), "-c:v", "libx264", "-preset", "veryfast", "-crf", "15", "-pix_fmt", "yuv420p", out])
+            inp = ["-ss", f"{s0:.3f}", "-t", f"{b - a + 0.2:.3f}", "-i", self.video]
+            if leak and (tin == "leak" or tout == "leak"):
+                lf = []
+                if tin == "leak": lf.append("fade=t=out:st=0.05:d=0.45:alpha=1")
+                if tout == "leak": lf.append(f"fade=t=in:st={max((n - 10) / FPS, 0):.3f}:d=0.33:alpha=1")
+                fc = f"[0:v]{chain}[v];[1:v]format=rgba,{','.join(lf)}[l];[v][l]overlay=x='-160+320*t/{max(b - a, 0.5):.2f}':y=0:shortest=1[o]"
+                args = inp + ["-loop", "1", "-framerate", str(FPS), "-i", leak, "-filter_complex", fc, "-map", "[o]"]
+            else: args = inp + ["-vf", chain]
+            jobs.append(args + ["-an", "-frames:v", str(n), "-c:v", "libx264", "-preset", "veryfast", "-crf", "15", "-pix_fmt", "yuv420p", "-threads", "2", out])
+        from concurrent.futures import ThreadPoolExecutor
+        with ThreadPoolExecutor(max(1, min(4, (os.cpu_count() or 2) // 2 + 1))) as ex: list(ex.map(ff, jobs))   # shots render in parallel
         open(self.p("shots.txt"), "w").write("".join(f"file '{fwd(x)}'\n" for x in parts))
         ff(["-f", "concat", "-safe", "0", "-i", self.p("shots.txt"), "-c", "copy", self.p("base.mp4")])
         for x in parts: os.remove(x)
-        json.dump(shots, open(self.p("shots.json"), "w"))
+        json.dump(shots, open(self.p("shots.json"), "w")); json.dump(trans, open(self.p("trans.json"), "w"))
         json.dump(detect_faces(self.p("base.mp4")), open(self.p("faces.json"), "w"))
         return shots
 

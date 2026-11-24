@@ -39,10 +39,12 @@ input[type=range]{width:100%}input[type=color]{width:46px;height:32px;border:non
   <div id="stat" class="hint"></div><div class="log" id="log" style="display:none"></div>
  </div>
  <div class="side">
-  <div class="tabs"><div data-t="look" class="on">Look</div><div data-t="text">Text</div><div data-t="fx">Sound &amp; camera</div><div data-t="script">Script</div><div data-t="notes">Notes</div></div>
+  <div class="tabs"><div data-t="look" class="on">Look</div><div data-t="text">Text</div><div data-t="color">Colour</div><div data-t="fx">Motion &amp; sound</div><div data-t="broll">B-roll</div><div data-t="script">Script</div><div data-t="notes">Notes</div></div>
   <div class="pane on" id="look">
    <label>Editing style</label><select id="style"></select>
    <div class="hint">kilgore-* = Calm Cards references · gallo-promo · edita-* = Motion Pop references · a-*/b-* = generic</div>
+   <button id="bStyles" class="pri" style="margin-top:10px;width:100%">See every style on my video</button>
+   <div class="looks" id="styles"></div>
    <label>Looks</label><button id="bLooks">Generate 5 looks from this video</button><div class="looks" id="looks"></div>
   </div>
   <div class="pane" id="text">
@@ -53,10 +55,32 @@ input[type=range]{width:100%}input[type=color]{width:46px;height:32px;border:non
    <label>Handwritten font</label><select id="font_hand"></select>
    <label>Colours</label>
    <div class="row"><div>Text<br><input type="color" id="c_text" value="#ffffff"></div><div>Accent words<br><input type="color" id="c_acc" value="#F3E37C"></div><div>Brand colour<br><input type="color" id="c_brand" value="#2F6BFF"></div><div>Keyword fade<br><input type="color" id="c_grad" value="#8fcaff"></div></div>
+   <label>Main words</label>
+   <div class="row"><div>Main colour<br><input type="color" data-lk="main_color" value="#FFFFFF"></div><div>Highlight<br><input type="color" data-lk="highlight" value="#FFD60A"></div><div>Outline<br><input type="color" data-lk="stroke" value="#0B0B0F"></div><div>Box<br><input type="color" data-lk="box_color" value="#FF3B30"></div></div>
+   <div class="row" style="margin-top:8px"><select data-lk="main_style"><option value="solid">Solid colour</option><option value="box">Colour box</option><option value="gradient">Gradient</option></select>
+     <select data-lk="cap_case"><option value="lowercase">lowercase</option><option value="uppercase">UPPERCASE</option><option value="as-spoken">As spoken</option></select></div>
+   <label>Outline thickness <span data-v="outline"></span></label><input type="range" data-lk="outline" data-n min="0" max="2" step="0.1" value="1">
+   <label>Caption weight <span data-v="cap_weight"></span></label><input type="range" data-lk="cap_weight" data-n min="500" max="900" step="100" value="800">
    <label>Caption size <span id="capv"></span></label><input type="range" id="cap_size" min="44" max="96" value="66">
    <div class="fontprev" id="fprev">The quick preview</div>
   </div>
+  <div class="pane" id="color">
+   <div class="row"><label style="margin:0"><input type="checkbox" id="g_auto" checked> Auto-adjust to each video</label><button id="gReset">Reset to base grade</button></div>
+   <div class="hint">Your base grade is set below. Auto-adjust lifts dark clips, holds back bright ones and never over-saturates skin.</div>
+   <label>Intensity <span data-gv="intensity"></span></label><input type="range" data-g="intensity" min="0" max="1.5" step="0.05" value="1">
+   <div id="gsl"></div>
+   <button id="gPrev" style="margin-top:12px;width:100%">Preview before / after</button>
+   <img id="gImg" style="width:100%;border-radius:10px;margin-top:10px;display:none"><div class="hint" id="gNotes"></div>
+  </div>
+  <div class="pane" id="broll">
+   <div class="hint">Suggested B-roll for this video. Save the clip or image into <b>_reubx/&lt;video&gt;/broll/</b> with the file name shown and it is placed automatically on the next render.</div>
+   <div id="brList"></div>
+  </div>
   <div class="pane" id="fx">
+   <label>Transitions</label><select data-lk="transitions"><option value="auto">Auto (matches the style)</option><option value="dynamic">Dynamic: whip, zoom, flash, glitch, spin, shake, light leak</option><option value="minimal">Clean: zoom-through, blur, dip, light leak</option><option value="off">Hard cuts only</option></select>
+   <label style="display:flex;gap:6px;align-items:center"><input type="checkbox" data-lk="punch_fx" data-b checked> Impact effects on key words (shake + colour split)</label>
+   <label>Screen recording mode</label><select id="screen"><option value="auto">Auto-detect</option><option value="true">On: present the recording, never cut it</option><option value="false">Off</option></select>
+   <label>Screen recording background</label><input type="color" data-lk="screen_bg" value="#101218">
    <label>Music volume <span id="musv"></span></label><input type="range" id="music" min="0" max="0.3" step="0.01" value="0.14">
    <label>Sound effects</label><select id="sfx"><option value="0">Off</option><option value="0.6">Subtle</option><option value="1" selected>Normal</option><option value="1.4">Punchy</option></select>
    <label>Zoom punch-ins <span id="zv"></span></label><input type="range" id="zoom" min="0" max="0.2" step="0.01" value="0.11">
@@ -91,11 +115,30 @@ async function refresh(){
 async function pick(id){cur=id; J=await api('/api/job/'+id); const v=S.videos.find(v=>v.id==id); J._out=v.out; fill(); load(v.out?'edit':'raw'); refresh()}
 function load(which){view=which; const v=S.videos.find(v=>v.id==cur); if(!v)return; const p=which=='edit'&&v.out?v.out:v.name; $('player').src='/file?p='+encodeURIComponent(p)+'&t='+(v.updated||0)}
 $('bRaw').onclick=()=>load('raw'); $('bEdit').onclick=()=>load('edit');
+const GS=[['brightness',-30,30,1],['contrast',-30,30,1],['saturation',-30,30,1],['brilliance',-20,20,0.5],['highlights',-50,30,1],['shadows',-50,30,1],['whites',-30,30,0.5],['hue',-30,30,1],['temp',-30,30,1],['tint',-30,30,1],['sharpen',0,100,1],['clarity',-20,40,1]];
+const GB={brightness:2,contrast:4,saturation:6,brilliance:3.5,highlights:-13,shadows:-23,whites:-7.5,hue:9,temp:0,tint:0,sharpen:50,clarity:7};
+$('gsl').innerHTML=GS.map(([k,a,b,st])=>`<label>${k[0].toUpperCase()+k.slice(1)} <span data-gv="${k}"></span></label><input type="range" data-g="${k}" min="${a}" max="${b}" step="${st}" value="${GB[k]}">`).join('');
+const gv=()=>document.querySelectorAll('[data-gv]').forEach(e=>{const i=document.querySelector(`[data-g="${e.dataset.gv}"]`); e.textContent=i.value});
+document.querySelectorAll('[data-g]').forEach(i=>i.oninput=gv);
+const lv=()=>document.querySelectorAll('[data-v]').forEach(e=>{e.textContent=document.querySelector(`[data-lk="${e.dataset.v}"]`).value});
+document.querySelectorAll('[data-lk]').forEach(i=>i.addEventListener('input',lv));
+$('gReset').onclick=()=>{document.querySelectorAll('[data-g]').forEach(i=>i.value=i.dataset.g=='intensity'?1:GB[i.dataset.g]); $('g_auto').checked=true; gv()};
+function gradeVals(){const g={auto:$('g_auto').checked}; document.querySelectorAll('[data-g]').forEach(i=>{const k=i.dataset.g, v=+i.value; if(k=='intensity'||v!==GB[k]) g[k]=v}); return g}
+function lookVals(){const o={}; document.querySelectorAll('[data-lk]').forEach(i=>{o[i.dataset.lk]=i.dataset.b!==undefined?i.checked:(i.dataset.n!==undefined?+i.value:i.value)}); return o}
+function fillExtra(lk,p){document.querySelectorAll('[data-lk]').forEach(i=>{const v=lk[i.dataset.lk]; if(v===undefined)return; if(i.dataset.b!==undefined)i.checked=!!v; else i.value=v});
+  const g=lk.grade||{}; $('g_auto').checked=g.auto!==false; document.querySelectorAll('[data-g]').forEach(i=>{const k=i.dataset.g; i.value=g[k]!==undefined?g[k]:(k=='intensity'?1:GB[k])});
+  $('screen').value=String(p.screen===undefined?'auto':p.screen); gv(); lv();
+  const br=J.broll||[]; $('brList').innerHTML=br.length?br.map(x=>`<div class="note"><b>${x.t.toFixed(1)}s · ${x.kind}</b><br>${x.idea}<br><small>“${x.line.slice(0,90)}”</small><br><small>file: <code>${x.file}</code> · search: ${x.query}</small></div>`).join(''):'<div class="hint">No suggestions yet (they appear after the video is transcribed).</div>'}
+$('gPrev').onclick=async()=>{if(!cur)return; await api(`/api/job/${cur}/plan`,{look:{grade:gradeVals()}}); $('gNotes').textContent='Rendering preview…';
+  const r=await api(`/api/job/${cur}/grade`,{}); $('gImg').src='/file?p='+encodeURIComponent(r.img)+'&t='+Date.now(); $('gImg').style.display='block'; $('gNotes').textContent=(r.report.notes||[]).join(' · ')||'Base grade applied as is.'};
+$('bStyles').onclick=async()=>{if(!cur)return; await api(`/api/job/${cur}/plan`,{look:lookVals()}); $('styles').innerHTML='<div class="hint">Rendering every style on your video…</div>';
+  const r=await api(`/api/job/${cur}/styles`,{}); $('styles').innerHTML=r.styles.map(l=>`<div class="look"><img src="/file?p=${encodeURIComponent(l.img)}&t=${Date.now()}"><div><b>${l.name}</b></div><div class="hint" style="font-size:11px">${(l.guide||'').slice(0,110)}</div><button onclick="pickStyle('${l.name}')">Use this style</button></div>`).join('')};
+window.pickStyle=async n=>{$('style').value=n; J.plan=await api(`/api/job/${cur}/plan`,{style:n}); api('/api/settings',{style:n}); document.querySelectorAll('#styles .look').forEach(e=>e.style.outline=e.textContent.includes(n)?'2px solid var(--acc)':'none')};
 function fill(){const p=J.plan||{}, lk=p.look||{}; $('style').value=p.style||S.settings.style;
   [['font_cap','Poppins'],['font_main','Montserrat'],['font_accent','Instrument Serif'],['font_lead','Poppins'],['font_hand','Gochi']].forEach(([k,d])=>$(k).value=lk[k]||d);
   $('c_text').value=lk.text||'#ffffff'; $('c_acc').value=lk.accent_text||'#F3E37C'; $('c_brand').value=((p.style||'').startsWith('a')||(p.style||'').startsWith('kilgore'))?(p.accent_color||'#ff5a93'):(p.accent||'#2F6BFF');
   const g=(lk.grad||'').match(/#[0-9a-fA-F]{6}(?=[^#]*$)/); $('c_grad').value=g?g[0]:'#8fcaff';
-  $('cap_size').value=lk.cap_size||66; $('music').value=lk.music??0.14; $('sfx').value=String(lk.sfx??1); $('zoom').value=lk.zoom??0.11; labels(); words(); $('looks').innerHTML=''}
+  $('cap_size').value=lk.cap_size||66; $('music').value=lk.music??0.14; $('sfx').value=String(lk.sfx??1); $('zoom').value=lk.zoom??0.11; labels(); words(); $('looks').innerHTML=''; $('styles').innerHTML=''; fillExtra(lk,p)}
 function labels(){$('capv').textContent=$('cap_size').value+'px'; $('musv').textContent=Math.round($('music').value*100)+'%'; $('zv').textContent='+'+Math.round($('zoom').value*100)+'%';
   $('fprev').style.fontFamily=$('font_cap').value; $('fprev').innerHTML=`<span style="font-family:'${$('font_cap').value}'">caption</span> · <i style="font-family:'${$('font_accent').value}'">accent</i> · <b style="font-family:'${$('font_main').value}'">KEYWORD</b>`}
 ['cap_size','music','zoom','font_cap','font_accent','font_main'].forEach(id=>$(id).oninput=labels);
@@ -109,8 +152,8 @@ function words(){const rm=removedSet(), pu=new Set(J.plan.punch||[]), fx=J.plan.
       lastShift=i; J.plan.remove=toRanges(s); words()};
     el.ondblclick=()=>{const t=prompt('Correct this word (empty = hide it in captions)', el.textContent); if(t===null)return; J.plan.fix=J.plan.fix||{}; J.plan.fix[i]=t; words()}})}
 function patch(){const st=$('style').value, isA=st.startsWith('a')||st.startsWith('kilgore'), lk={font_cap:$('font_cap').value,font_main:$('font_main').value,font_accent:$('font_accent').value,font_lead:$('font_lead').value,font_hand:$('font_hand').value,
-  text:$('c_text').value,accent_text:$('c_acc').value,cap_size:+$('cap_size').value,music:+$('music').value,sfx:+$('sfx').value,zoom:+$('zoom').value,grad:`linear-gradient(180deg,#fff 0%,#fff 48%,${$('c_grad').value}55 70%,${$('c_grad').value} 100%)`};
-  const p={style:st,look:lk,remove:J.plan.remove||[],fix:J.plan.fix||{},punch:J.plan.punch||[]}; if(isA)p.accent_color=$('c_brand').value; else {p.accent=$('c_brand').value;p.accent2=$('c_grad').value}; return p}
+  text:$('c_text').value,accent_text:$('c_acc').value,cap_size:+$('cap_size').value,music:+$('music').value,sfx:+$('sfx').value,zoom:+$('zoom').value,...lookVals(),grade:gradeVals(),grad:`linear-gradient(180deg,#fff 0%,#fff 48%,${$('c_grad').value}55 70%,${$('c_grad').value} 100%)`};
+  const sc=$('screen').value; const p={style:st,look:lk,remove:J.plan.remove||[],fix:J.plan.fix||{},punch:J.plan.punch||[],screen:sc=='auto'?'auto':sc=='true'}; if(isA)p.accent_color=$('c_brand').value; else {p.accent=$('c_brand').value;p.accent2=$('c_grad').value}; return p}
 $('bRender').onclick=async()=>{if(!cur)return; J.plan=await api(`/api/job/${cur}/plan`,patch()); await api(`/api/job/${cur}/render`,{}); refresh()};
 $('bLooks').onclick=async()=>{if(!cur)return; await api(`/api/job/${cur}/plan`,{style:$('style').value}); $('looks').innerHTML='<div class="hint">Rendering looks…</div>';
   const r=await api(`/api/job/${cur}/looks`,{}); $('looks').innerHTML=r.looks.map((l,k)=>`<div class="look"><img src="/file?p=${encodeURIComponent(l.img)}&t=${Date.now()}"><div>${l.name}</div><button onclick='useLook(${JSON.stringify(l.look)})'>Use this look</button></div>`).join('')};

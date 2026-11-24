@@ -281,7 +281,7 @@ def build(job, plan, cut, wins_out):
         a = ch[0]["o"] - 0.03; b = min(chunks[n + 1][0]["o"] - 0.03 if n + 1 < len(chunks) else T, ch[-1]["oe"] + 0.35)
         if over(a, b, "blk"): continue          # the keyword block on screen already shows these words
         txt = " ".join(clean(x["w"]).lower() for x in ch)
-        parts = [f'<span style="color:var(--acc2);font-weight:800">{clean(x["w"]).lower()}</span>' if clean(x["w"]).lower() in key else clean(x["w"]).lower() for x in ch]
+        parts = [f'<span class="hl">{clean(x["w"]).lower()}</span>' if clean(x["w"]).lower() in key else clean(x["w"]).lower() for x in ch]
         cards, uis = over(a, b, "card"), over(a, b, "ui")
         if cards:
             y = 1730

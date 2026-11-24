@@ -122,7 +122,7 @@ class H(BaseHTTPRequestHandler):
         if m:
             d = jdir(m.group(1)); log = os.path.join(d, "render.log")
             return self.send({"transcript": jload(os.path.join(d, "transcript.json"), []), "plan": jload(os.path.join(d, "plan.json"), {}),
-                              "status": jload(os.path.join(d, "status.json"), {}), "log": open(log).read()[-1500:] if os.path.exists(log) else ""})
+                              "status": jload(os.path.join(d, "status.json"), {}), "broll": jload(os.path.join(d, "broll_suggestions.json"), []), "log": open(log).read()[-1500:] if os.path.exists(log) else ""})
         if u.path == "/file":
             p = os.path.abspath(os.path.join(FOLDER, unquote(q.get("p", [""])[0])))
             if not p.startswith(FOLDER) or not os.path.isfile(p): return self.send({"error": "not found"}, 404)
@@ -150,7 +150,7 @@ class H(BaseHTTPRequestHandler):
         u = urlparse(self.path); data = self.body()
         if u.path == "/api/settings":
             s = settings(); s.update({k: v for k, v in data.items() if k in ("style", "look", "auto", "ai_layer")}); jsave(SET_P, s); return self.send(s)
-        m = re.match(r"^/api/job/([\w-]+)/(plan|render|note|looks)$", u.path)
+        m = re.match(r"^/api/job/([\w-]+)/(plan|render|note|looks|styles|grade)$", u.path)
         if not m: return self.send({"error": "not found"}, 404)
         jid, act = m.groups(); d = jdir(jid); pp = os.path.join(d, "plan.json")
         if act == "plan":
@@ -168,6 +168,14 @@ class H(BaseHTTPRequestHandler):
                 notes = jload(NOTES_P, []); n = {"id": len(notes) + 1, "job": jid, "text": data.get("text", "").strip(), "time": time.time(), "status": "open"}
                 if n["text"]: notes.append(n); jsave(NOTES_P, notes)
             return self.send(n)
+        if act in ("styles", "grade"):
+            import looks
+            st = jload(os.path.join(d, "status.json"), {}); plan = jload(pp, {}); video = os.path.join(FOLDER, st["name"])
+            if act == "grade":
+                img, rep = looks.grade_preview(video, d, plan.get("look", {}))
+                return self.send({"img": os.path.relpath(img, FOLDER), "report": rep})
+            files = looks.styles(video, d, plan, os.path.join(d, "transcript.json"), PRESETS)
+            return self.send({"styles": [{"name": n, "img": os.path.relpath(f, FOLDER), "guide": g} for n, f, g in files]})
         if act == "looks":
             import looks
             st = jload(os.path.join(d, "status.json"), {}); plan = jload(pp, {})
