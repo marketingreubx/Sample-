@@ -1,2 +1,4 @@
 Sound effects: Kenney.nl (Interface Sounds, UI Audio, Impact Sounds, Casino Audio) and OpenGameArt (Swishes Sound Pack, Air whoosh, qubodup wind/swosh, Camera, Keyboard Soundpack #1) - all CC0.
 Music beds (on the site, not in git): OpenGameArt CC0 - Chill lofi inspired, lofi hip hop, A cup of tea / Cue (lofi compilation), Midnight Cruiser, Calm Relax 1 (Synthwave 421k), Apple Cider.
+Face detector: Ultra-Light-Fast-Generic-Face-Detector-1MB (MIT).
+Extra sounds: Kenney Impact Sounds, Digital Audio, Interface Sounds (CC0).
