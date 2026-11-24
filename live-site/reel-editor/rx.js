@@ -440,15 +440,17 @@ function renderVideo(v, job, onp) {
   var segs = cut.segs;
   /* playback-driven capture: each segment plays once; every output frame takes the source frame showing at its time (timestamps come from the edit, never from the clock) */
   function srcOf(t) { var sg = segs[0]; for (var k = 0; k < segs.length; k++) { if (segs[k].o <= t + 1e-6) { sg = segs[k]; } } return sg.s + (t - sg.o); }
-  function playSeg(k) { var sg = segs[k], end = k + 1 < segs.length ? segs[k + 1].o : cut.T;
+  var prate = 1, clean = 0, d0 = 0.5;
+   function playSeg(k) { var lastM = null, sg = segs[k], end = k + 1 < segs.length ? segs[k + 1].o : cut.T;
    return seek(sg.s).then(function () { return new Promise(function (res, rej) { var done = false, stall = null;
     function fin() { if (done) { return; } done = true; clearTimeout(stall); v.pause(); res(); }
     function step(now, meta) { if (done) { return; } if (err) { done = true; v.pause(); rej(err); return; } var m = meta && meta.mediaTime != null ? meta.mediaTime : v.currentTime;
+      if (lastM != null && m > lastM) { var dl = m - lastM; if (dl < d0) { d0 = dl; } var rmax = d0 < 0.025 ? 1.5 : 2; if (dl > Math.max(1.45 / FPS, 1.5 * d0)) { prate = Math.max(0.5, prate * 0.75); clean = 0; } else if (++clean >= 20 && prate < rmax) { prate = Math.min(rmax, prate * 1.25); clean = 0; } var want = m > sg.e - 0.3 ? Math.min(prate, 1) : prate; if (Math.abs(v.playbackRate - want) > 0.01) { try { v.playbackRate = want; } catch (x) {} } } lastM = m;
      while (f < N && f / FPS < end - 1e-6 && srcOf(f / FPS) <= m + 0.6 / FPS) { emit(f / FPS, true); }
      if (f >= N || f / FPS >= end - 1e-6 || m >= sg.e - 0.5 / FPS || v.ended) { while (f < N && f / FPS < end - 1e-6) { emit(f / FPS, true); } fin(); return; }
      clearTimeout(stall); stall = setTimeout(function () { while (f < N && f / FPS < end - 1e-6) { emit(f / FPS, true); } fin(); }, 4000);
      if (enc.encodeQueueSize > 8) { v.pause(); waitQ().then(function () { v.play().catch(function () {}); v.requestVideoFrameCallback(step); }); } else { v.requestVideoFrameCallback(step); } }
-    v.muted = true; v.playbackRate = 1; v.requestVideoFrameCallback(step); v.play().catch(function (e) { done = true; rej(e); }); }); }); }
+    v.muted = true; v.playbackRate = Math.min(prate, 1); v.requestVideoFrameCallback(step); v.play().catch(function (e) { done = true; rej(e); }); }); }); }
   function viaPlayback() { var k = 0; return (function nx() { if (k >= segs.length) { return Promise.resolve(); } return playSeg(k++).then(nx); })().then(function endCard() { if (f >= N) { return; } emit(f / FPS, false); return (f % 10 ? Promise.resolve() : tick()).then(waitQ).then(endCard); }); }
   var si = 0;
   function nextFrame() { if (err) { return Promise.reject(err); } if (f >= N) { return Promise.resolve(); } var t = f / FPS;
@@ -480,7 +482,7 @@ function buildAudio(a48, job, onp) { var MIXIN = 'mix0.raw', MIXN = [], segs = j
   .then(function () { MIXN.forEach(del); }); }
 
 /* ---------------- the page ---------------- */
-var S = { file: null, photos: [], style: 'kilgore-list', v: null, a16: null, a48: null, words: null, removed: [], busy: false, url: null };
+var S = { file: null, photos: [], style: 'ref-chloe', v: null, a16: null, a48: null, words: null, removed: [], busy: false, url: null };
 function show(t, p, n) { $('#rxStep').textContent = t; if (p != null) { $('#rxBar').style.width = clamp(Math.round(p), 2, 100) + '%'; } if (n != null) { $('#rxNote').textContent = n; } }
 function fail(m) { var e = $('#rxErr'); e.textContent = m; e.hidden = false; $('#rxWork').hidden = true; S.busy = false; $('#rxGo').disabled = !S.file; e.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
 function mb(n) { return (n / 1048576).toFixed(1) + ' MB'; }
